@@ -10,6 +10,9 @@ class EmailService {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASSWORD,
       },
+      connectionTimeout: 10000,
+      greetingTimeout: 10000,
+      socketTimeout: 15000,
     });
   }
 

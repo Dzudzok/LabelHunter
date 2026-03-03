@@ -406,21 +406,15 @@ router.post('/:id/generate-label', async (req, res, next) => {
 
     if (updateError) throw updateError;
 
-    // Send shipping confirmation email
-    try {
-      const dnWithItems = { ...updated, items };
-      await emailService.sendShipmentEmail(dnWithItems);
-
-      await supabase
+    // Send shipping confirmation email — fire and forget, don't block response
+    const dnWithItems = { ...updated, items };
+    emailService.sendShipmentEmail(dnWithItems)
+      .then(() => supabase
         .from('delivery_notes')
         .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
-        .eq('id', id);
-
-      updated.email_sent_at = new Date().toISOString();
-      updated.status = 'shipped';
-    } catch (emailErr) {
-      console.error('Failed to send shipment email:', emailErr.message);
-    }
+        .eq('id', id)
+      )
+      .catch(emailErr => console.error('Failed to send shipment email:', emailErr.message));
 
     res.json({
       success: true,

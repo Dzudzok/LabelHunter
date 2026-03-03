@@ -360,7 +360,7 @@ export default function PackageView() {
                 />
                 {labelData.label_url && (
                   <a
-                    href={`/api/packages/${pkg.id}/download-label`}
+                    href={`${import.meta.env.VITE_API_URL || '/api'}/packages/${pkg.id}/download-label`}
                     target="_blank"
                     rel="noopener noreferrer"
                     className="block w-full bg-brand-orange hover:bg-brand-orange-dark text-white py-4 rounded-xl text-xl font-bold text-center mt-4 transition-colors"
