@@ -407,14 +407,18 @@ router.post('/:id/generate-label', async (req, res, next) => {
     if (updateError) throw updateError;
 
     // Send shipping confirmation email — fire and forget, don't block response
-    const dnWithItems = { ...updated, items };
-    emailService.sendShipmentEmail(dnWithItems)
-      .then(() => supabase
-        .from('delivery_notes')
-        .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
-        .eq('id', id)
-      )
-      .catch(emailErr => console.error('Failed to send shipment email:', emailErr.message));
+    if (process.env.DISABLE_EMAIL !== 'true') {
+      const dnWithItems = { ...updated, items };
+      emailService.sendShipmentEmail(dnWithItems)
+        .then(() => supabase
+          .from('delivery_notes')
+          .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
+          .eq('id', id)
+        )
+        .catch(emailErr => console.error('Failed to send shipment email:', emailErr.message));
+    } else {
+      console.log('[Email] Skipped (DISABLE_EMAIL=true)');
+    }
 
     res.json({
       success: true,
