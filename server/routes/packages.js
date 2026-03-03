@@ -1,0 +1,441 @@
+const express = require('express');
+const router = express.Router();
+const crypto = require('crypto');
+const fs = require('fs');
+const path = require('path');
+const supabase = require('../db/supabase');
+const labelPrinterService = require('../services/LabelPrinterService');
+const emailService = require('../services/EmailService');
+const { getTransportMap } = require('../utils/transportMap');
+
+// GET / - list packages with filtering
+router.get('/', async (req, res, next) => {
+  try {
+    const { date, status, search } = req.query;
+
+    let query = supabase
+      .from('delivery_notes')
+      .select('*')
+      .order('date_issued', { ascending: false });
+
+    if (date) {
+      const dayStart = `${date}T00:00:00.000Z`;
+      const dayEnd = `${date}T23:59:59.999Z`;
+      query = query.gte('date_issued', dayStart).lte('date_issued', dayEnd);
+    }
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (search) {
+      query = query.or(`invoice_number.ilike.%${search}%,doc_number.ilike.%${search}%,customer_name.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /by-invoice/:invoice - get package by invoice number (for barcode scan)
+// MUST be before /:id to avoid Express matching "by-invoice" as an id
+router.get('/by-invoice/:invoice', async (req, res, next) => {
+  try {
+    const { invoice } = req.params;
+
+    const { data: dn, error: dnError } = await supabase
+      .from('delivery_notes')
+      .select('*')
+      .eq('invoice_number', invoice)
+      .single();
+
+    if (dnError || !dn) {
+      return res.status(404).json({ error: 'Package not found for this invoice' });
+    }
+
+    const { data: items, error: itemsError } = await supabase
+      .from('delivery_note_items')
+      .select('*')
+      .eq('delivery_note_id', dn.id)
+      .order('id');
+
+    if (itemsError) throw itemsError;
+
+    res.json({ ...dn, items: items || [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /:id - get single package with items
+router.get('/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const { data: dn, error: dnError } = await supabase
+      .from('delivery_notes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (dnError) throw dnError;
+    if (!dn) return res.status(404).json({ error: 'Package not found' });
+
+    const { data: items, error: itemsError } = await supabase
+      .from('delivery_note_items')
+      .select('*')
+      .eq('delivery_note_id', id)
+      .order('id');
+
+    if (itemsError) throw itemsError;
+
+    res.json({ ...dn, items: items || [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /:id/status - update package status
+router.put('/:id/status', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    const { data, error } = await supabase
+      .from('delivery_notes')
+      .update({ status, updated_at: new Date().toISOString() })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /:id/scan-item - update item scan qty
+router.put('/:id/scan-item', async (req, res, next) => {
+  try {
+    const { itemId, qty } = req.body;
+
+    const { data, error } = await supabase
+      .from('delivery_note_items')
+      .update({
+        scanned_qty: qty,
+        scan_verified: true,
+      })
+      .eq('id', itemId)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /:id/skip-item - skip single item scanning
+router.put('/:id/skip-item', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { itemId } = req.body;
+
+    const { error: skipError } = await supabase
+      .from('delivery_note_items')
+      .update({ scan_skipped: true })
+      .eq('id', itemId);
+
+    if (skipError) throw skipError;
+
+    // Return full package with items (same as GET /:id)
+    const { data: dn, error: dnError } = await supabase
+      .from('delivery_notes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (dnError) throw dnError;
+
+    const { data: items, error: itemsError } = await supabase
+      .from('delivery_note_items')
+      .select('*')
+      .eq('delivery_note_id', id)
+      .order('id');
+
+    if (itemsError) throw itemsError;
+
+    res.json({ ...dn, items: items || [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// PUT /:id/skip-all - skip all items scanning
+router.put('/:id/skip-all', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const { error } = await supabase
+      .from('delivery_note_items')
+      .update({ scan_skipped: true })
+      .eq('delivery_note_id', id);
+
+    if (error) throw error;
+    res.json({ success: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /:id/generate-label - generate LP label
+router.post('/:id/generate-label', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    // Fetch delivery note with items
+    const { data: dn, error: dnError } = await supabase
+      .from('delivery_notes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (dnError) throw dnError;
+    if (!dn) return res.status(404).json({ error: 'Package not found' });
+
+    // Get items for weight calculation
+    const { data: items, error: itemsError } = await supabase
+      .from('delivery_note_items')
+      .select('*')
+      .eq('delivery_note_id', id);
+
+    if (itemsError) throw itemsError;
+
+    // Map transport to shipper — body overrides auto-mapping
+    const { shipperCode: bodyShipper, serviceCode: bodyService } = req.body || {};
+    let transport;
+    if (bodyShipper) {
+      transport = { shipperCode: bodyShipper, serviceCode: bodyService || bodyShipper };
+    } else {
+      transport = getTransportMap()[dn.transport_name];
+    }
+    if (!transport || !transport.shipperCode) {
+      return res.status(400).json({ error: `Unsupported transport: ${dn.transport_name}` });
+    }
+
+    // Calculate total weight from items
+    let totalWeight = 0;
+    if (items) {
+      for (const item of items) {
+        if (item.unit_weight_netto && item.qty) {
+          totalWeight += parseFloat(item.unit_weight_netto) * parseFloat(item.qty);
+        }
+      }
+    }
+    // Minimum weight 0.5 kg
+    if (totalWeight < 0.5) totalWeight = 0.5;
+
+    // Build shipment data for LP API
+    const shipmentData = {
+      shipperCode: transport.shipperCode,
+      serviceCode: transport.serviceCode,
+      variableSymbol: dn.invoice_number || dn.doc_number,
+      orderNumber: dn.order_number || '',
+      paymentInAdvance: true,
+      price: dn.amount_brutto ? parseFloat(dn.amount_brutto) : 0,
+      priceCurrency: dn.currency || 'CZK',
+      cod: null,
+      codCurrency: null,
+      description: 'Autodíly',
+      recipient: {
+        company: dn.customer_name,
+        street: dn.delivery_street || dn.customer_street,
+        city: dn.delivery_city || dn.customer_city,
+        postalCode: dn.delivery_postal_code || dn.customer_postal_code,
+        countryCode: dn.delivery_country || dn.customer_country || 'CZ',
+        phone: dn.delivery_phone || dn.customer_phone,
+        email: dn.delivery_email || dn.customer_email,
+      },
+      parcels: [{
+        weight: Math.round(totalWeight * 100) / 100,
+      }],
+      labels: { format: 'A6' },
+    };
+
+    // Create shipment in LP
+    console.log('[generate-label] Sending to LP:', JSON.stringify(shipmentData));
+    const result = await labelPrinterService.createShipment(shipmentData);
+
+    // Extract label PDF from response
+    // LP API returns labels as array of base64 strings: ["JVBERi0x..."]
+    const lpItem = result.data && result.data[0] ? result.data[0] : {};
+    let labelPdfUrl = null;
+    const labelsField = lpItem.labels;
+
+    // Normalize: accept string or array of strings
+    const labelBase64 = Array.isArray(labelsField) ? labelsField[0] : labelsField;
+
+    if (labelBase64 && typeof labelBase64 === 'string' && labelBase64.length > 10) {
+      const labelsDir = path.join(__dirname, '..', 'labels');
+      const filename = `${lpItem.id}.pdf`;
+      const filePath = path.join(labelsDir, filename);
+
+      const pdfBuffer = Buffer.from(labelBase64, 'base64');
+      console.log('[generate-label] PDF saved:', filename, pdfBuffer.length, 'bytes');
+      fs.writeFileSync(filePath, pdfBuffer);
+      labelPdfUrl = `/labels/${filename}`;
+    } else {
+      console.warn('[generate-label] No labels in LP response. type:', typeof labelsField, Array.isArray(labelsField) ? 'array len=' + labelsField.length : '');
+    }
+
+    // Extract shipment details — LP response: data[0].id, data[0].parcels[0].barcode
+    const shipmentResult = result.data && result.data[0] ? result.data[0] : {};
+    const firstParcel = shipmentResult.parcels && shipmentResult.parcels[0] ? shipmentResult.parcels[0] : {};
+    const trackingToken = crypto.randomUUID();
+
+    // Update delivery note
+    const { data: updated, error: updateError } = await supabase
+      .from('delivery_notes')
+      .update({
+        lp_shipment_id: shipmentResult.id,
+        lp_barcode: firstParcel.barcode,
+        tracking_number: firstParcel.trackingNumber || firstParcel.barcode,
+        tracking_url: firstParcel.trackingUrl,
+        label_pdf_url: labelPdfUrl,
+        shipper_code: transport.shipperCode,
+        shipper_service: transport.serviceCode,
+        status: 'label_generated',
+        label_generated_at: new Date().toISOString(),
+        tracking_token: trackingToken,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+
+    // Send shipping confirmation email
+    try {
+      const dnWithItems = { ...updated, items };
+      await emailService.sendShipmentEmail(dnWithItems);
+
+      await supabase
+        .from('delivery_notes')
+        .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
+        .eq('id', id);
+
+      updated.email_sent_at = new Date().toISOString();
+      updated.status = 'shipped';
+    } catch (emailErr) {
+      console.error('Failed to send shipment email:', emailErr.message);
+    }
+
+    res.json({
+      success: true,
+      label_url: labelPdfUrl,
+      tracking_number: updated.tracking_number,
+      barcode: updated.lp_barcode,
+      deliveryNote: updated,
+    });
+  } catch (err) {
+    // If LP API returned error details, pass them through
+    if (err.response) {
+      return res.status(err.response.status).json({
+        error: 'LP API Error',
+        details: err.response.data,
+      });
+    }
+    next(err);
+  }
+});
+
+// GET /:id/download-label - stream label PDF
+router.get('/:id/download-label', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const { data: dn, error } = await supabase
+      .from('delivery_notes')
+      .select('label_pdf_url, invoice_number')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    if (!dn?.label_pdf_url) return res.status(404).json({ error: 'No label found' });
+
+    const filePath = path.join(__dirname, '..', dn.label_pdf_url);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });
+
+    const filename = `label-${dn.invoice_number || id}.pdf`;
+    const stat = fs.statSync(filePath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', stat.size);
+    fs.createReadStream(filePath).pipe(res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /:id/label - cancel LP shipment
+router.delete('/:id/label', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const { data: dn, error: dnError } = await supabase
+      .from('delivery_notes')
+      .select('lp_shipment_id, label_pdf_url')
+      .eq('id', id)
+      .single();
+
+    if (dnError) throw dnError;
+    if (!dn || !dn.lp_shipment_id) {
+      return res.status(400).json({ error: 'No label to cancel' });
+    }
+
+    // Delete from LP API
+    await labelPrinterService.deleteShipment(dn.lp_shipment_id);
+
+    // Delete local PDF file if exists
+    if (dn.label_pdf_url) {
+      const filePath = path.join(__dirname, '..', dn.label_pdf_url);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+      }
+    }
+
+    // Reset delivery note fields
+    const { data: updated, error: updateError } = await supabase
+      .from('delivery_notes')
+      .update({
+        lp_shipment_id: null,
+        lp_barcode: null,
+        tracking_number: null,
+        tracking_url: null,
+        label_pdf_url: null,
+        shipper_code: null,
+        shipper_service: null,
+        status: 'pending',
+        label_generated_at: null,
+        tracking_token: null,
+        email_sent_at: null,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (updateError) throw updateError;
+    res.json({ success: true, deliveryNote: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+module.exports = router;

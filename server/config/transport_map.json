@@ -1,0 +1,13 @@
+[
+  { "nextisName": "1. GLS Kurýrní Služba",   "shipperCode": "GLS",        "serviceCode": "AH" },
+  { "nextisName": "2. Zásilkovna",            "shipperCode": "ZASILKOVNA", "serviceCode": "ZASILKOVNA" },
+  { "nextisName": "3. We|Do Kurýrní Služba", "shipperCode": "WEDO",       "serviceCode": "WEDO" },
+  { "nextisName": "4. GLS Výdejní místo",    "shipperCode": "GLS",        "serviceCode": "SM" },
+  { "nextisName": "6. PPL Kurýrní Služba",   "shipperCode": "PPL",        "serviceCode": "PPL" },
+  { "nextisName": "7. Česká Pošta",          "shipperCode": "CP",         "serviceCode": "DR" },
+  { "nextisName": "8. PPL Parcelbox",        "shipperCode": "PPL",        "serviceCode": "PPL" },
+  { "nextisName": "9. DPD Kurýrní Služba",   "shipperCode": "DPD",        "serviceCode": "CL" },
+  { "nextisName": "UPS",                     "shipperCode": "UPS",        "serviceCode": "UPS" },
+  { "nextisName": "Osobní odběr",            "shipperCode": null,         "serviceCode": null },
+  { "nextisName": "Shipping to Europe",      "shipperCode": "GLS",        "serviceCode": "EBP" }
+]
