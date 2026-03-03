@@ -1,32 +1,62 @@
-const fs = require('fs');
-const path = require('path');
+const supabase = require('../db/supabase');
 
-const MAP_FILE = path.join(__dirname, '..', 'config', 'transport_map.json');
-
-function getTransportMap() {
+async function getTransportMap() {
   try {
-    const rows = JSON.parse(fs.readFileSync(MAP_FILE, 'utf8'));
+    const { data, error } = await supabase
+      .from('transport_map')
+      .select('nextis_name, shipper_code, service_code');
+    if (error) throw error;
     const map = {};
-    for (const row of rows) {
-      map[row.nextisName] = { shipperCode: row.shipperCode, serviceCode: row.serviceCode };
+    for (const row of (data || [])) {
+      map[row.nextis_name] = { shipperCode: row.shipper_code, serviceCode: row.service_code };
     }
     return map;
   } catch (err) {
-    console.error('[TransportMap] Failed to load:', err.message);
+    console.error('[TransportMap] Failed to load from Supabase:', err.message);
     return {};
   }
 }
 
-function getTransportMapRows() {
+async function getTransportMapRows() {
   try {
-    return JSON.parse(fs.readFileSync(MAP_FILE, 'utf8'));
-  } catch {
+    const { data, error } = await supabase
+      .from('transport_map')
+      .select('nextis_name, shipper_code, service_code')
+      .order('id');
+    if (error) throw error;
+    return (data || []).map(r => ({
+      nextisName: r.nextis_name,
+      shipperCode: r.shipper_code,
+      serviceCode: r.service_code,
+    }));
+  } catch (err) {
+    console.error('[TransportMap] Failed to load rows:', err.message);
     return [];
   }
 }
 
-function saveTransportMapRows(rows) {
-  fs.writeFileSync(MAP_FILE, JSON.stringify(rows, null, 2));
+async function saveTransportMapRows(rows) {
+  // Delete all existing rows and re-insert
+  const { error: deleteError } = await supabase
+    .from('transport_map')
+    .delete()
+    .neq('id', 0); // delete all rows
+
+  if (deleteError) throw deleteError;
+
+  if (rows.length === 0) return;
+
+  const records = rows.map(r => ({
+    nextis_name: r.nextisName || '',
+    shipper_code: r.shipperCode || null,
+    service_code: r.serviceCode || null,
+  }));
+
+  const { error: insertError } = await supabase
+    .from('transport_map')
+    .insert(records);
+
+  if (insertError) throw insertError;
 }
 
 module.exports = { getTransportMap, getTransportMapRows, saveTransportMapRows };

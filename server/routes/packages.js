@@ -222,7 +222,8 @@ router.post('/:id/generate-label', async (req, res, next) => {
     if (bodyShipper) {
       transport = { shipperCode: bodyShipper, serviceCode: bodyService || bodyShipper };
     } else {
-      transport = getTransportMap()[dn.transport_name];
+      const transportMap = await getTransportMap();
+      transport = transportMap[dn.transport_name];
     }
     if (!transport || !transport.shipperCode) {
       return res.status(400).json({ error: `Unsupported transport: ${dn.transport_name}` });

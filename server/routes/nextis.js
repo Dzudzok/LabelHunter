@@ -62,7 +62,8 @@ async function importDeliveryNotes(dateFrom, dateTo, limit = null) {
 
       // Map transport name to shipper
       const transportName = (note.transportName || '').trim();
-      const transport = getTransportMap()[transportName] || { shipperCode: null, serviceCode: null };
+      const transportMap = await getTransportMap();
+      const transport = transportMap[transportName] || { shipperCode: null, serviceCode: null };
 
       // Nextis structure: headAddress for customer, deliveryAddress for delivery
       const headAddress = note.headAddress || {};
