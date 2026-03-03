@@ -27,6 +27,7 @@ class LabelPrinterService {
           'Content-Type': 'application/x-www-form-urlencoded',
           'Authorization': `Basic ${credentials}`,
         },
+        timeout: 30000,
       }
     );
 
@@ -40,6 +41,7 @@ class LabelPrinterService {
     const token = await this.getToken();
     const response = await axios.get(`${this.baseUrl}${path}`, {
       headers: { 'Authorization': `Bearer ${token}` },
+      timeout: 30000,
     });
     return response.data;
   }
@@ -49,6 +51,7 @@ class LabelPrinterService {
     try {
       const response = await axios.post(`${this.baseUrl}${path}`, data, {
         headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
+        timeout: 60000,
       });
       return response.data;
     } catch (err) {

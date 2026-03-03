@@ -56,7 +56,7 @@ export const usePackageStore = create((set, get) => ({
     const body = {}
     if (shipperCode) body.shipperCode = shipperCode
     if (serviceCode) body.serviceCode = serviceCode
-    const res = await api.post(`/packages/${packageId}/generate-label`, body)
+    const res = await api.post(`/packages/${packageId}/generate-label`, body, { timeout: 90000 })
     return res.data
   },
 
