@@ -7,6 +7,7 @@ import { classifyBarcode } from '../../utils/barcode'
 import StatsBar from './StatsBar'
 import PackageCard from './PackageCard'
 import TransportMapModal from './TransportMapModal'
+import StatsModal from './StatsModal'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -28,6 +29,7 @@ export default function Dashboard() {
   const [importHourFrom, setImportHourFrom] = useState('06')
   const [importHourTo, setImportHourTo] = useState('18')
   const [showTransportMap, setShowTransportMap] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   const searchRef = useRef(null)
 
   // Fetch packages on mount and date change
@@ -205,6 +207,13 @@ export default function Dashboard() {
               {importing ? 'Importuji...' : 'Importuj teraz'}
             </button>
             <button
+              onClick={() => setShowStats(true)}
+              className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-4 py-3 rounded-xl text-lg font-semibold transition-colors"
+              title="Statistiky"
+            >
+              &#x1F4CA; Statistiky
+            </button>
+            <button
               onClick={() => setShowTransportMap(true)}
               className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-4 py-3 rounded-xl text-lg font-semibold transition-colors"
               title="Mapování přepravců"
@@ -215,6 +224,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {showStats && <StatsModal date={selectedDate} onClose={() => setShowStats(false)} />}
       {showTransportMap && <TransportMapModal onClose={() => setShowTransportMap(false)} />}
 
       {/* Main content */}

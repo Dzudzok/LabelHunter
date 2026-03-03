@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { usePackageStore } from '../../store/packageStore'
+import { useAuthStore } from '../../store/authStore'
 import { useScanner } from '../../hooks/useScanner'
 import { classifyBarcode } from '../../utils/barcode'
 import { api } from '../../services/api'
@@ -11,6 +12,7 @@ export default function PackageView() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { updateItemScan, skipAllItems, generateLabel } = usePackageStore()
+  const worker = useAuthStore(s => s.worker)
 
   const [pkg, setPkg] = useState(null)
   const [loading, setLoading] = useState(true)
@@ -69,7 +71,7 @@ export default function PackageView() {
       )
       if (item) {
         try {
-          const updated = await updateItemScan(pkg.id, item.id, 1)
+          const updated = await updateItemScan(pkg.id, item.id, 1, worker?.id)
           setPkg(updated)
         } catch (err) {
           console.error('Scan error:', err)
@@ -109,7 +111,8 @@ export default function PackageView() {
       const result = await generateLabel(
         pkg.id,
         overrideShipper || null,
-        overrideService || null
+        overrideService || null,
+        worker?.id || null
       )
       setLabelData(result)
       fetchPackage()

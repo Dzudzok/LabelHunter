@@ -42,8 +42,8 @@ export const usePackageStore = create((set, get) => ({
     return res.data
   },
 
-  updateItemScan: async (packageId, itemId, qty) => {
-    const res = await api.put(`/packages/${packageId}/scan-item`, { itemId, qty })
+  updateItemScan: async (packageId, itemId, qty, workerId = null) => {
+    const res = await api.put(`/packages/${packageId}/scan-item`, { itemId, qty, workerId })
     return res.data
   },
 
@@ -52,11 +52,18 @@ export const usePackageStore = create((set, get) => ({
     return res.data
   },
 
-  generateLabel: async (packageId, shipperCode = null, serviceCode = null) => {
+  generateLabel: async (packageId, shipperCode = null, serviceCode = null, workerId = null) => {
     const body = {}
     if (shipperCode) body.shipperCode = shipperCode
     if (serviceCode) body.serviceCode = serviceCode
+    if (workerId) body.workerId = workerId
     const res = await api.post(`/packages/${packageId}/generate-label`, body, { timeout: 90000 })
+    return res.data
+  },
+
+  fetchStats: async (date) => {
+    const d = date || new Date().toISOString().split('T')[0]
+    const res = await api.get(`/packages/stats?date=${d}`)
     return res.data
   },
 

@@ -40,6 +40,79 @@ router.get('/', async (req, res, next) => {
   }
 });
 
+// GET /stats - aggregated stats for a date
+// MUST be before /:id to avoid Express matching "stats" as an id
+router.get('/stats', async (req, res, next) => {
+  try {
+    const { date } = req.query;
+    const d = date || new Date().toISOString().split('T')[0];
+    const from = `${d}T00:00:00.000Z`;
+    const to   = `${d}T23:59:59.999Z`;
+
+    // Fetch all notes for the day
+    const { data: notes, error } = await supabase
+      .from('delivery_notes')
+      .select('id, status, shipper_code, transport_name, invoice_number, doc_number, customer_name, scanned_by, scanned_at, label_generated_by, label_generated_at')
+      .gte('date_issued', from)
+      .lte('date_issued', to);
+
+    if (error) throw error;
+
+    // Fetch all workers for name lookup
+    const { data: workers } = await supabase.from('workers').select('id, name');
+    const workerMap = {};
+    for (const w of (workers || [])) workerMap[w.id] = w.name;
+
+    // Aggregate
+    const byStatus = {};
+    const byShipper = {};
+    const workerStats = {}; // id -> { name, scanned, labeled }
+
+    for (const n of (notes || [])) {
+      byStatus[n.status] = (byStatus[n.status] || 0) + 1;
+
+      if (n.shipper_code) {
+        byShipper[n.shipper_code] = (byShipper[n.shipper_code] || 0) + 1;
+      }
+
+      if (n.scanned_by) {
+        if (!workerStats[n.scanned_by]) workerStats[n.scanned_by] = { name: workerMap[n.scanned_by] || '?', scanned: 0, labeled: 0 };
+        workerStats[n.scanned_by].scanned++;
+      }
+
+      if (n.label_generated_by) {
+        if (!workerStats[n.label_generated_by]) workerStats[n.label_generated_by] = { name: workerMap[n.label_generated_by] || '?', scanned: 0, labeled: 0 };
+        workerStats[n.label_generated_by].labeled++;
+      }
+    }
+
+    // History: packages that had a label generated, sorted newest first
+    const history = (notes || [])
+      .filter(n => n.label_generated_at)
+      .sort((a, b) => new Date(b.label_generated_at) - new Date(a.label_generated_at))
+      .slice(0, 40)
+      .map(n => ({
+        id: n.id,
+        invoice_number: n.invoice_number,
+        doc_number: n.doc_number,
+        customer_name: n.customer_name,
+        shipper_code: n.shipper_code,
+        label_generated_at: n.label_generated_at,
+        scanned_at: n.scanned_at,
+        label_worker: workerMap[n.label_generated_by] || null,
+        scan_worker: workerMap[n.scanned_by] || null,
+      }));
+
+    const total = (notes || []).length;
+    const done = (notes || []).filter(n => ['label_generated', 'shipped', 'delivered'].includes(n.status)).length;
+    const pending = (notes || []).filter(n => ['pending', 'scanning', 'verified'].includes(n.status)).length;
+
+    res.json({ total, done, pending, byStatus, byShipper, workers: Object.values(workerStats), history });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /by-invoice/:invoice - get package by invoice number (for barcode scan)
 // MUST be before /:id to avoid Express matching "by-invoice" as an id
 router.get('/by-invoice/:invoice', async (req, res, next) => {
@@ -121,7 +194,8 @@ router.put('/:id/status', async (req, res, next) => {
 // PUT /:id/scan-item - update item scan qty
 router.put('/:id/scan-item', async (req, res, next) => {
   try {
-    const { itemId, qty } = req.body;
+    const { id } = req.params;
+    const { itemId, qty, workerId } = req.body;
 
     const { data, error } = await supabase
       .from('delivery_note_items')
@@ -134,6 +208,16 @@ router.put('/:id/scan-item', async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    // Track who scanned (set only on first scan)
+    if (workerId) {
+      await supabase
+        .from('delivery_notes')
+        .update({ scanned_by: workerId, scanned_at: new Date().toISOString() })
+        .eq('id', id)
+        .is('scanned_by', null);
+    }
+
     res.json(data);
   } catch (err) {
     next(err);
@@ -217,7 +301,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
     if (itemsError) throw itemsError;
 
     // Map transport to shipper — body overrides auto-mapping
-    const { shipperCode: bodyShipper, serviceCode: bodyService } = req.body || {};
+    const { shipperCode: bodyShipper, serviceCode: bodyService, workerId } = req.body || {};
     let transport;
     if (bodyShipper) {
       transport = { shipperCode: bodyShipper, serviceCode: bodyService || bodyShipper };
@@ -312,6 +396,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
         shipper_service: transport.serviceCode,
         status: 'label_generated',
         label_generated_at: new Date().toISOString(),
+        label_generated_by: workerId || null,
         tracking_token: trackingToken,
         updated_at: new Date().toISOString(),
       })
