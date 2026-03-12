@@ -63,7 +63,14 @@ async function importDeliveryNotes(dateFrom, dateTo, limit = null) {
       // Map transport name to shipper
       const transportName = (note.transportName || '').trim();
       const transportMap = await getTransportMap();
-      const transport = transportMap[transportName] || { shipperCode: null, serviceCode: null };
+      const transport = transportMap[transportName] || { shipperCode: null, serviceCode: null, skip: false };
+
+      // LEJEK: pomiń jeśli oznaczone skip=true w transport_map,
+      // lub jeśli nazwa transportu zaczyna się od "Rozvoz" (własna dostawa)
+      if (transport.skip || transportName.startsWith('Rozvoz')) {
+        skipped++;
+        continue;
+      }
 
       // Nextis structure: headAddress for customer, deliveryAddress for delivery
       const headAddress = note.headAddress || {};

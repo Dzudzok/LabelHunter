@@ -1,0 +1,3269 @@
+{
+  "openapi": "3.0.1",
+  "info": {
+    "title": "General API (Nextis.ERP.API)",
+    "description": "This is the general data exchange application interface based on Nextis.Core.API standard and compatible with any system in the scope of the Nextis application network. This interface provides communication and data exchange either among Nextis product portfolio or with third-party systems.<br><br>Release notes for current version at <a href='https://nextis.zone/product-articles/67782BB8-9062-477A-942E-D1917F736BC4?lang=en' target='_blank' style='color: dodgerblue'>nextis.zone</a><H1>Operated by</H1><br><strong>MROAUTO AUTODÍLY s.r.o.</strong></br>Čs. armády 360, 735 51 Bohumín Pudlov, CZ</br>TAX ID: <strong>06630405</strong> | main language: <strong>cs</strong> | <a href='https://www.mroauto.cz' target='_blank' style='color: dodgerblue'>www.mroauto.cz</a></br><H1>Integration support</H1><!DOCTYPE html>\r\n\r\n<body style=\"padding: 15px; font-family:Arial; border-block-style:none\">\r\n    <h2>For suppliers</h2>\r\n    <table style=\"padding: 15px;width:100%; font-family:Arial; border:none; border-block-style:none; border-top:solid;border-top-width:1px;border-color:lightgray!important\">\r\n         <tr style=\"padding:5px\">\r\n                <td style=\"align-content: center;width:95px;border-top:none!important\">\r\n                    <img src='https://www.nextis.cz/resources/nextis_nuget_64x64.png' alt='Nextis-NuGet' width='64' height='64'>\r\n                </td>\r\n                <td style=\"border-top: none !important\">\r\n                    <table>\r\n                        <tr>\r\n                            <div style=\"padding: 4px;padding-left: 15px; font-weight:600\">\r\n                                Nextis.Core.API\r\n                            </div>\r\n                            <div style=\"padding: 4px;padding-left: 15px; color:dimgrey\">\r\n                                (.NET standard 2.0) | download package from: <a href='https://www.nuget.org/packages/Nextis.Core.API' target='_blank' style=\"color:dodgerblue\">nuget.org</a>\r\n                            </div>\r\n                            <div style=\"padding: 4px;padding-left: 15px\">\r\n                                Create your own nextis-compatible API endpoint within the Nextis network using nextis.api nuget package.\r\n                            </div>\r\n                        </tr>\r\n                    </table>\r\n                </td>\r\n            </tr>\r\n    </table>\r\n    <h2>For customers</h2>\r\n    <table style=\"padding: 15px; width:100%; font-family:Arial; border:none; border-block-style:none; border-top:solid;border-top-width:1px;border-color:lightgray!important\">\r\n        <tr style=\"padding:5px\">\r\n            <td style=\"align-content: center;width:95px;border-top: none !important\">\r\n                <img src='https://www.nextis.cz/resources/nextis_nuget_64x64.png' alt='Nextis-NuGet' width='64' height='64'>\r\n            </td>\r\n            <td style=\"border-top: none !important\">\r\n                <table>\r\n                    <tr>\r\n                        <div style=\"padding: 4px;padding-left: 15px; font-weight:600\">\r\n                            Nextis.Core.API.Client\r\n                        </div>\r\n                        <div style=\"padding: 4px;padding-left: 15px; color:dimgrey\">\r\n                            (.NET standard 2.0) | download package from: <a href='https://www.nuget.org/packages/Nextis.Core.API.Client' target='_blank' style=\"color:dodgerblue\">nuget.org</a>\r\n                        </div>\r\n                        <div style=\"padding: 4px;padding-left: 15px\">\r\n                            Implement API efortlessly with Nextis.API.Client package from nuget.org.\r\n                        </div>\r\n                    </tr>\r\n                </table>\r\n            </td>\r\n        </tr>\r\n    </table>\r\n</body>\r\n",
+    "version": "v10.53"
+  },
+  "paths": {
+    "/catalogs/items-checking": {
+      "post": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Check catalog items (common)",
+        "description": "Provides catalog items \"on demand\" checking functionality by code and brand.\r\nMethod supports checking multiple items at the same time (supports list of items).\r\n\r\nThe amount of requests par day or items per request might be independently limited (controlled) by the API operator and so it might differ from the default limitation.</br>\r\nThe limitation, configured by default, is 100 requests per day and 1000 items per request.",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemChecking.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemChecking.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemChecking.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] CheckItemResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemChecking.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/catalogs/items-checking-by-id": {
+      "post": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Check catalog items (by id)",
+        "description": "Provides catalog items \"on demand\" checking functionality by internal ID.\r\nMethod supports checking multiple items at the same time (supports list of items).\r\n\r\nThe amount of requests par day or items per request might be independently limited (controlled) by the API operator and so it might differ from the default limitation.</br>\r\nThe limitation, configured by default, is 100 requests per day and 1000 items per request.",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemCheckingByID.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemCheckingByID.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemCheckingByID.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] CheckItemResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemCheckingByID.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/catalogs/items-finding-by-vehicle": {
+      "post": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Find catalog items (by vehicle)",
+        "description": "Provides catalog items \"on demand\" searching functionality by vehicle id according to the TecDoc catalogue.\r\n\r\nThe amount of requests par day or items per request might be independently limited (controlled) by the API operator and so it might differ from the default limitation.</br>\r\nThe limitation, configured by default, is 100 requests per day and 1000 items per request.",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByVehicle.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByVehicle.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByVehicle.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] CheckItemResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByVehicle.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/catalogs/items-finding-by-code": {
+      "post": {
+        "tags": [
+          "Catalogs"
+        ],
+        "summary": "Find catalog items (by code)",
+        "description": "Provides catalog items \"on demand\" searching functionality by code.\r\n\r\nThe amount of requests par day or items per request might be independently limited (controlled) by the API operator and so it might differ from the default limitation.</br>\r\nThe limitation, configured by default, is 100 requests per day and 1000 items per request.",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByCode.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByCode.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByCode.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] CheckItemResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByCode.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/common/authentication": {
+      "post": {
+        "tags": [
+          "Common"
+        ],
+        "summary": "Authenticate user\r\n(obtaining the token)",
+        "description": "Provides the authentication method to obtain the API key",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Common.Authentication.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Common.Authentication.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Common.Authentication.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] AuthenticateResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Common.Authentication.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/documents/invoices": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get invoices",
+        "description": "Provides the list of issued invoices within the specified date and time range and according to the specified parameter.\r\n\r\nIn case you are authenticated as headquarter it allows you to get all documents issued to your company by setting request paramater LoadAll to true.</br>",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.Invoices.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.Invoices.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.Invoices.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] DocumentListResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.Invoices.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/documents/deliverynotes": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get delivery notes",
+        "description": "Provides the list of issued delivery notes within the specified date and time range and according to the specified parameter.\r\n\r\nIn case you are authenticated as headquarter it allows you to get all documents issued to your company by setting request paramater LoadAll to true.</br>",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DeliveryNotes.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DeliveryNotes.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DeliveryNotes.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] DocumentListResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DeliveryNotes.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/documents/invoice-file": {
+      "post": {
+        "tags": [
+          "Documents"
+        ],
+        "summary": "Get invoice file",
+        "description": "Provides invoice file according to the specified parameters.",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.InvoiceFile.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.InvoiceFile.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.InvoiceFile.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "File Response",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "type": "string",
+                  "format": "binary"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/pdf": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              },
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/orders/validation": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Validate order",
+        "description": "Provides the functionality that allows you to check the order validity in the target system before sending it",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] OrderValidateResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Validation.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/orders/sending": {
+      "post": {
+        "tags": [
+          "Orders"
+        ],
+        "summary": "Send order",
+        "description": "Provides the functionality that allows you to send orders to the target system and returns confirmation info",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] OrderSendResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Sending.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/partners/info": {
+      "post": {
+        "tags": [
+          "Partners"
+        ],
+        "summary": "Get partner info",
+        "description": "Provides partner general information (headquarter address, subsidiaries, etc.)",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] PartnerInfoResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    },
+    "/partners/credit": {
+      "post": {
+        "tags": [
+          "Partners"
+        ],
+        "summary": "Get partner credit",
+        "description": "Provides partner credit limitation and credit current state",
+        "requestBody": {
+          "description": "Request Data",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Credit.Request"
+              }
+            },
+            "text/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Credit.Request"
+              }
+            },
+            "application/*+json": {
+              "schema": {
+                "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Credit.Request"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "[Success] PartnerCreditResponse is being returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Credit.Response"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "[Bad Request] The request was invalid. A list of errors will be returned.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "500": {
+            "description": "[Internal Server Error] An unexpected error internal to the application has occurred.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Microsoft.AspNetCore.Mvc.ProblemDetails"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "[Unathorized] Access token is not or could not be authenticated."
+          },
+          "403": {
+            "description": "[Forbidden] Access could not be granted."
+          },
+          "501": {
+            "description": "[Not Implemented] Method is not implemented."
+          }
+        }
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "Microsoft.AspNetCore.Mvc.ProblemDetails": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "type": "string",
+            "nullable": true
+          },
+          "title": {
+            "type": "string",
+            "nullable": true
+          },
+          "status": {
+            "type": "integer",
+            "format": "int32",
+            "nullable": true
+          },
+          "detail": {
+            "type": "string",
+            "nullable": true
+          },
+          "instance": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": { }
+      },
+      "Nextis.NSCore.API.Catalogs.CatalogItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Internal ID of the item",
+            "format": "int32"
+          },
+          "valid": {
+            "type": "boolean",
+            "description": "Item is properly loaded"
+          },
+          "itemType": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemTypes"
+          },
+          "productPrefix": {
+            "type": "string",
+            "description": "Item code prefix (if used)",
+            "nullable": true
+          },
+          "productCode": {
+            "type": "string",
+            "description": "Item code",
+            "nullable": true
+          },
+          "productBrand": {
+            "type": "string",
+            "description": "Item brand name",
+            "nullable": true
+          },
+          "productName": {
+            "type": "string",
+            "description": "Item name",
+            "nullable": true
+          },
+          "productDescription": {
+            "type": "string",
+            "description": "Item additional description",
+            "nullable": true
+          },
+          "price": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemPrice"
+          },
+          "qtyAvailableMain": {
+            "type": "number",
+            "description": "The quantity that is available on the warehouse you are assigned to",
+            "format": "double"
+          },
+          "qtyAvailableMainDetailed": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemAvailabilty"
+          },
+          "qtyAvailableProduction": {
+            "type": "number",
+            "description": "The quantity that is not available immediately but supplier is capable to assembly it",
+            "format": "double"
+          },
+          "qtyAvailableOther": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemAvailabilty"
+            },
+            "description": "The quantity that is available on other warehouse you are allowed to see",
+            "nullable": true
+          },
+          "qtyAvailableSupplier": {
+            "type": "number",
+            "description": "The quantity that is available on target system suppliers",
+            "format": "double"
+          },
+          "qtyPackage": {
+            "type": "number",
+            "description": "The quantity in one package",
+            "format": "double"
+          },
+          "qtyMinimal": {
+            "type": "number",
+            "description": "Minimum order quantity (MOQ)",
+            "format": "double"
+          },
+          "qtyMultiply": {
+            "type": "number",
+            "description": "Minimum multiplying quantity",
+            "format": "double"
+          },
+          "baseUnit": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.Units"
+          },
+          "deposits": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemDeposit"
+            },
+            "description": "Item deposits",
+            "nullable": true
+          },
+          "oeCodes": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemOECode"
+            },
+            "description": "Item OE code list",
+            "nullable": true
+          },
+          "notes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Item note list",
+            "nullable": true
+          },
+          "barCodes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            },
+            "description": "Item barcode list",
+            "nullable": true
+          },
+          "instrastatCode": {
+            "type": "string",
+            "description": "Code uset for intrastat reporting",
+            "nullable": true
+          },
+          "weightKg": {
+            "type": "number",
+            "description": "Netto weight of the item/package",
+            "format": "double"
+          },
+          "returnNote": {
+            "type": "string",
+            "description": "Return note of the item (if provided)",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "General catalog item information set"
+      },
+      "Nextis.NSCore.API.Catalogs.CatalogItemAvailabilty": {
+        "type": "object",
+        "properties": {
+          "idWarehouse": {
+            "type": "integer",
+            "description": "Internal ID of the warehouse",
+            "format": "int32"
+          },
+          "warehouseName": {
+            "type": "string",
+            "description": "Name of the warehouse",
+            "nullable": true
+          },
+          "qty": {
+            "type": "number",
+            "description": "Available quantity",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Detailed item availability informations"
+      },
+      "Nextis.NSCore.API.Catalogs.CatalogItemDeposit": {
+        "type": "object",
+        "properties": {
+          "type": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.DepositTypes"
+          },
+          "code": {
+            "type": "string",
+            "description": "Deposit item code",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "description": "Deposit item brand name",
+            "nullable": true
+          },
+          "qty": {
+            "type": "number",
+            "description": "Related deposit quantity per unit",
+            "format": "double"
+          },
+          "name": {
+            "type": "string",
+            "description": "Deposit item name od description",
+            "nullable": true
+          },
+          "price": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemPrice"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.CatalogItemOECode": {
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "string",
+            "description": "OE code",
+            "nullable": true
+          },
+          "manufacturer": {
+            "type": "string",
+            "description": "OE manufacturer",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.CatalogItemPrice": {
+        "type": "object",
+        "properties": {
+          "unitPrice": {
+            "type": "number",
+            "description": "Unit price",
+            "format": "double"
+          },
+          "unitPriceIncVAT": {
+            "type": "number",
+            "description": "Unit price (including VAT)",
+            "format": "double"
+          },
+          "discount": {
+            "type": "number",
+            "description": "Discount in percent",
+            "format": "double"
+          },
+          "unitPriceRetail": {
+            "type": "number",
+            "description": "Unit price retail",
+            "format": "double"
+          },
+          "unitPriceRetailIncVAT": {
+            "type": "number",
+            "description": "Unit price retail (including VAT)",
+            "format": "double"
+          },
+          "note": {
+            "type": "string",
+            "description": "Note",
+            "nullable": true
+          },
+          "reliability": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemPriceReliability"
+          },
+          "reliabilityOverQty": {
+            "type": "number",
+            "description": "Quantity over which may price start varying",
+            "format": "double"
+          },
+          "valid": {
+            "type": "boolean",
+            "description": "Price is properly loaded"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Currencies"
+          },
+          "vatRate": {
+            "type": "number",
+            "description": "Current VAT rate of the item.",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Item price informations"
+      },
+      "Nextis.NSCore.API.Catalogs.CatalogItemPriceReliability": {
+        "enum": [
+          "PriceIsConstant",
+          "PriceMayVary",
+          "NoInformation"
+        ],
+        "type": "string",
+        "description": "Informs that price may vary according to requested quantity or is fixed"
+      },
+      "Nextis.NSCore.API.Catalogs.CatalogItemSearchTarget": {
+        "enum": [
+          "CodeMain",
+          "CodeOE",
+          "CodeEAN",
+          "CodeInternal",
+          "InternalID"
+        ],
+        "type": "string",
+        "description": "Search target"
+      },
+      "Nextis.NSCore.API.Catalogs.DepositTypes": {
+        "enum": [
+          "NonGoods",
+          "Goods"
+        ],
+        "type": "string",
+        "description": "Deposit type"
+      },
+      "Nextis.NSCore.API.Catalogs.ItemChecking.Request": {
+        "required": [
+          "items",
+          "language",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          },
+          "getEANCodes": {
+            "type": "boolean",
+            "description": "Request bar-codes (if allowed)"
+          },
+          "getOECodes": {
+            "type": "boolean",
+            "description": "Request OE codes (if allowed)"
+          },
+          "getServices": {
+            "type": "boolean",
+            "description": "Request non-goods items"
+          },
+          "getDeposits": {
+            "type": "boolean",
+            "description": "Request deposits"
+          },
+          "getCashBack": {
+            "type": "boolean",
+            "description": "Request cashback information (if allowed)"
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemChecking.RequestItem"
+            },
+            "description": "List of items to get info about"
+          },
+          "searchTarget": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemSearchTarget"
+          },
+          "trySearchWithoutManufacturer": {
+            "type": "boolean",
+            "description": "Try to search without manufacturer"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemChecking.RequestItem": {
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "type": "string",
+            "description": "Prefix for code\r\n<b>Note:</b> for the time being used for Motoprofil (PL) only and for other suppliers behind this API is currently useless.",
+            "default": " ",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Code of the catalog item.",
+            "default": "",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "description": "Brand name (or brand ID) of the catalog item.\r\n<b>Note:</b> either name or id must be provided as string (in quotations).",
+            "default": "",
+            "nullable": true
+          },
+          "pairID": {
+            "type": "integer",
+            "description": "Internal Id of yours\r\n\r\nVariable you may use for the backward pairing of your item</br>",
+            "format": "int32",
+            "default": -1
+          },
+          "internalID": {
+            "type": "integer",
+            "description": "Allows to find, validate and order items through its internal ID instead of finding them throghout the code and brand.\r\n<b>Note:</b> To make this option work the request field \"SearchTarget\" must be set to \"InternalID\". Code and brand not need to be provided.",
+            "format": "int32",
+            "default": -1
+          },
+          "requestedQty": {
+            "type": "number",
+            "description": "Requested quantity",
+            "format": "double",
+            "default": 0
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemChecking.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemChecking.ResponseItem"
+            },
+            "description": "List of items returned",
+            "nullable": true
+          },
+          "successRatio": {
+            "type": "number",
+            "description": "Provides information of how many items from request have been found and returned in the result (100 = all items have been found)",
+            "format": "double",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemChecking.ResponseItem": {
+        "type": "object",
+        "properties": {
+          "requestItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemChecking.RequestItem"
+          },
+          "responseItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItem"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemCheckingByID.Request": {
+        "required": [
+          "items",
+          "language",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          },
+          "getEANCodes": {
+            "type": "boolean",
+            "description": "Request bar-codes (if allowed)"
+          },
+          "getOECodes": {
+            "type": "boolean",
+            "description": "Request OE codes (if allowed)"
+          },
+          "getServices": {
+            "type": "boolean",
+            "description": "Request non-goods items"
+          },
+          "getDeposits": {
+            "type": "boolean",
+            "description": "Request deposits"
+          },
+          "getCashBack": {
+            "type": "boolean",
+            "description": "Request cashback information (if allowed)"
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemCheckingByID.RequestItem"
+            },
+            "description": "List of items to get info about"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemCheckingByID.RequestItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemCheckingByID.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemCheckingByID.ResponseItem"
+            },
+            "description": "List of items returned",
+            "nullable": true
+          },
+          "successRatio": {
+            "type": "number",
+            "description": "Provides information of how many items from request have been found and returned in the result (100 = all items have been found)",
+            "format": "double",
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemCheckingByID.ResponseItem": {
+        "type": "object",
+        "properties": {
+          "requestItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemCheckingByID.RequestItem"
+          },
+          "responseItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItem"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemFindingByCode.Request": {
+        "required": [
+          "code",
+          "genArtID",
+          "language",
+          "target",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          },
+          "getEANCodes": {
+            "type": "boolean",
+            "description": "Request bar-codes (if allowed)"
+          },
+          "getOECodes": {
+            "type": "boolean",
+            "description": "Request OE codes (if allowed)"
+          },
+          "getServices": {
+            "type": "boolean",
+            "description": "Request non-goods items"
+          },
+          "getDeposits": {
+            "type": "boolean",
+            "description": "Request deposits"
+          },
+          "getCashBack": {
+            "type": "boolean",
+            "description": "Request cashback information (if allowed)"
+          },
+          "code": {
+            "minLength": 1,
+            "type": "string",
+            "description": "EngineID according to the TecDoc database (aka K-type)."
+          },
+          "brandIDs": {
+            "type": "array",
+            "items": {
+              "type": "integer",
+              "format": "int32"
+            },
+            "description": "Limits the result by given list of brand ID according to the TecDoc database.",
+            "nullable": true
+          },
+          "target": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Catalogs.TecDOC.TecDocTargetType"
+          },
+          "genArtID": {
+            "type": "integer",
+            "description": "Limits the result by the generic article ID according to the TecDoc database.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemFindingByCode.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByCode.ResponseItem"
+            },
+            "description": "List of items returned",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemFindingByCode.ResponseItem": {
+        "type": "object",
+        "properties": {
+          "responseItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItem"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemFindingByVehicle.Request": {
+        "required": [
+          "engineID",
+          "genArtID",
+          "language",
+          "target",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          },
+          "getEANCodes": {
+            "type": "boolean",
+            "description": "Request bar-codes (if allowed)"
+          },
+          "getOECodes": {
+            "type": "boolean",
+            "description": "Request OE codes (if allowed)"
+          },
+          "getServices": {
+            "type": "boolean",
+            "description": "Request non-goods items"
+          },
+          "getDeposits": {
+            "type": "boolean",
+            "description": "Request deposits"
+          },
+          "getCashBack": {
+            "type": "boolean",
+            "description": "Request cashback information (if allowed)"
+          },
+          "engineID": {
+            "type": "integer",
+            "description": "EngineID according to the TecDoc database (aka K-type).",
+            "format": "int32"
+          },
+          "target": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Catalogs.TecDOC.TecDocTargetType"
+          },
+          "genArtID": {
+            "type": "integer",
+            "description": "ID of the generic article according to the TecDoc database.",
+            "format": "int32"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemFindingByVehicle.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.ItemFindingByVehicle.ResponseItem"
+            },
+            "description": "List of items returned",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemFindingByVehicle.ResponseItem": {
+        "type": "object",
+        "properties": {
+          "responseItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItem"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Catalogs.ItemTypes": {
+        "enum": [
+          "goods",
+          "service",
+          "rounding"
+        ],
+        "type": "string",
+        "description": "Item type"
+      },
+      "Nextis.NSCore.API.Catalogs.Units": {
+        "enum": [
+          "Piece",
+          "Mililiter",
+          "Milimeter",
+          "Decimeter",
+          "Meter",
+          "Miligram",
+          "Kilogram",
+          "Package",
+          "Liter"
+        ],
+        "type": "string",
+        "description": "Measure unit"
+      },
+      "Nextis.NSCore.API.Common.Authentication.Request": {
+        "required": [
+          "login",
+          "password"
+        ],
+        "type": "object",
+        "properties": {
+          "login": {
+            "minLength": 1,
+            "type": "string",
+            "description": "Login, obtained from the API owner"
+          },
+          "password": {
+            "minLength": 1,
+            "type": "string",
+            "description": "Password, obtained from the API owner"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Authentication request"
+      },
+      "Nextis.NSCore.API.Common.Authentication.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "token": {
+            "type": "string",
+            "description": "API key, obtained when authentication succeeded",
+            "nullable": true
+          },
+          "tokenValidTo": {
+            "type": "string",
+            "description": "Validity of the API key\r\n\r\n(depends on the API configuration, default 120 minute)</br>",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Authentication response"
+      },
+      "Nextis.NSCore.API.Documents.DeliveryNotes.DeliveryNote": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Internal ID of the document",
+            "format": "int32"
+          },
+          "type": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DocumentTypes"
+          },
+          "dateIssued": {
+            "type": "string",
+            "description": "Date when document was issued",
+            "format": "date-time"
+          },
+          "no": {
+            "type": "string",
+            "description": "Document number (sequence)",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DocumentItem"
+            },
+            "description": "List of document items",
+            "nullable": true
+          },
+          "headAddress": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Headquarter"
+          },
+          "deliveryAddress": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Address"
+          },
+          "transportName": {
+            "type": "string",
+            "description": "Name of the transport",
+            "nullable": true
+          },
+          "amountNetto": {
+            "type": "number",
+            "description": "Document amount (excluding VAT)",
+            "format": "double"
+          },
+          "amountBrutto": {
+            "type": "number",
+            "description": "Document amount (including VAT)",
+            "format": "double"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Currencies"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Contais delivery note specific information and delivery note items"
+      },
+      "Nextis.NSCore.API.Documents.DeliveryNotes.Request": {
+        "required": [
+          "dateFrom",
+          "dateTo",
+          "language",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          },
+          "dateFrom": {
+            "type": "string",
+            "description": "Start date of the delivery notes list\r\n\r\n(is always considered as the beginning of the day, regardless of the time provided)</br>",
+            "format": "date-time"
+          },
+          "dateTo": {
+            "type": "string",
+            "description": "End date of the delivery notes list\r\n\r\n(is always considered as the end of the day, regardless of the time provided)</br>",
+            "format": "date-time"
+          },
+          "loadAll": {
+            "type": "boolean",
+            "description": "If given authentication token belongs to the headquarters and this property is set to true, all delivery notes for all subsidiaries will be returned. Otherwise only delivery notes issued for the headquarter will be returned\r\n\r\n(default = true)</br>"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Documents.DeliveryNotes.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DeliveryNotes.DeliveryNote"
+            },
+            "description": "List of delivery notes returned",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Documents.DocumentItem": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Internal document item id",
+            "format": "int32"
+          },
+          "type": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DocumentItemTypes"
+          },
+          "code": {
+            "type": "string",
+            "description": "Code of the item\r\n\r\n(provided only for service or goods item types)</br>",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "description": "Brand of the item\r\n\r\n(provided only for goods item type)</br>",
+            "nullable": true
+          },
+          "text": {
+            "type": "string",
+            "description": "Text of the item",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Related note",
+            "nullable": true
+          },
+          "qty": {
+            "type": "number",
+            "description": "Quantity ot the item",
+            "format": "double"
+          },
+          "priceUnit": {
+            "type": "number",
+            "description": "Unit price of the item",
+            "format": "double"
+          },
+          "priceTotal": {
+            "type": "number",
+            "description": "Total price of the item",
+            "format": "double"
+          },
+          "priceUnitIncVAT": {
+            "type": "number",
+            "description": "Unit price of the item (including VAT)",
+            "format": "double"
+          },
+          "priceTotalIncVAT": {
+            "type": "number",
+            "description": "Total price of the item (including VAT)",
+            "format": "double"
+          },
+          "vatRate": {
+            "type": "number",
+            "description": "VAT rate of the item",
+            "format": "double"
+          },
+          "intrastatCode": {
+            "type": "string",
+            "description": "Intrastat code of the item (if provided)",
+            "nullable": true
+          },
+          "deliveryNote": {
+            "type": "string",
+            "description": "Related delivery note number",
+            "nullable": true
+          },
+          "invoice": {
+            "type": "string",
+            "description": "Related invoice number",
+            "nullable": true
+          },
+          "order": {
+            "type": "string",
+            "description": "Related order number",
+            "nullable": true
+          },
+          "unitWeightNetto": {
+            "type": "number",
+            "description": "Unit weight (netto Kg) of the item",
+            "format": "double"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Documents.DocumentItemTypes": {
+        "enum": [
+          "goods",
+          "nongoods",
+          "rounding"
+        ],
+        "type": "string",
+        "description": "Type of the document item"
+      },
+      "Nextis.NSCore.API.Documents.DocumentTypes": {
+        "enum": [
+          "Invoice",
+          "Receipt",
+          "DeliveryNote",
+          "CorrectionNote",
+          "ProformaInvoice",
+          "unknown"
+        ],
+        "type": "string",
+        "description": "Type of the document"
+      },
+      "Nextis.NSCore.API.Documents.InvoiceFile.Request": {
+        "required": [
+          "documentNumber",
+          "language",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          },
+          "documentNumber": {
+            "minLength": 1,
+            "type": "string",
+            "description": "Invoice number to search and return invoice file for"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Documents.Invoices.Invoice": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Internal ID of the document",
+            "format": "int32"
+          },
+          "type": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DocumentTypes"
+          },
+          "dateIssued": {
+            "type": "string",
+            "description": "Date when document was issued",
+            "format": "date-time"
+          },
+          "no": {
+            "type": "string",
+            "description": "Document number (sequence)",
+            "nullable": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.DocumentItem"
+            },
+            "description": "List of document items",
+            "nullable": true
+          },
+          "headAddress": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Headquarter"
+          },
+          "deliveryAddress": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Address"
+          },
+          "transportName": {
+            "type": "string",
+            "description": "Name of the transport",
+            "nullable": true
+          },
+          "amountNetto": {
+            "type": "number",
+            "description": "Document amount (excluding VAT)",
+            "format": "double"
+          },
+          "amountBrutto": {
+            "type": "number",
+            "description": "Document amount (including VAT)",
+            "format": "double"
+          },
+          "currency": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Currencies"
+          },
+          "dateOfMaturity": {
+            "type": "string",
+            "description": "Date of maturity",
+            "format": "date-time"
+          },
+          "dateOfTaxation": {
+            "type": "string",
+            "description": "Date of taxable supply",
+            "format": "date-time"
+          },
+          "note": {
+            "type": "string",
+            "description": "Invoice note",
+            "nullable": true
+          },
+          "variableSymbol": {
+            "type": "string",
+            "description": "Variable symbol of the invoice (used for wire-transfer payment)",
+            "nullable": true
+          },
+          "amountAdvance": {
+            "type": "number",
+            "description": "Amount that has been paid in advance",
+            "format": "double"
+          },
+          "amountPaid": {
+            "type": "number",
+            "description": "Amount that has been already paid",
+            "format": "double"
+          },
+          "paymentState": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Documents.PaymentStates"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Contais invoice specific information and invoice items"
+      },
+      "Nextis.NSCore.API.Documents.Invoices.Request": {
+        "required": [
+          "dateFrom",
+          "dateTo",
+          "language",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          },
+          "dateFrom": {
+            "type": "string",
+            "description": "Start date of the invoice list\r\n\r\n(is always considered as the beginning of the day, regardless of of time provided)</br>",
+            "format": "date-time"
+          },
+          "dateTo": {
+            "type": "string",
+            "description": "End date of the invoice list\r\n\r\n(is always considered as the end of the day, regardless of the time provided)</br>",
+            "format": "date-time"
+          },
+          "loadAll": {
+            "type": "boolean",
+            "description": "If given authentication token belongs to the headquarters and this property is set to true, all invoices for all subsidiaries will be returned. Otherwise only invoices issued for the headquarter will be returner\r\n\r\n(default = true)</br>"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Documents.Invoices.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Documents.Invoices.Invoice"
+            },
+            "description": "List of invoices returned",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Orders.OrderType": {
+        "enum": [
+          "General",
+          "Warehouse",
+          "Fast",
+          "Personal",
+          "Manufacturer"
+        ],
+        "type": "string",
+        "description": "Order type (might be not supported in all target systems)"
+      },
+      "Nextis.NSCore.API.Orders.Request": {
+        "required": [
+          "items",
+          "language",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          },
+          "items": {
+            "minItems": 1,
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.RequestItem"
+            },
+            "description": "List of items to order"
+          },
+          "orderType": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.OrderType"
+          },
+          "searchTarget": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItemSearchTarget"
+          },
+          "trySearchWithoutManufacturer": {
+            "type": "boolean",
+            "description": "Try to search without manufacturer",
+            "default": false
+          },
+          "keepBackOrder": {
+            "type": "boolean",
+            "description": "Keep back order in the target system if goods are not available at the moment of the order placement",
+            "default": true
+          },
+          "separatedDocument": {
+            "type": "boolean",
+            "description": "Request to issue separated document for given order",
+            "default": false
+          },
+          "waitNextOrder": {
+            "type": "boolean",
+            "description": "Request to do not deliver given order unless there exists other order to delivery",
+            "default": false
+          },
+          "userNote": {
+            "maxLength": 600,
+            "type": "string",
+            "description": "Provide your note (optional)",
+            "default": "",
+            "nullable": true
+          },
+          "userOrder": {
+            "maxLength": 75,
+            "type": "string",
+            "description": "Provide your order no",
+            "default": "",
+            "nullable": true
+          },
+          "confirmOptionalPromotionItems": {
+            "type": "boolean",
+            "description": "Confirms adding optional promotion items to order",
+            "default": false
+          },
+          "subCustomerInfo": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.SubCustomerInfo"
+          },
+          "optionalDeliveryAddress": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Address"
+          }
+        },
+        "additionalProperties": false,
+        "description": "Order request"
+      },
+      "Nextis.NSCore.API.Orders.RequestItem": {
+        "required": [
+          "qty"
+        ],
+        "type": "object",
+        "properties": {
+          "prefix": {
+            "type": "string",
+            "description": "Prefix for code\r\n<b>Note:</b> for the time being used for Motoprofil (PL) only and for other suppliers behind this API is currently useless.",
+            "default": " ",
+            "nullable": true
+          },
+          "code": {
+            "type": "string",
+            "description": "Code of the catalog item.",
+            "default": "",
+            "nullable": true
+          },
+          "brand": {
+            "type": "string",
+            "description": "Brand name (or brand ID) of the catalog item.\r\n<b>Note:</b> either name or id must be provided as string (in quotations).",
+            "default": "",
+            "nullable": true
+          },
+          "pairID": {
+            "type": "integer",
+            "description": "Internal Id of yours\r\n\r\nVariable you may use for the backward pairing of your item</br>",
+            "format": "int32",
+            "default": -1
+          },
+          "internalID": {
+            "type": "integer",
+            "description": "Allows to find, validate and order items through its internal ID instead of finding them throghout the code and brand.\r\n<b>Note:</b> To make this option work the request field \"SearchTarget\" must be set to \"InternalID\". Code and brand not need to be provided.",
+            "format": "int32",
+            "default": -1
+          },
+          "qty": {
+            "type": "number",
+            "description": "Requested quantity",
+            "format": "double"
+          },
+          "info1": {
+            "maxLength": 45,
+            "type": "string",
+            "description": "Internal purposes information",
+            "nullable": true
+          },
+          "info2": {
+            "maxLength": 45,
+            "type": "string",
+            "description": "Internal purposes information",
+            "nullable": true
+          },
+          "info3": {
+            "maxLength": 45,
+            "type": "string",
+            "description": "Internal purposes information",
+            "nullable": true
+          },
+          "searchedFor": {
+            "maxLength": 45,
+            "type": "string",
+            "description": "Information about how the item was found",
+            "nullable": true
+          },
+          "userNote": {
+            "maxLength": 400,
+            "type": "string",
+            "description": "Provide your note on order item (optional)",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Order item request"
+      },
+      "Nextis.NSCore.API.Orders.Sending.OrderInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Internal order ID",
+            "format": "int32"
+          },
+          "no": {
+            "type": "string",
+            "description": "Order No.",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Order note",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "The information about order created"
+      },
+      "Nextis.NSCore.API.Orders.Sending.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Sending.ResponseItem"
+            },
+            "description": "List of inserted items of order/orders",
+            "nullable": true
+          },
+          "orders": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Sending.OrderInfo"
+            },
+            "description": "List of all orders created throughout given request (commonly only one order is created with some exceptions, such as using the functionality to auto split orders amongst subsidiaries, etc.)",
+            "nullable": true,
+            "readOnly": true
+          },
+          "usedCustomOrderMode": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Orders.Sending.ResponseItem": {
+        "type": "object",
+        "properties": {
+          "requestItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.RequestItem"
+          },
+          "catalogItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItem"
+          },
+          "qtyAvailable": {
+            "type": "number",
+            "description": "Available quaintity",
+            "format": "double"
+          },
+          "qtyCommited": {
+            "type": "number",
+            "description": "Commited quantity (based on back-order setting and current availability)",
+            "format": "double"
+          },
+          "unitPriceCommited": {
+            "type": "number",
+            "description": "Commited unit price in customer currrency",
+            "format": "double"
+          },
+          "totalPriceCommited": {
+            "type": "number",
+            "description": "Commited total price in user currency",
+            "format": "double"
+          },
+          "order": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Sending.OrderInfo"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Sending.ResponseItemStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Orders.Sending.ResponseItemStatus": {
+        "enum": [
+          "OrderedProperly",
+          "OrderedUncomplete",
+          "NotOrdered",
+          "NotFound",
+          "InvalidItem",
+          "none"
+        ],
+        "type": "string",
+        "description": "Additional information that item has been or has not been ordered properly"
+      },
+      "Nextis.NSCore.API.Orders.SubCustomerInfo": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "description": "Subcustomer's name",
+            "default": "",
+            "nullable": true
+          },
+          "description": {
+            "type": "string",
+            "description": "Description",
+            "default": "",
+            "nullable": true
+          },
+          "street": {
+            "type": "string",
+            "description": "Street",
+            "default": "",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "description": "City",
+            "default": "",
+            "nullable": true
+          },
+          "postcode": {
+            "type": "string",
+            "description": "Postcode",
+            "default": "",
+            "nullable": true
+          },
+          "countryCode": {
+            "type": "string",
+            "description": "Country code",
+            "default": "",
+            "nullable": true
+          },
+          "countryName": {
+            "type": "string",
+            "description": "Country name",
+            "default": "",
+            "nullable": true
+          },
+          "taxID": {
+            "type": "string",
+            "description": "Tax number",
+            "default": "",
+            "nullable": true
+          },
+          "vatID": {
+            "type": "string",
+            "description": "VAT ID",
+            "default": "",
+            "nullable": true
+          },
+          "contactPhone": {
+            "type": "string",
+            "description": "Contact phone",
+            "default": "",
+            "nullable": true
+          },
+          "contactEmail": {
+            "type": "string",
+            "description": "Contact email",
+            "default": "",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Subcustomer's information"
+      },
+      "Nextis.NSCore.API.Orders.Validation.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "items": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Validation.ResponseItem"
+            },
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Orders.Validation.ResponseItem": {
+        "type": "object",
+        "properties": {
+          "requestItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.RequestItem"
+          },
+          "catalogItem": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Catalogs.CatalogItem"
+          },
+          "qtyToDelivery": {
+            "type": "number",
+            "description": "The quantity available for immediate delivery",
+            "format": "double"
+          },
+          "qtyToDelieveryOther": {
+            "type": "number",
+            "description": "The quantity available for delivery from delivery form other subsidiaries",
+            "format": "double"
+          },
+          "qtyBackOrder": {
+            "type": "number",
+            "description": "The quantity that is not available neither in the main warehouse nor other warehouses\r\n(valid only if BackOrder=true)",
+            "format": "double"
+          },
+          "qtyCancelled": {
+            "type": "number",
+            "description": "The quantity that is not available neither in the main warehouse nor other warehouses\r\n(valid only if BackOrder=False)",
+            "format": "double"
+          },
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Orders.Validation.ResponseItemStatus"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Orders.Validation.ResponseItemStatus": {
+        "enum": [
+          "Valid",
+          "NotFound",
+          "Invalid"
+        ],
+        "type": "string",
+        "description": "Additional information that item is found and valid"
+      },
+      "Nextis.NSCore.API.Partners.Credit.Request": {
+        "required": [
+          "language",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Partners.Credit.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "limit": {
+            "type": "number",
+            "description": "Limit in configured currency",
+            "format": "double"
+          },
+          "limitOverdue": {
+            "type": "number",
+            "description": "Limit overdue in configured currency",
+            "format": "double"
+          },
+          "debts": {
+            "type": "number",
+            "description": "Current debts in configured currency",
+            "format": "double"
+          },
+          "debtsOverdue": {
+            "type": "number",
+            "description": "Currend debts overdue in configured currency",
+            "format": "double"
+          },
+          "debstDeliveryNotes": {
+            "type": "number",
+            "description": "Current debts without invoice in configured currency",
+            "format": "double"
+          },
+          "countInvoiceOverdue": {
+            "type": "integer",
+            "description": "Count of overdue invoices",
+            "format": "int32"
+          },
+          "percentageDebts": {
+            "type": "integer",
+            "description": "Consumed credit (expressed in percent)",
+            "format": "int32"
+          },
+          "percentageDebtsOverdue": {
+            "type": "integer",
+            "description": "Consumed overdue credit (expressed in percent)",
+            "format": "int32"
+          },
+          "exceeded": {
+            "type": "boolean",
+            "description": "Is or isn't exceeded the credit limitation\r\n\r\n(before due date or overdue)</br>"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Partners.Info.Address": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Target system internal id",
+            "format": "int32"
+          },
+          "addressName": {
+            "type": "string",
+            "description": "Address name\r\n\r\n(only for subsidiaries)</br>",
+            "nullable": true
+          },
+          "street": {
+            "type": "string",
+            "description": "Street",
+            "nullable": true
+          },
+          "street2": {
+            "type": "string",
+            "description": "Street",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "description": "City",
+            "nullable": true
+          },
+          "district": {
+            "type": "string",
+            "description": "District (county)",
+            "nullable": true
+          },
+          "region": {
+            "type": "string",
+            "description": "Region",
+            "nullable": true
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Postal code",
+            "nullable": true
+          },
+          "country": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Countries"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Contakt phone",
+            "nullable": true
+          },
+          "mobil": {
+            "type": "string",
+            "description": "Contact mobile phone",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "Contact email",
+            "nullable": true
+          },
+          "web": {
+            "type": "string",
+            "description": "Web address",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Note",
+            "nullable": true
+          },
+          "coordinates": {
+            "type": "string",
+            "description": "Geographical coordinates",
+            "nullable": true
+          },
+          "isValid": {
+            "type": "boolean",
+            "description": "Address has been loaded properly"
+          },
+          "accessibleWarehouses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.WarehouseInfo"
+            },
+            "description": "List of supplier warehouses, accessible for given credentials (token)",
+            "nullable": true,
+            "readOnly": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Address of the subsidiary (also so-called delivery address)"
+      },
+      "Nextis.NSCore.API.Partners.Info.Headquarter": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "description": "Target system internal id",
+            "format": "int32"
+          },
+          "addressName": {
+            "type": "string",
+            "description": "Address name\r\n\r\n(only for subsidiaries)</br>",
+            "nullable": true
+          },
+          "street": {
+            "type": "string",
+            "description": "Street",
+            "nullable": true
+          },
+          "street2": {
+            "type": "string",
+            "description": "Street",
+            "nullable": true
+          },
+          "city": {
+            "type": "string",
+            "description": "City",
+            "nullable": true
+          },
+          "district": {
+            "type": "string",
+            "description": "District (county)",
+            "nullable": true
+          },
+          "region": {
+            "type": "string",
+            "description": "Region",
+            "nullable": true
+          },
+          "postalCode": {
+            "type": "string",
+            "description": "Postal code",
+            "nullable": true
+          },
+          "country": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Countries"
+          },
+          "phone": {
+            "type": "string",
+            "description": "Contakt phone",
+            "nullable": true
+          },
+          "mobil": {
+            "type": "string",
+            "description": "Contact mobile phone",
+            "nullable": true
+          },
+          "email": {
+            "type": "string",
+            "description": "Contact email",
+            "nullable": true
+          },
+          "web": {
+            "type": "string",
+            "description": "Web address",
+            "nullable": true
+          },
+          "note": {
+            "type": "string",
+            "description": "Note",
+            "nullable": true
+          },
+          "coordinates": {
+            "type": "string",
+            "description": "Geographical coordinates",
+            "nullable": true
+          },
+          "isValid": {
+            "type": "boolean",
+            "description": "Address has been loaded properly"
+          },
+          "accessibleWarehouses": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.WarehouseInfo"
+            },
+            "description": "List of supplier warehouses, accessible for given credentials (token)",
+            "nullable": true,
+            "readOnly": true
+          },
+          "companyName": {
+            "type": "string",
+            "description": "Oficial name of the company",
+            "nullable": true
+          },
+          "taxID": {
+            "type": "string",
+            "description": "Company TAX ID",
+            "nullable": true
+          },
+          "vatID": {
+            "type": "string",
+            "description": "Company's VAT ID",
+            "nullable": true
+          },
+          "vatID2": {
+            "type": "string",
+            "description": "Company VAT ID 2 (mainly used in Slovakia)",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "Address of the headquarter (main address)"
+      },
+      "Nextis.NSCore.API.Partners.Info.Request": {
+        "required": [
+          "language",
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "maxLength": 40,
+            "minLength": 1,
+            "type": "string"
+          },
+          "tokenIsMaster": {
+            "type": "boolean"
+          },
+          "tokenPartnerID": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "language": {
+            "$ref": "#/components/schemas/Nextis.NSCore.Culture.Languages"
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Partners.Info.Response": {
+        "type": "object",
+        "properties": {
+          "status": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.ResponseStatus"
+          },
+          "statusText": {
+            "type": "string",
+            "nullable": true
+          },
+          "duration": {
+            "type": "integer",
+            "format": "int64",
+            "readOnly": true
+          },
+          "headquarter": {
+            "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Headquarter"
+          },
+          "subsidiaries": {
+            "type": "array",
+            "items": {
+              "$ref": "#/components/schemas/Nextis.NSCore.API.Partners.Info.Address"
+            },
+            "description": "List of registered subsidiaries",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false
+      },
+      "Nextis.NSCore.API.Partners.Info.WarehouseInfo": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "type": "string",
+            "nullable": true
+          }
+        },
+        "additionalProperties": false,
+        "description": "API provider warehouse info"
+      },
+      "Nextis.NSCore.API.ResponseStatus": {
+        "enum": [
+          "OK",
+          "BadRequest",
+          "Unauthenticated",
+          "Forbidden",
+          "ProcessingError",
+          "NotImplemented",
+          "RequestLimitExceeded",
+          "CommunicationError"
+        ],
+        "type": "string"
+      },
+      "Nextis.NSCore.Catalogs.TecDOC.TecDocTargetType": {
+        "enum": [
+          "P",
+          "O",
+          "M",
+          "A",
+          "K",
+          "H",
+          "B",
+          "V",
+          "L",
+          "T",
+          "NA"
+        ],
+        "type": "string"
+      },
+      "Nextis.NSCore.Culture.Countries": {
+        "enum": [
+          "RS",
+          "AF",
+          "AL",
+          "DZ",
+          "AS_",
+          "AD",
+          "AO",
+          "AI",
+          "AG",
+          "AR",
+          "AM",
+          "AW",
+          "SH",
+          "AU",
+          "AQ",
+          "AZ",
+          "BS",
+          "BH",
+          "BD",
+          "BB",
+          "MM",
+          "BE",
+          "BZ",
+          "BY",
+          "BJ",
+          "BM",
+          "BT",
+          "BO",
+          "BA",
+          "BW",
+          "BR",
+          "VG",
+          "BN",
+          "BG",
+          "BF",
+          "BI",
+          "CK",
+          "TD",
+          "CN",
+          "DK",
+          "IO",
+          "DM",
+          "DO",
+          "DJ",
+          "EG",
+          "EC",
+          "ER",
+          "EE",
+          "ET",
+          "FO",
+          "FK",
+          "FJ",
+          "PH",
+          "FI",
+          "FR",
+          "GF",
+          "PF",
+          "GA",
+          "GM",
+          "GH",
+          "GI",
+          "GD",
+          "GL",
+          "GE",
+          "GP",
+          "GU",
+          "GT",
+          "GN",
+          "GW",
+          "GY",
+          "HT",
+          "HN",
+          "HK",
+          "CL",
+          "HR",
+          "IN_",
+          "ID",
+          "IQ",
+          "IR",
+          "IE",
+          "IS_",
+          "IT",
+          "IL",
+          "JM",
+          "JP",
+          "YE",
+          "ZA",
+          "JO",
+          "KY",
+          "KH",
+          "CM",
+          "CA",
+          "CV",
+          "QA",
+          "RU_K",
+          "KE",
+          "KI",
+          "CO",
+          "KM",
+          "CG",
+          "CD",
+          "KP",
+          "KR",
+          "CR",
+          "CU",
+          "KW",
+          "CY",
+          "KG",
+          "LA",
+          "LS",
+          "LB",
+          "LR",
+          "LY",
+          "LI",
+          "LT",
+          "LV",
+          "LU",
+          "MO",
+          "MG",
+          "HU",
+          "MK",
+          "MY",
+          "MW",
+          "MV",
+          "ML",
+          "MT",
+          "MA",
+          "MH",
+          "MQ",
+          "MR",
+          "MU",
+          "MX",
+          "FM",
+          "MD",
+          "MC",
+          "MN",
+          "MS",
+          "MZ",
+          "NA",
+          "NR",
+          "DE",
+          "NP",
+          "NE",
+          "NG",
+          "NI",
+          "NU",
+          "AN",
+          "NL",
+          "NO",
+          "NC",
+          "NZ",
+          "OM",
+          "PK",
+          "PW",
+          "PA",
+          "PG",
+          "PY",
+          "PE",
+          "CI",
+          "PL",
+          "PR",
+          "PT",
+          "AT",
+          "RE",
+          "GQ",
+          "RO",
+          "RU",
+          "RW",
+          "GR",
+          "PM",
+          "SV",
+          "WS",
+          "SM",
+          "SA",
+          "SN",
+          "MP",
+          "SC",
+          "SL",
+          "SG",
+          "SK",
+          "SI",
+          "SO",
+          "AE",
+          "US",
+          "LK",
+          "CF",
+          "SD",
+          "SR",
+          "LC",
+          "KN",
+          "ST",
+          "VC",
+          "SZ",
+          "SY",
+          "SB",
+          "ES",
+          "SE",
+          "CH",
+          "TJ",
+          "TW",
+          "TZ",
+          "TH",
+          "TG",
+          "TK",
+          "TO_",
+          "TT",
+          "TN",
+          "TR",
+          "TM",
+          "TV",
+          "UG",
+          "UA",
+          "UY",
+          "UZ",
+          "VU",
+          "VA",
+          "VE",
+          "VN",
+          "TL",
+          "WF",
+          "ZM",
+          "ZW",
+          "ME",
+          "CZ",
+          "GB",
+          "_notset"
+        ],
+        "type": "string"
+      },
+      "Nextis.NSCore.Culture.Currencies": {
+        "enum": [
+          "_unknown",
+          "CZK",
+          "USD",
+          "SKK",
+          "EUR",
+          "DKK",
+          "HUF",
+          "PLN",
+          "SEK",
+          "GBP",
+          "NOK",
+          "LTL",
+          "LVL",
+          "CYP",
+          "EEK",
+          "MTL",
+          "IRR",
+          "BAM",
+          "RON",
+          "CHF",
+          "AUD",
+          "BGN",
+          "MUR",
+          "KES",
+          "HRK",
+          "UAH",
+          "RUB",
+          "CLP",
+          "DOP",
+          "TRY",
+          "CAD",
+          "RSD",
+          "_notset"
+        ],
+        "type": "string"
+      },
+      "Nextis.NSCore.Culture.Languages": {
+        "enum": [
+          "cs",
+          "pl",
+          "en",
+          "de",
+          "sk",
+          "hu",
+          "nl",
+          "ru",
+          "et",
+          "lv",
+          "lt",
+          "ar",
+          "fr",
+          "it",
+          "pt",
+          "ro",
+          "es",
+          "tr",
+          "bg",
+          "sl",
+          "sr",
+          "hr",
+          "gr",
+          "da",
+          "fi",
+          "lb",
+          "sv",
+          "ua",
+          "sh",
+          "no",
+          "Is",
+          "ga",
+          "mt",
+          "el",
+          "la",
+          "_NA"
+        ],
+        "type": "string"
+      },
+      "Nextis.NSCore.Documents.PaymentStates": {
+        "enum": [
+          "Paid",
+          "Partially",
+          "Unpaid"
+        ],
+        "type": "string"
+      }
+    }
+  },
+  "tags": [
+    {
+      "name": "Catalogs",
+      "description": "Provides functionality for obtaining general catalog informations on demand"
+    }
+  ]
+}

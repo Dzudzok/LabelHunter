@@ -4,11 +4,11 @@ async function getTransportMap() {
   try {
     const { data, error } = await supabase
       .from('transport_map')
-      .select('nextis_name, shipper_code, service_code');
+      .select('nextis_name, shipper_code, service_code, skip');
     if (error) throw error;
     const map = {};
     for (const row of (data || [])) {
-      map[row.nextis_name] = { shipperCode: row.shipper_code, serviceCode: row.service_code };
+      map[row.nextis_name] = { shipperCode: row.shipper_code, serviceCode: row.service_code, skip: row.skip || false };
     }
     return map;
   } catch (err) {
@@ -21,13 +21,14 @@ async function getTransportMapRows() {
   try {
     const { data, error } = await supabase
       .from('transport_map')
-      .select('nextis_name, shipper_code, service_code')
+      .select('nextis_name, shipper_code, service_code, skip')
       .order('id');
     if (error) throw error;
     return (data || []).map(r => ({
       nextisName: r.nextis_name,
       shipperCode: r.shipper_code,
       serviceCode: r.service_code,
+      skip: r.skip || false,
     }));
   } catch (err) {
     console.error('[TransportMap] Failed to load rows:', err.message);
@@ -50,6 +51,7 @@ async function saveTransportMapRows(rows) {
     nextis_name: r.nextisName || '',
     shipper_code: r.shipperCode || null,
     service_code: r.serviceCode || null,
+    skip: r.skip || false,
   }));
 
   const { error: insertError } = await supabase

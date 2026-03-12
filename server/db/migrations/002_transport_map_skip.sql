@@ -1,0 +1,1 @@
+ALTER TABLE transport_map ADD COLUMN IF NOT EXISTS skip BOOLEAN DEFAULT false;
