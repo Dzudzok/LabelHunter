@@ -171,6 +171,35 @@ router.get('/:id', async (req, res, next) => {
   }
 });
 
+// PUT /:id/address - update delivery address
+router.put('/:id/address', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      customer_name,
+      delivery_street, delivery_city, delivery_postal_code, delivery_country,
+      delivery_phone, delivery_email,
+    } = req.body;
+
+    const { data, error } = await supabase
+      .from('delivery_notes')
+      .update({
+        customer_name,
+        delivery_street, delivery_city, delivery_postal_code, delivery_country,
+        delivery_phone, delivery_email,
+        updated_at: new Date().toISOString(),
+      })
+      .eq('id', id)
+      .select()
+      .single();
+
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // PUT /:id/status - update package status
 router.put('/:id/status', async (req, res, next) => {
   try {
@@ -301,7 +330,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
     if (itemsError) throw itemsError;
 
     // Map transport to shipper — body overrides auto-mapping
-    const { shipperCode: bodyShipper, serviceCode: bodyService, workerId } = req.body || {};
+    const { shipperCode: bodyShipper, serviceCode: bodyService, workerId, parcels: bodyParcels } = req.body || {};
     let transport;
     if (bodyShipper) {
       transport = { shipperCode: bodyShipper, serviceCode: bodyService || bodyShipper };
@@ -313,17 +342,26 @@ router.post('/:id/generate-label', async (req, res, next) => {
       return res.status(400).json({ error: `Unsupported transport: ${dn.transport_name}` });
     }
 
-    // Calculate total weight from items
-    let totalWeight = 0;
+    // Calculate total weight from items (used as fallback)
+    let autoWeight = 0;
     if (items) {
       for (const item of items) {
         if (item.unit_weight_netto && item.qty) {
-          totalWeight += parseFloat(item.unit_weight_netto) * parseFloat(item.qty);
+          autoWeight += parseFloat(item.unit_weight_netto) * parseFloat(item.qty);
         }
       }
     }
-    // Minimum weight 0.5 kg
-    if (totalWeight < 0.5) totalWeight = 0.5;
+    if (autoWeight < 0.5) autoWeight = 0.5;
+
+    // Build parcels array — from body (user-defined) or auto single parcel
+    let parcelsForLP;
+    if (bodyParcels && Array.isArray(bodyParcels) && bodyParcels.length > 0) {
+      parcelsForLP = bodyParcels.map(p => ({
+        weight: Math.round(Math.max(parseFloat(p.weight) || 0.5, 0.1) * 100) / 100,
+      }));
+    } else {
+      parcelsForLP = [{ weight: Math.round(autoWeight * 100) / 100 }];
+    }
 
     // Build shipment data for LP API
     const shipmentData = {
@@ -346,9 +384,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
         phone: dn.delivery_phone || dn.customer_phone,
         email: dn.delivery_email || dn.customer_email,
       },
-      parcels: [{
-        weight: Math.round(totalWeight * 100) / 100,
-      }],
+      parcels: parcelsForLP,
       labels: { format: 'A6' },
     };
 
@@ -378,10 +414,19 @@ router.post('/:id/generate-label', async (req, res, next) => {
       console.warn('[generate-label] No labels in LP response. type:', typeof labelsField, Array.isArray(labelsField) ? 'array len=' + labelsField.length : '');
     }
 
-    // Extract shipment details — LP response: data[0].id, data[0].parcels[0].barcode
+    // Extract shipment details — LP response: data[0].id, data[0].parcels[]
     const shipmentResult = result.data && result.data[0] ? result.data[0] : {};
-    const firstParcel = shipmentResult.parcels && shipmentResult.parcels[0] ? shipmentResult.parcels[0] : {};
+    const allParcels = shipmentResult.parcels || [];
+    const firstParcel = allParcels[0] || {};
     const trackingToken = crypto.randomUUID();
+
+    // Store all parcels as JSON
+    const lpParcelsData = allParcels.map(p => ({
+      barcode: p.barcode,
+      trackingNumber: p.trackingNumber || p.barcode,
+      trackingUrl: p.trackingUrl,
+      weight: p.weight,
+    }));
 
     // Update delivery note
     const { data: updated, error: updateError } = await supabase
@@ -389,6 +434,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
       .update({
         lp_shipment_id: shipmentResult.id,
         lp_barcode: firstParcel.barcode,
+        lp_parcels: lpParcelsData,
         tracking_number: firstParcel.trackingNumber || firstParcel.barcode,
         tracking_url: firstParcel.trackingUrl,
         label_pdf_url: labelPdfUrl,

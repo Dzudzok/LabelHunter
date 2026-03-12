@@ -22,14 +22,39 @@ export default function PackageView() {
   const [overrideShipper, setOverrideShipper] = useState('')
   const [overrideService, setOverrideService] = useState('')
   const [shippers, setShippers] = useState([])
+
+  // Address edit state
+  const [editingAddress, setEditingAddress] = useState(false)
+  const [addressForm, setAddressForm] = useState({})
+  const [savingAddress, setSavingAddress] = useState(false)
+
+  // Multi-parcel state: array of { weight }
+  const [parcels, setParcels] = useState([])
+  const parcelsInitialized = useRef(false)
   const scanInputRef = useRef(null)
 
-  // Fetch package data
+  function calcAutoWeight(items) {
+    let w = 0
+    for (const item of (items || [])) {
+      if (item.unit_weight_netto && item.qty) {
+        w += parseFloat(item.unit_weight_netto) * parseFloat(item.qty)
+      }
+    }
+    return Math.max(Math.round(w * 100) / 100, 0.5)
+  }
+
   const fetchPackage = useCallback(async () => {
     try {
       const res = await api.get(`/packages/${id}`)
-      setPkg(res.data)
+      const data = res.data
+      setPkg(data)
       setLoading(false)
+      // Init parcels only once
+      if (!parcelsInitialized.current) {
+        parcelsInitialized.current = true
+        const autoW = calcAutoWeight(data.items || [])
+        setParcels([{ weight: autoW }])
+      }
     } catch {
       setLoading(false)
     }
@@ -39,7 +64,6 @@ export default function PackageView() {
     fetchPackage()
   }, [fetchPackage])
 
-  // Fetch shippers from LP API
   useEffect(() => {
     api.get('/labelprinter/shippers')
       .then(res => {
@@ -49,13 +73,11 @@ export default function PackageView() {
       .catch(err => console.error('Failed to fetch shippers:', err))
   }, [])
 
-  // Check if all goods items are verified
   const goodsItems = pkg?.items?.filter(i => i.item_type === 'goods') || []
   const allVerified = goodsItems.length === 0 || goodsItems.every(
     i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified
   )
 
-  // Handle barcode scan
   const handleScan = useCallback(async (code) => {
     if (!pkg) return
     const classified = classifyBarcode(code)
@@ -82,7 +104,6 @@ export default function PackageView() {
 
   useScanner(handleScan)
 
-  // Skip single item
   const handleSkipItem = async (itemId) => {
     try {
       const res = await api.put(`/packages/${pkg.id}/skip-item`, { itemId })
@@ -92,7 +113,6 @@ export default function PackageView() {
     }
   }
 
-  // Skip all items
   const handleSkipAll = async () => {
     try {
       await skipAllItems(pkg.id)
@@ -102,19 +122,64 @@ export default function PackageView() {
     }
   }
 
-  // Generate label
+  // --- Address edit ---
+  const startEditAddress = () => {
+    setAddressForm({
+      customer_name: pkg.customer_name || '',
+      delivery_street: pkg.delivery_street || pkg.customer_street || '',
+      delivery_city: pkg.delivery_city || pkg.customer_city || '',
+      delivery_postal_code: pkg.delivery_postal_code || pkg.customer_postal_code || '',
+      delivery_country: pkg.delivery_country || pkg.customer_country || 'CZ',
+      delivery_phone: pkg.delivery_phone || pkg.customer_phone || '',
+      delivery_email: pkg.delivery_email || pkg.customer_email || '',
+    })
+    setEditingAddress(true)
+  }
+
+  const handleSaveAddress = async () => {
+    setSavingAddress(true)
+    try {
+      const res = await api.put(`/packages/${pkg.id}/address`, addressForm)
+      setPkg(prev => ({ ...prev, ...res.data }))
+      setEditingAddress(false)
+    } catch (err) {
+      console.error('Address save error:', err)
+    } finally {
+      setSavingAddress(false)
+    }
+  }
+
+  // --- Multi-parcel ---
+  const addParcel = () => {
+    const autoW = calcAutoWeight(pkg?.items || [])
+    const count = parcels.length + 1
+    const splitW = Math.round((autoW / count) * 100) / 100
+    setParcels(Array(count).fill(null).map(() => ({ weight: splitW })))
+  }
+
+  const removeParcel = (idx) => {
+    if (parcels.length <= 1) return
+    setParcels(prev => prev.filter((_, i) => i !== idx))
+  }
+
+  const updateParcelWeight = (idx, val) => {
+    setParcels(prev => prev.map((p, i) => i === idx ? { ...p, weight: val } : p))
+  }
+
+  // --- Generate label ---
   const handleGenerateLabel = async () => {
     if (generating) return
     setGenerating(true)
     setLabelError(null)
     try {
-      const result = await generateLabel(
-        pkg.id,
-        overrideShipper || null,
-        overrideService || null,
-        worker?.id || null
-      )
-      setLabelData(result)
+      const parcelsPayload = parcels.map(p => ({ weight: Math.max(parseFloat(p.weight) || 0.5, 0.1) }))
+      const res = await api.post(`/packages/${pkg.id}/generate-label`, {
+        shipperCode: overrideShipper || null,
+        serviceCode: overrideService || null,
+        workerId: worker?.id || null,
+        parcels: parcelsPayload,
+      })
+      setLabelData(res.data)
       fetchPackage()
     } catch (err) {
       const errData = err.response?.data
@@ -125,13 +190,13 @@ export default function PackageView() {
       } else {
         setLabelError(err.message)
       }
-      console.error('Label generation error:', err)
     } finally {
       setGenerating(false)
     }
   }
 
   const selectedShipperObj = shippers.find(s => s.code === overrideShipper)
+  const totalWeight = parcels.reduce((s, p) => s + (parseFloat(p.weight) || 0), 0)
 
   if (loading) {
     return (
@@ -145,10 +210,7 @@ export default function PackageView() {
     return (
       <div className="min-h-screen bg-navy-800 flex flex-col items-center justify-center gap-4">
         <div className="text-2xl text-gray-400">Balik nenalezen</div>
-        <button
-          onClick={() => navigate('/')}
-          className="bg-brand-orange text-white px-6 py-3 rounded-xl text-lg font-bold"
-        >
+        <button onClick={() => navigate('/')} className="bg-brand-orange text-white px-6 py-3 rounded-xl text-lg font-bold">
           Zpet na Dashboard
         </button>
       </div>
@@ -159,43 +221,108 @@ export default function PackageView() {
     <div className="min-h-screen bg-navy-800">
       {/* Top bar */}
       <div className="bg-navy-900 border-b border-navy-700 px-6 py-4">
-        <button
-          onClick={() => navigate('/')}
-          className="text-gray-400 hover:text-white text-xl min-h-0"
-        >
+        <button onClick={() => navigate('/')} className="text-gray-400 hover:text-white text-xl min-h-0">
           &larr; Dashboard
         </button>
       </div>
 
       <div className="max-w-7xl mx-auto px-6 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-5 gap-6">
+
           {/* LEFT SIDE - 60% */}
           <div className="lg:col-span-3 flex flex-col gap-6">
-            {/* Customer info */}
+
+            {/* Customer info / Address edit */}
             <div className="bg-navy-700 rounded-xl p-6 border border-navy-600">
-              <h2 className="text-2xl font-bold text-white mb-4">Zakaznik</h2>
-              <div className="space-y-2 text-lg">
-                <div className="text-white font-semibold text-xl">
-                  {pkg.customer_name}
-                </div>
-                {(pkg.delivery_street || pkg.customer_street) && (
-                  <div className="text-gray-400">{pkg.delivery_street || pkg.customer_street}</div>
-                )}
-                <div className="text-gray-400">
-                  {[pkg.delivery_city || pkg.customer_city, pkg.delivery_postal_code || pkg.customer_postal_code, pkg.delivery_country || pkg.customer_country].filter(Boolean).join(', ')}
-                </div>
-                {(pkg.delivery_phone || pkg.customer_phone) && (
-                  <a
-                    href={`tel:${pkg.delivery_phone || pkg.customer_phone}`}
-                    className="text-brand-orange hover:underline block"
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-2xl font-bold text-white">Zakaznik</h2>
+                {!labelData && !editingAddress && (
+                  <button
+                    onClick={startEditAddress}
+                    className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-4 py-2 rounded-lg text-base transition-colors"
                   >
-                    Tel: {pkg.delivery_phone || pkg.customer_phone}
-                  </a>
-                )}
-                {(pkg.delivery_email || pkg.customer_email) && (
-                  <div className="text-gray-400">{pkg.delivery_email || pkg.customer_email}</div>
+                    Upravit adresu
+                  </button>
                 )}
               </div>
+
+              {editingAddress ? (
+                <div className="space-y-3">
+                  <input
+                    value={addressForm.customer_name}
+                    onChange={e => setAddressForm(p => ({ ...p, customer_name: e.target.value }))}
+                    placeholder="Jméno / firma"
+                    className="w-full bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                  />
+                  <input
+                    value={addressForm.delivery_street}
+                    onChange={e => setAddressForm(p => ({ ...p, delivery_street: e.target.value }))}
+                    placeholder="Ulice"
+                    className="w-full bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                  />
+                  <div className="grid grid-cols-3 gap-2">
+                    <input
+                      value={addressForm.delivery_city}
+                      onChange={e => setAddressForm(p => ({ ...p, delivery_city: e.target.value }))}
+                      placeholder="Město"
+                      className="col-span-2 bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                    />
+                    <input
+                      value={addressForm.delivery_postal_code}
+                      onChange={e => setAddressForm(p => ({ ...p, delivery_postal_code: e.target.value }))}
+                      placeholder="PSČ"
+                      className="bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                    />
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <input
+                      value={addressForm.delivery_phone}
+                      onChange={e => setAddressForm(p => ({ ...p, delivery_phone: e.target.value }))}
+                      placeholder="Telefon"
+                      className="bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                    />
+                    <input
+                      value={addressForm.delivery_email}
+                      onChange={e => setAddressForm(p => ({ ...p, delivery_email: e.target.value }))}
+                      placeholder="Email"
+                      className="bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                    />
+                  </div>
+                  <div className="flex gap-3 pt-1">
+                    <button
+                      onClick={handleSaveAddress}
+                      disabled={savingAddress}
+                      className="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg text-base font-bold transition-colors disabled:opacity-50"
+                    >
+                      {savingAddress ? 'Ukládám...' : 'Uložit adresu'}
+                    </button>
+                    <button
+                      onClick={() => setEditingAddress(false)}
+                      className="px-5 bg-navy-600 hover:bg-navy-500 text-gray-300 py-3 rounded-lg text-base transition-colors"
+                    >
+                      Zrušit
+                    </button>
+                  </div>
+                </div>
+              ) : (
+                <div className="space-y-2 text-lg">
+                  <div className="text-white font-semibold text-xl">{pkg.customer_name}</div>
+                  {(pkg.delivery_street || pkg.customer_street) && (
+                    <div className="text-gray-400">{pkg.delivery_street || pkg.customer_street}</div>
+                  )}
+                  <div className="text-gray-400">
+                    {[pkg.delivery_city || pkg.customer_city, pkg.delivery_postal_code || pkg.customer_postal_code, pkg.delivery_country || pkg.customer_country].filter(Boolean).join(', ')}
+                  </div>
+                  {(pkg.delivery_phone || pkg.customer_phone) && (
+                    <a href={`tel:${pkg.delivery_phone || pkg.customer_phone}`} className="text-brand-orange hover:underline block">
+                      Tel: {pkg.delivery_phone || pkg.customer_phone}
+                    </a>
+                  )}
+                  {(pkg.delivery_email || pkg.customer_email) && (
+                    <div className="text-gray-400">{pkg.delivery_email || pkg.customer_email}</div>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Package info */}
@@ -226,39 +353,66 @@ export default function PackageView() {
                     <div className="text-white font-semibold">{pkg.doc_number}</div>
                   </div>
                 )}
-                {pkg.cod_amount && (
-                  <div>
-                    <span className="text-gray-500">Dobirka:</span>
-                    <div className="text-brand-orange font-bold">
-                      {pkg.cod_amount} {pkg.cod_currency || 'CZK'}
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
+
+            {/* Multi-parcel section */}
+            {!labelData && (
+              <div className="bg-navy-700 rounded-xl p-6 border border-navy-600">
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-bold text-white">
+                    Balíky <span className="text-gray-400 text-base font-normal">({parcels.length} ks)</span>
+                  </h2>
+                  <button
+                    onClick={addParcel}
+                    className="bg-brand-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-base font-bold transition-colors"
+                  >
+                    + Přidat balík
+                  </button>
+                </div>
+                <div className="space-y-3">
+                  {parcels.map((parcel, idx) => (
+                    <div key={idx} className="flex items-center gap-3">
+                      <div className="text-gray-400 text-base w-20 shrink-0">Balík {idx + 1}</div>
+                      <input
+                        type="number"
+                        min="0.1"
+                        step="0.1"
+                        value={parcel.weight}
+                        onChange={e => updateParcelWeight(idx, e.target.value)}
+                        className="w-28 bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                      />
+                      <span className="text-gray-400">kg</span>
+                      {parcels.length > 1 && (
+                        <button
+                          onClick={() => removeParcel(idx)}
+                          className="ml-auto text-red-400 hover:text-red-300 px-3 py-1 rounded-lg hover:bg-red-900/30 transition-colors text-2xl leading-none"
+                        >
+                          ×
+                        </button>
+                      )}
+                    </div>
+                  ))}
+                </div>
+                <div className="mt-3 text-gray-500 text-sm">
+                  Celková hmotnost: {totalWeight.toFixed(2)} kg
+                </div>
+              </div>
+            )}
           </div>
 
           {/* RIGHT SIDE - 40% */}
           <div className="lg:col-span-2 flex flex-col gap-6">
-            {/* Scan section header */}
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">
-                Produkty k naskenovani
-              </h2>
+              <h2 className="text-xl font-bold text-white">Produkty k naskenovani</h2>
               <span className="text-gray-400 text-lg">
                 {goodsItems.filter(i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified).length}
                 /{goodsItems.length}
               </span>
             </div>
 
-            {/* Item list */}
-            <ItemList
-              items={pkg.items || []}
-              onSkipItem={handleSkipItem}
-              onScanItem={handleScan}
-            />
+            <ItemList items={pkg.items || []} onSkipItem={handleSkipItem} onScanItem={handleScan} />
 
-            {/* Scan input */}
             <input
               ref={scanInputRef}
               type="text"
@@ -273,21 +427,16 @@ export default function PackageView() {
               }}
             />
 
-            {/* Shipper override selector */}
+            {/* Shipper override */}
             {!labelData && (
               <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
                 <div className="text-sm text-gray-400 mb-2">
-                  Přepravce{' '}
-                  <span className="text-gray-500">(Nextis: {pkg.transport_name || '—'})</span>
+                  Přepravce <span className="text-gray-500">(Nextis: {pkg.transport_name || '—'})</span>
                 </div>
                 <div className="flex gap-2">
                   <select
                     value={overrideShipper}
-                    onChange={(e) => {
-                      setOverrideShipper(e.target.value)
-                      setOverrideService('')
-                      setLabelError(null)
-                    }}
+                    onChange={(e) => { setOverrideShipper(e.target.value); setOverrideService(''); setLabelError(null) }}
                     className="flex-1 bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-3 text-base outline-none focus:border-brand-orange"
                   >
                     <option value="">Auto (z Nextis)</option>
@@ -295,7 +444,6 @@ export default function PackageView() {
                       <option key={s.code} value={s.code}>{s.name || s.code}</option>
                     ))}
                   </select>
-
                   {overrideShipper && selectedShipperObj?.services?.length > 0 && (
                     <select
                       value={overrideService}
@@ -311,14 +459,12 @@ export default function PackageView() {
                     </select>
                   )}
                 </div>
-
                 {overrideShipper && !overrideService && selectedShipperObj?.services?.length > 0 && (
                   <div className="text-yellow-400 text-sm mt-2">Vyberte službu přepravce</div>
                 )}
               </div>
             )}
 
-            {/* Label generation error */}
             {labelError && (
               <div className="bg-red-900/40 border border-red-600 rounded-xl p-4">
                 <div className="text-red-400 font-bold text-base mb-1">Chyba generování etikety (LP API):</div>
@@ -326,7 +472,6 @@ export default function PackageView() {
               </div>
             )}
 
-            {/* Skip all button */}
             {!allVerified && (
               <button
                 onClick={handleSkipAll}
@@ -336,7 +481,6 @@ export default function PackageView() {
               </button>
             )}
 
-            {/* Generate label button */}
             {allVerified && !labelData && (
               <button
                 onClick={handleGenerateLabel}
@@ -346,11 +490,10 @@ export default function PackageView() {
               >
                 {generating ? 'Generuji...' : overrideShipper
                   ? `GENERUJ (${overrideShipper}${overrideService ? '/' + overrideService : ''})`
-                  : 'GENERUJ ETIKETU'}
+                  : `GENERUJ ETIKETU${parcels.length > 1 ? ` (${parcels.length} balíky)` : ''}`}
               </button>
             )}
 
-            {/* Label generated - show barcode */}
             {labelData && (
               <div className="mt-4">
                 <BarcodeAction
@@ -371,7 +514,6 @@ export default function PackageView() {
               </div>
             )}
 
-            {/* Action barcode for confirming label generation */}
             {allVerified && !labelData && (
               <BarcodeAction
                 value="ACTION:GENERATE_LABEL"
