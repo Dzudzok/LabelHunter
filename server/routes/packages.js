@@ -452,6 +452,9 @@ router.post('/:id/generate-label', async (req, res, next) => {
 
     if (updateError) throw updateError;
 
+    // Delete items after label generated — not needed anymore, LP desktop is the archive
+    await supabase.from('delivery_note_items').delete().eq('delivery_note_id', id);
+
     // Send shipping confirmation email — fire and forget, don't block response
     if (process.env.DISABLE_EMAIL !== 'true') {
       const dnWithItems = { ...updated, items };
