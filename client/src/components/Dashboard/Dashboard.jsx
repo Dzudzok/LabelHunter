@@ -4,6 +4,7 @@ import { useAuthStore } from '../../store/authStore'
 import { usePackageStore } from '../../store/packageStore'
 import { useScanner } from '../../hooks/useScanner'
 import { classifyBarcode } from '../../utils/barcode'
+import { api } from '../../services/api'
 import StatsBar from './StatsBar'
 import PackageCard from './PackageCard'
 import TransportMapModal from './TransportMapModal'
@@ -23,14 +24,20 @@ export default function Dashboard() {
     getPackageByInvoice,
   } = usePackageStore()
 
-  const [searchValue, setSearchValue] = useState('')
+  const [scanValue, setScanValue] = useState('')
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const [importHourFrom, setImportHourFrom] = useState('06')
   const [importHourTo, setImportHourTo] = useState('18')
   const [showTransportMap, setShowTransportMap] = useState(false)
   const [showStats, setShowStats] = useState(false)
-  const searchRef = useRef(null)
+
+  // Right panel search
+  const [searchQuery, setSearchQuery] = useState('')
+  const [searchResults, setSearchResults] = useState(null) // null = show today's sent
+  const [searchLoading, setSearchLoading] = useState(false)
+
+  const scanRef = useRef(null)
 
   // Fetch packages on mount and date change
   useEffect(() => {
@@ -45,14 +52,14 @@ export default function Dashboard() {
     return () => clearInterval(interval)
   }, [selectedDate, fetchPackages])
 
-  // Auto-focus search input
+  // Auto-focus scan input
   useEffect(() => {
-    if (searchRef.current) {
-      searchRef.current.focus()
+    if (scanRef.current) {
+      scanRef.current.focus()
     }
   }, [])
 
-  // Handle scanned barcode
+  // Handle scanned barcode (physical scanner)
   const handleScan = useCallback(async (code) => {
     const classified = classifyBarcode(code)
     if (classified.type === 'invoice') {
@@ -62,12 +69,10 @@ export default function Dashboard() {
           navigate(`/package/${pkg.id}`)
         }
       } catch {
-        setSearchValue(code)
+        setScanValue(code)
       }
-    } else if (classified.type === 'action') {
-      // Handle action barcodes
     } else {
-      setSearchValue(code)
+      setScanValue(code)
     }
   }, [getPackageByInvoice, navigate])
 
@@ -80,7 +85,7 @@ export default function Dashboard() {
     setSelectedDate(d.toISOString().split('T')[0])
   }
 
-  // Import from Nextis for selected date + hour range
+  // Import from Nextis
   const handleImport = async () => {
     setImporting(true)
     setImportMsg('')
@@ -88,72 +93,92 @@ export default function Dashboard() {
       const dateFrom = `${selectedDate}T${importHourFrom}:00:00.000Z`
       const dateTo   = `${selectedDate}T${importHourTo}:59:59.000Z`
       const result = await importFromNextis(null, null, dateFrom, dateTo)
-      setImportMsg(`✓ Importováno: ${result.imported || 0}, přeskočeno: ${result.skipped || 0} (celkem: ${result.total || 0})`)
+      setImportMsg(`✓ ${result.imported || 0} importováno, ${result.skipped || 0} přeskočeno`)
       fetchPackages(selectedDate)
     } catch (err) {
-      setImportMsg('✗ Chyba: ' + (err?.response?.data?.error || err.message))
+      setImportMsg('✗ ' + (err?.response?.data?.error || err.message))
     } finally {
       setImporting(false)
       setTimeout(() => setImportMsg(''), 6000)
     }
   }
 
-  // Search submit
-  const handleSearchSubmit = async (e) => {
+  // Scan input submit — navigate to package
+  const handleScanSubmit = async (e) => {
     e.preventDefault()
-    if (!searchValue.trim()) return
+    const val = scanValue.trim()
+    if (!val) return
     try {
-      const pkg = await getPackageByInvoice(searchValue.trim())
+      const pkg = await getPackageByInvoice(val)
       if (pkg) {
         navigate(`/package/${pkg.id}`)
       }
     } catch {
-      // Not found
+      // not found — keep value shown
     }
-    setSearchValue('')
+    setScanValue('')
   }
 
-  // Group packages by status
+  // Right panel search
+  const handleSearch = async (e) => {
+    e.preventDefault()
+    const q = searchQuery.trim()
+    if (!q) return
+    setSearchLoading(true)
+    try {
+      const res = await api.get('/packages', { params: { search: q } })
+      setSearchResults(res.data)
+    } catch (err) {
+      console.error(err)
+      setSearchResults([])
+    } finally {
+      setSearchLoading(false)
+    }
+  }
+
+  const clearSearch = () => {
+    setSearchQuery('')
+    setSearchResults(null)
+  }
+
+  // Package groups for left column
   const pendingPackages = packages.filter(p =>
     ['pending', 'scanning', 'verified'].includes(p.status)
   )
-  const sentPackages = packages.filter(p =>
+
+  // Right column: today's sent packages OR search results
+  const sentPackagesToday = packages.filter(p =>
     ['label_generated', 'shipped', 'delivered'].includes(p.status)
   )
-  const otherPackages = packages.filter(p =>
-    ['returned', 'problem'].includes(p.status)
-  )
+  const rightPackages = searchResults !== null ? searchResults : sentPackagesToday
 
   const initials = worker?.name
     ? worker.name.split(' ').map(n => n[0]).join('').toUpperCase()
     : '?'
 
   return (
-    <div className="min-h-screen bg-navy-800">
+    <div className="min-h-screen bg-navy-800 flex flex-col">
       {/* Top bar */}
-      <div className="bg-navy-900 border-b border-navy-700 px-6 py-4">
+      <div className="bg-navy-900 border-b border-navy-700 px-6 py-3">
         <div className="flex items-center justify-between gap-4 flex-wrap">
-          {/* Left: Worker info */}
+          {/* Worker info */}
           <div className="flex items-center gap-3">
-            <div className="w-12 h-12 rounded-full bg-brand-orange flex items-center justify-center text-lg font-bold text-white">
+            <div className="w-10 h-10 rounded-full bg-brand-orange flex items-center justify-center text-base font-bold text-white">
               {initials}
             </div>
             <div>
-              <div className="text-lg font-semibold text-white">{worker?.name}</div>
-              <button
-                onClick={logout}
-                className="text-sm text-gray-500 hover:text-red-400 min-h-0"
-              >
-                Odhlasit
+              <div className="text-base font-semibold text-white">{worker?.name}</div>
+              <button onClick={logout} className="text-xs text-gray-500 hover:text-red-400 min-h-0">
+                Odhlásit
               </button>
             </div>
           </div>
 
-          {/* Center: Date navigation */}
+          {/* Date navigation */}
           <div className="flex items-center gap-2">
             <button
               onClick={() => changeDate(-1)}
-              className="bg-navy-700 hover:bg-navy-600 px-4 py-2 rounded-lg text-xl text-white min-h-0"
+              className="bg-navy-700 hover:bg-navy-600 px-3 py-1.5 rounded-lg text-lg text-white min-h-0"
             >
               &larr;
             </button>
@@ -161,25 +186,24 @@ export default function Dashboard() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-navy-700 border border-navy-600 rounded-lg px-4 py-2 text-xl text-white min-h-0"
+              className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-1.5 text-lg text-white min-h-0"
             />
             <button
               onClick={() => changeDate(1)}
-              className="bg-navy-700 hover:bg-navy-600 px-4 py-2 rounded-lg text-xl text-white min-h-0"
+              className="bg-navy-700 hover:bg-navy-600 px-3 py-1.5 rounded-lg text-lg text-white min-h-0"
             >
               &rarr;
             </button>
           </div>
 
-          {/* Right: Import + settings */}
-          <div className="flex items-center gap-3 flex-wrap">
-            {/* Hour range filter */}
-            <div className="flex items-center gap-1 text-gray-300 text-lg">
+          {/* Import controls */}
+          <div className="flex items-center gap-2 flex-wrap">
+            <div className="flex items-center gap-1 text-gray-300 text-sm">
               <span>Od</span>
               <select
                 value={importHourFrom}
                 onChange={e => setImportHourFrom(e.target.value)}
-                className="bg-navy-700 border border-navy-600 rounded-lg px-2 py-1 text-white min-h-0 text-lg"
+                className="bg-navy-700 border border-navy-600 rounded px-2 py-1 text-white min-h-0 text-sm"
               >
                 {Array.from({length: 24}, (_, i) => String(i).padStart(2,'0')).map(h => (
                   <option key={h} value={h}>{h}:00</option>
@@ -189,7 +213,7 @@ export default function Dashboard() {
               <select
                 value={importHourTo}
                 onChange={e => setImportHourTo(e.target.value)}
-                className="bg-navy-700 border border-navy-600 rounded-lg px-2 py-1 text-white min-h-0 text-lg"
+                className="bg-navy-700 border border-navy-600 rounded px-2 py-1 text-white min-h-0 text-sm"
               >
                 {Array.from({length: 24}, (_, i) => String(i).padStart(2,'0')).map(h => (
                   <option key={h} value={h}>{h}:59</option>
@@ -197,28 +221,26 @@ export default function Dashboard() {
               </select>
             </div>
             {importMsg && (
-              <span className="text-brand-orange font-semibold text-sm">{importMsg}</span>
+              <span className="text-brand-orange font-semibold text-xs">{importMsg}</span>
             )}
             <button
               onClick={handleImport}
               disabled={importing}
-              className="bg-brand-orange hover:bg-brand-orange-dark text-white font-bold px-6 py-3 rounded-xl text-lg disabled:opacity-50 transition-colors"
+              className="bg-brand-orange hover:bg-brand-orange-dark text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
             >
-              {importing ? 'Importuji...' : 'Importuj teraz'}
+              {importing ? 'Importuji...' : 'Importuj'}
             </button>
             <button
               onClick={() => setShowStats(true)}
-              className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-4 py-3 rounded-xl text-lg font-semibold transition-colors"
-              title="Statistiky"
+              className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
-              &#x1F4CA; Statistiky
+              Statistiky
             </button>
             <button
               onClick={() => setShowTransportMap(true)}
-              className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-4 py-3 rounded-xl text-lg font-semibold transition-colors"
-              title="Mapování přepravců"
+              className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
-              &#x1F69A; Přepravci
+              Přepravci
             </button>
           </div>
         </div>
@@ -227,86 +249,106 @@ export default function Dashboard() {
       {showStats && <StatsModal date={selectedDate} onClose={() => setShowStats(false)} />}
       {showTransportMap && <TransportMapModal onClose={() => setShowTransportMap(false)} />}
 
-      {/* Main content */}
-      <div className="max-w-7xl mx-auto px-6 py-6">
-        {/* Stats */}
+      {/* Stats bar */}
+      <div className="px-6 pt-4">
         <StatsBar packages={packages} />
+      </div>
 
-        {/* Search input */}
-        <form onSubmit={handleSearchSubmit} className="mt-6">
-          <input
-            ref={searchRef}
-            type="text"
-            value={searchValue}
-            onChange={(e) => setSearchValue(e.target.value)}
-            placeholder="Naskenuj cislo faktury..."
-            className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-6 py-5 text-3xl text-white placeholder-gray-600 outline-none transition-colors"
-            style={{ minHeight: '80px' }}
-          />
-        </form>
+      {/* 2-column layout */}
+      <div className="flex flex-1 gap-0 px-6 py-4 overflow-hidden" style={{ minHeight: 0 }}>
 
-        {/* Loading indicator */}
-        {loading && (
-          <div className="text-center py-8 text-gray-400 text-xl">
-            Nacitani baliku...
-          </div>
-        )}
+        {/* LEFT COLUMN — scan input + pending queue */}
+        <div className="flex flex-col w-1/2 pr-3 overflow-hidden">
+          {/* Scan input */}
+          <form onSubmit={handleScanSubmit}>
+            <input
+              ref={scanRef}
+              type="text"
+              value={scanValue}
+              onChange={(e) => setScanValue(e.target.value)}
+              placeholder="Naskenuj číslo faktury..."
+              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-5 py-4 text-2xl text-white placeholder-gray-600 outline-none transition-colors"
+            />
+          </form>
 
-        {/* Empty state */}
-        {!loading && packages.length === 0 && (
-          <div className="text-center py-16">
-            <div className="text-5xl mb-4">&#128230;</div>
-            <div className="text-2xl text-gray-400 mb-2">Zadne baliky pro tento den</div>
-            <div className="text-lg text-gray-500">
-              Zkuste importovat data z Nextis nebo zmente datum
-            </div>
-          </div>
-        )}
-
-        {/* Pending packages */}
-        {pendingPackages.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-bold text-red-400 mb-4 flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-red-500" />
-              K vyrizeni ({pendingPackages.length})
+          {/* Pending list */}
+          <div className="flex items-center gap-2 mt-4 mb-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
+            <h2 className="text-base font-bold text-red-400">
+              K vyřízení ({loading ? '…' : pendingPackages.length})
             </h2>
-            <div className="flex flex-col gap-3">
-              {pendingPackages.map(pkg => (
-                <PackageCard key={pkg.id} pkg={pkg} />
-              ))}
-            </div>
           </div>
-        )}
 
-        {/* Sent packages */}
-        {sentPackages.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-bold text-green-400 mb-4 flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-green-500" />
-              Odeslano ({sentPackages.length})
-            </h2>
-            <div className="flex flex-col gap-3">
-              {sentPackages.map(pkg => (
-                <PackageCard key={pkg.id} pkg={pkg} />
-              ))}
-            </div>
+          <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
+            {loading && (
+              <div className="text-center py-8 text-gray-500 text-sm">Načítám...</div>
+            )}
+            {!loading && pendingPackages.length === 0 && (
+              <div className="text-center py-12 text-gray-500 text-sm">
+                Žádné balíky k vyřízení
+              </div>
+            )}
+            {pendingPackages.map(pkg => (
+              <PackageCard key={pkg.id} pkg={pkg} />
+            ))}
           </div>
-        )}
+        </div>
 
-        {/* Other packages */}
-        {otherPackages.length > 0 && (
-          <div className="mt-8">
-            <h2 className="text-xl font-bold text-gray-400 mb-4 flex items-center gap-2">
-              <span className="w-3 h-3 rounded-full bg-gray-500" />
-              Ostatni ({otherPackages.length})
+        {/* RIGHT COLUMN — search + sent packages */}
+        <div className="flex flex-col w-1/2 pl-3 border-l border-navy-700 overflow-hidden">
+          {/* Search input */}
+          <form onSubmit={handleSearch} className="flex gap-2">
+            <input
+              type="text"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder="Hledat balík (FV, zákazník, číslo...)"
+              className="flex-1 bg-navy-900 border-2 border-navy-600 focus:border-blue-500 rounded-xl px-5 py-4 text-xl text-white placeholder-gray-600 outline-none transition-colors"
+            />
+            <button
+              type="submit"
+              disabled={searchLoading}
+              className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 rounded-xl text-sm disabled:opacity-50 transition-colors"
+            >
+              {searchLoading ? '...' : 'Hledat'}
+            </button>
+            {searchResults !== null && (
+              <button
+                type="button"
+                onClick={clearSearch}
+                className="bg-navy-600 hover:bg-navy-500 text-gray-300 px-4 rounded-xl text-sm transition-colors"
+              >
+                × Zrušit
+              </button>
+            )}
+          </form>
+
+          {/* Section header */}
+          <div className="flex items-center gap-2 mt-4 mb-2">
+            <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
+            <h2 className="text-base font-bold text-green-400">
+              {searchResults !== null
+                ? `Výsledky hledání (${rightPackages.length})`
+                : `Odesláno dnes (${sentPackagesToday.length})`
+              }
             </h2>
-            <div className="flex flex-col gap-3">
-              {otherPackages.map(pkg => (
-                <PackageCard key={pkg.id} pkg={pkg} />
-              ))}
-            </div>
           </div>
-        )}
+
+          <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
+            {searchLoading && (
+              <div className="text-center py-8 text-gray-500 text-sm">Hledám...</div>
+            )}
+            {!searchLoading && rightPackages.length === 0 && (
+              <div className="text-center py-12 text-gray-500 text-sm">
+                {searchResults !== null ? 'Nic nenalezeno' : 'Žádné odeslané balíky dnes'}
+              </div>
+            )}
+            {!searchLoading && rightPackages.map(pkg => (
+              <PackageCard key={pkg.id} pkg={pkg} />
+            ))}
+          </div>
+        </div>
+
       </div>
     </div>
   )
