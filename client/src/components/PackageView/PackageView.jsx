@@ -245,11 +245,10 @@ export default function PackageView() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-hidden px-4 py-3">
-        <div className="grid grid-cols-1 lg:grid-cols-5 gap-3 h-full">
+      <div className="flex-1 overflow-hidden flex gap-3 px-4 py-3">
 
-          {/* LEFT SIDE - 60% */}
-          <div className="lg:col-span-3 flex flex-col gap-3 overflow-y-auto">
+          {/* LEFT SIDE - 55% */}
+          <div className="w-[55%] shrink-0 flex flex-col gap-3 overflow-y-auto">
 
             {/* Customer info / Address edit */}
             <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
@@ -415,8 +414,8 @@ export default function PackageView() {
             )}
           </div>
 
-          {/* RIGHT SIDE - 40% */}
-          <div className="lg:col-span-2 flex flex-col gap-2 overflow-y-auto">
+          {/* RIGHT SIDE - 45% */}
+          <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
             <div className="flex items-center justify-between">
               <h2 className="text-base font-bold text-theme-primary">Produkty</h2>
               <span className="text-theme-secondary text-sm font-bold">
@@ -541,7 +540,6 @@ export default function PackageView() {
               />
             )}
           </div>
-        </div>
       </div>
 
       {/* History — fixed bottom bar, expandable */}
