@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 
 const ERROR_TYPES = [
-  { value: 'wrong_qty', label: 'Spatne mnozstvi', icon: '#' },
-  { value: 'missing_product', label: 'Chybejici zbozi', icon: '!' },
-  { value: 'wrong_product', label: 'Jiny tovar', icon: '~' },
+  { value: 'wrong_qty', label: 'Spatne mnozstvi' },
+  { value: 'missing_product', label: 'Chybejici zbozi' },
+  { value: 'wrong_product', label: 'Jiny tovar' },
 ]
 
 export default function HunterPanel({ packageId, workerId, itemsCount }) {
@@ -41,16 +41,18 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
   useEffect(() => { fetchData() }, [packageId])
 
   const handleAssign = async (hunterId) => {
-    setSelectedHunter(hunterId)
+    const hId = parseInt(hunterId)
+    if (!hId) return
+    setSelectedHunter(hId)
     try {
       const res = await api.post('/hunters/assign', {
         deliveryNoteId: packageId,
-        hunterId,
+        hunterId: hId,
         workerId,
         itemsCount: itemsCount || 0,
       })
       setAssignment(res.data)
-      setSavedMsg('Szykowacz prirazen')
+      setSavedMsg('OK')
       setTimeout(() => setSavedMsg(''), 2000)
     } catch (err) {
       console.error('Failed to assign hunter:', err)
@@ -68,9 +70,8 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
         errorType,
       })
       setShowErrorPanel(false)
-      setSavedMsg('Chyba zaznamenana!')
+      setSavedMsg('Chyba!')
       setTimeout(() => setSavedMsg(''), 3000)
-      // Refresh errors
       const res = await api.get(`/hunters/errors/${packageId}`)
       setErrors(res.data || [])
     } catch (err) {
@@ -80,95 +81,71 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
     }
   }
 
-  if (loading) {
-    return <div className="text-theme-muted text-sm py-2">Nacitam szykowacze...</div>
-  }
+  if (loading) return null
 
-  if (hunters.length === 0) {
-    return (
-      <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
-        <div className="text-theme-muted text-sm">Zadni szykowaczi. Pridejte je pres tlacitko "Hunter" v hlavicce.</div>
-      </div>
-    )
-  }
+  if (hunters.length === 0) return null
 
   const hunterName = hunters.find(h => h.id === selectedHunter)?.name
 
   return (
-    <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
-      <div className="flex items-center justify-between mb-3">
-        <h3 className="text-base font-bold text-theme-primary">Kdo szykoval?</h3>
+    <div className="bg-navy-700 rounded-xl p-3 border border-navy-600">
+      {/* Single row: label + dropdown + error btn + status */}
+      <div className="flex items-center gap-2">
+        <span className="text-sm font-bold text-theme-secondary shrink-0">Szykoval:</span>
+        <select
+          value={selectedHunter || ''}
+          onChange={e => handleAssign(e.target.value)}
+          className="flex-1 bg-navy-900 border border-navy-600 text-theme-primary rounded-lg px-2 py-2 text-sm outline-none focus:border-brand-orange min-w-0"
+        >
+          <option value="">— vyber —</option>
+          {hunters.map(h => (
+            <option key={h.id} value={h.id}>{h.name}</option>
+          ))}
+        </select>
+
+        {selectedHunter && !showErrorPanel && (
+          <button
+            onClick={() => setShowErrorPanel(true)}
+            className="bg-red-900/50 hover:bg-red-900/70 border border-red-700 text-red-400 px-3 py-2 rounded-lg text-sm font-bold shrink-0 transition-colors"
+          >
+            Chyba
+          </button>
+        )}
+
         {savedMsg && (
-          <span className="text-green-400 text-xs font-semibold">{savedMsg}</span>
+          <span className="text-green-400 text-xs font-bold shrink-0">{savedMsg}</span>
         )}
       </div>
 
-      {/* Hunter selection grid */}
-      <div className="grid grid-cols-2 gap-2 mb-3">
-        {hunters.map(h => (
-          <button
-            key={h.id}
-            onClick={() => handleAssign(h.id)}
-            className={`px-4 py-3 rounded-lg text-base font-semibold transition-colors ${
-              selectedHunter === h.id
-                ? 'bg-brand-orange text-white'
-                : 'bg-navy-800 border border-navy-600 text-theme-secondary hover:text-theme-primary hover:border-brand-orange'
-            }`}
-          >
-            {h.name}
-          </button>
-        ))}
-      </div>
-
-      {/* Error button — only if hunter is selected */}
-      {selectedHunter && (
-        <div className="border-t border-navy-600 pt-3 mt-2">
-          {!showErrorPanel ? (
+      {/* Error type selection — inline row */}
+      {showErrorPanel && selectedHunter && (
+        <div className="flex items-center gap-2 mt-2">
+          {ERROR_TYPES.map(et => (
             <button
-              onClick={() => setShowErrorPanel(true)}
-              className="w-full bg-red-900/40 hover:bg-red-900/60 border border-red-700 text-red-400 hover:text-red-300 py-3 rounded-lg text-base font-bold transition-colors"
+              key={et.value}
+              onClick={() => handleReportError(et.value)}
+              disabled={savingError}
+              className="flex-1 bg-red-900/30 hover:bg-red-900/50 border border-red-700 text-red-300 py-2 rounded-lg text-xs font-semibold transition-colors disabled:opacity-50"
             >
-              Chyba szykowacza ({hunterName})
+              {et.label}
             </button>
-          ) : (
-            <div className="flex flex-col gap-2">
-              <div className="text-red-400 text-sm font-bold mb-1">
-                Typ chyby — {hunterName}:
-              </div>
-              {ERROR_TYPES.map(et => (
-                <button
-                  key={et.value}
-                  onClick={() => handleReportError(et.value)}
-                  disabled={savingError}
-                  className="w-full bg-red-900/30 hover:bg-red-900/50 border border-red-700 text-red-300 hover:text-red-200 py-3 rounded-lg text-base font-semibold transition-colors disabled:opacity-50"
-                >
-                  {et.icon} {et.label}
-                </button>
-              ))}
-              <button
-                onClick={() => setShowErrorPanel(false)}
-                className="text-theme-muted text-sm hover:text-theme-secondary mt-1"
-              >
-                Zrusit
-              </button>
-            </div>
-          )}
+          ))}
+          <button
+            onClick={() => setShowErrorPanel(false)}
+            className="text-theme-muted hover:text-theme-secondary text-lg px-2 shrink-0"
+          >
+            &times;
+          </button>
         </div>
       )}
 
-      {/* Show errors on this package */}
+      {/* Compact error badges */}
       {errors.length > 0 && (
-        <div className="border-t border-navy-600 pt-3 mt-3">
-          <div className="text-red-400 text-xs font-bold mb-2">Zaznamenane chyby ({errors.length}):</div>
+        <div className="flex flex-wrap gap-1 mt-2">
           {errors.map(e => (
-            <div key={e.id} className="flex items-center gap-2 text-xs text-theme-secondary py-1">
-              <span className="text-red-400 font-semibold">
-                {ERROR_TYPES.find(t => t.value === e.error_type)?.label || e.error_type}
-              </span>
-              <span className="text-theme-muted">
-                — {e.hunters?.name || '?'} — {new Date(e.created_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })}
-              </span>
-            </div>
+            <span key={e.id} className="bg-red-900/40 text-red-400 text-xs px-2 py-0.5 rounded font-semibold">
+              {ERROR_TYPES.find(t => t.value === e.error_type)?.label || e.error_type}
+            </span>
           ))}
         </div>
       )}
