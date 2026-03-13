@@ -85,9 +85,13 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
 
   const hunterName = hunters.find(h => h.id === selectedHunter)?.name
 
-  // Calculate grid: split hunters into rows that fill height
-  const cols = Math.ceil(hunters.length / 2) // 2 rows max
-  const hasSecondRow = hunters.length > cols
+  // Dynamic grid: find longest name to determine max cols
+  const longestName = Math.max(...hunters.map(h => h.name.length), 1)
+  // ~8ch per character + padding, panel is ~50vw (~700px), so max cols = floor(700 / (longestName * 8 + 24))
+  // Simpler heuristic: if names are long (>12ch) use 5 cols, medium (>8ch) use 6, short use 7
+  const maxCols = longestName > 14 ? 4 : longestName > 10 ? 5 : longestName > 7 ? 6 : 7
+  const cols = Math.min(hunters.length, maxCols)
+  const rows = Math.ceil(hunters.length / cols)
 
   return (
     <div className="bg-navy-700 rounded-xl p-4 border border-navy-600 flex-1 flex flex-col">
@@ -111,17 +115,17 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
 
       {/* Hunter tiles — auto-size to fill available space */}
       <div
-        className="grid gap-2 flex-1 content-stretch"
+        className="grid gap-2 flex-1"
         style={{
           gridTemplateColumns: `repeat(${cols}, 1fr)`,
-          gridTemplateRows: hasSecondRow ? '1fr 1fr' : '1fr',
+          gridTemplateRows: `repeat(${rows}, 1fr)`,
         }}
       >
         {hunters.map(h => (
           <button
             key={h.id}
             onClick={() => handleAssign(h.id)}
-            className={`rounded-lg text-lg font-semibold transition-colors truncate flex items-center justify-center ${
+            className={`rounded-lg text-base font-semibold transition-colors flex items-center justify-center px-1 ${
               selectedHunter === h.id
                 ? 'bg-brand-orange text-white'
                 : 'bg-navy-800 border border-navy-600 text-theme-secondary hover:text-theme-primary hover:border-brand-orange'
