@@ -37,6 +37,13 @@ export const usePackageStore = create((set, get) => ({
     return res.data
   },
 
+  importFromLP: async (limit = null) => {
+    const params = new URLSearchParams()
+    if (limit) params.set('limit', limit)
+    const res = await api.post(`/lp-import/import?${params.toString()}`, null, { timeout: 300000 })
+    return res.data
+  },
+
   getPackageByInvoice: async (invoice) => {
     const res = await api.get(`/packages/by-invoice/${invoice}`)
     return res.data

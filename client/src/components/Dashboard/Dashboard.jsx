@@ -26,11 +26,13 @@ export default function Dashboard() {
     setSelectedDate,
     fetchPackages,
     importFromNextis,
+    importFromLP,
     getPackageByInvoice,
   } = usePackageStore()
 
   const [scanValue, setScanValue] = useState('')
   const [importing, setImporting] = useState(false)
+  const [importingLP, setImportingLP] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const [showTransportMap, setShowTransportMap] = useState(false)
   const [showStats, setShowStats] = useState(false)
@@ -107,6 +109,22 @@ export default function Dashboard() {
       setImportMsg('✗ ' + (err?.response?.data?.error || err.message))
     } finally {
       setImporting(false)
+      setTimeout(() => setImportMsg(''), 6000)
+    }
+  }
+
+  // Import from LP MSSQL
+  const handleImportLP = async () => {
+    setImportingLP(true)
+    setImportMsg('')
+    try {
+      const result = await importFromLP()
+      setImportMsg(`LP: ${result.imported || 0} importováno, ${result.skipped || 0} přeskočeno`)
+      fetchPackages(selectedDate)
+    } catch (err) {
+      setImportMsg('LP: ' + (err?.response?.data?.error || err.message))
+    } finally {
+      setImportingLP(false)
       setTimeout(() => setImportMsg(''), 6000)
     }
   }
@@ -215,6 +233,13 @@ export default function Dashboard() {
               className="bg-brand-orange hover:bg-brand-orange-dark text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
             >
               {importing ? 'Importuji...' : 'Importuj'}
+            </button>
+            <button
+              onClick={handleImportLP}
+              disabled={importingLP}
+              className="bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
+            >
+              {importingLP ? 'LP...' : 'Import LP'}
             </button>
             <button
               onClick={() => setShowSearch(true)}

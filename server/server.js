@@ -29,6 +29,7 @@ app.use('/api/returns', require('./routes/returns'));
 app.use('/api/labelprinter', require('./routes/labelprinter'));
 app.use('/api/config', require('./routes/config'));
 app.use('/api/hunters', require('./routes/hunters'));
+app.use('/api/lp-import', require('./routes/lpImport'));
 
 // Health check
 app.get('/api/health', (req, res) => {
