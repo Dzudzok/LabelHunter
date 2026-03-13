@@ -6,6 +6,7 @@ import { useScanner } from '../../hooks/useScanner'
 import { classifyBarcode } from '../../utils/barcode'
 import { api } from '../../services/api'
 import ItemList from './ItemList'
+import HunterPanel from './HunterPanel'
 import BarcodeAction from '../BarcodeAction/BarcodeAction'
 
 export default function PackageView() {
@@ -443,6 +444,13 @@ export default function PackageView() {
                   e.target.value = ''
                 }
               }}
+            />
+
+            {/* Hunter assignment */}
+            <HunterPanel
+              packageId={parseInt(id)}
+              workerId={worker?.id}
+              itemsCount={goodsItems.length}
             />
 
             {/* Shipper override */}

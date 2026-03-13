@@ -11,6 +11,8 @@ import TransportMapModal from './TransportMapModal'
 import StatsModal from './StatsModal'
 import SearchPanel from '../Search/SearchPanel'
 import { useThemeStore } from '../../store/themeStore'
+import HunterManageModal from './HunterManageModal'
+import HunterStatsModal from './HunterStatsModal'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -33,6 +35,8 @@ export default function Dashboard() {
   const [showTransportMap, setShowTransportMap] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
+  const [showHunterManage, setShowHunterManage] = useState(false)
+  const [showHunterStats, setShowHunterStats] = useState(false)
 
   // Right panel search
   const [searchQuery, setSearchQuery] = useState('')
@@ -219,6 +223,18 @@ export default function Dashboard() {
               Vyhledávání
             </button>
             <button
+              onClick={() => setShowHunterManage(true)}
+              className="bg-purple-700 hover:bg-purple-600 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+            >
+              Hunter
+            </button>
+            <button
+              onClick={() => setShowHunterStats(true)}
+              className="bg-purple-900 hover:bg-purple-800 text-purple-300 hover:text-purple-200 px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+            >
+              Hunter Stats
+            </button>
+            <button
               onClick={() => setShowStats(true)}
               className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
@@ -244,6 +260,8 @@ export default function Dashboard() {
       {showSearch && <SearchPanel isOpen={showSearch} onClose={() => setShowSearch(false)} />}
       {showStats && <StatsModal date={selectedDate} onClose={() => setShowStats(false)} />}
       {showTransportMap && <TransportMapModal onClose={() => setShowTransportMap(false)} />}
+      {showHunterManage && <HunterManageModal onClose={() => setShowHunterManage(false)} />}
+      {showHunterStats && <HunterStatsModal onClose={() => setShowHunterStats(false)} />}
 
       {/* Stats bar */}
       <div className="px-6 pt-4">

@@ -28,6 +28,7 @@ app.use('/api/email', require('./routes/email'));
 app.use('/api/returns', require('./routes/returns'));
 app.use('/api/labelprinter', require('./routes/labelprinter'));
 app.use('/api/config', require('./routes/config'));
+app.use('/api/hunters', require('./routes/hunters'));
 
 // Health check
 app.get('/api/health', (req, res) => {
