@@ -45,19 +45,19 @@ export default function TransportMapModal({ onClose }) {
   const servicesFor = (code) => shippers.find(s => s.code === code)?.services || []
 
   return (
-    <div className="fixed inset-0 bg-black/70 z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto">
+    <div className="fixed inset-0 overlay-bg z-50 flex items-start justify-center pt-8 px-4 overflow-y-auto">
       <div className="bg-navy-800 border border-navy-600 rounded-2xl w-full max-w-4xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-navy-700">
-          <h2 className="text-xl font-bold text-white">Mapování přepravců (Nextis → LP API)</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-white text-2xl min-h-0 leading-none">&times;</button>
+          <h2 className="text-xl font-bold text-theme-primary">Mapování přepravců (Nextis → LP API)</h2>
+          <button onClick={onClose} className="text-theme-secondary hover:text-theme-primary text-2xl min-h-0 leading-none">&times;</button>
         </div>
 
         {/* Table */}
         <div className="px-6 py-4 overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="text-gray-400 text-left border-b border-navy-700">
+              <tr className="text-theme-secondary text-left border-b border-navy-700">
                 <th className="pb-2 pr-4 font-semibold">Název z Nextis</th>
                 <th className="pb-2 pr-4 font-semibold">Přepravce (LP)</th>
                 <th className="pb-2 pr-4 font-semibold">Služba (LP)</th>
@@ -71,7 +71,7 @@ export default function TransportMapModal({ onClose }) {
                     <input
                       value={row.nextisName || ''}
                       onChange={e => update(i, 'nextisName', e.target.value)}
-                      className="w-full bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-brand-orange"
+                      className="w-full bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary text-sm outline-none focus:border-brand-orange"
                       placeholder="Název přepravce z Nextis..."
                     />
                   </td>
@@ -79,7 +79,7 @@ export default function TransportMapModal({ onClose }) {
                     <select
                       value={row.shipperCode || ''}
                       onChange={e => update(i, 'shipperCode', e.target.value)}
-                      className="w-full bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-brand-orange"
+                      className="w-full bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary text-sm outline-none focus:border-brand-orange"
                     >
                       <option value="">— Osobní odběr —</option>
                       {shippers.map(s => (
@@ -92,7 +92,7 @@ export default function TransportMapModal({ onClose }) {
                       <select
                         value={row.serviceCode || ''}
                         onChange={e => update(i, 'serviceCode', e.target.value)}
-                        className="w-full bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-white text-sm outline-none focus:border-brand-orange"
+                        className="w-full bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary text-sm outline-none focus:border-brand-orange"
                       >
                         <option value="">— Vyberte službu —</option>
                         {servicesFor(row.shipperCode).map(svc => (
@@ -102,7 +102,7 @@ export default function TransportMapModal({ onClose }) {
                         ))}
                       </select>
                     ) : (
-                      <span className="text-gray-500 px-3">—</span>
+                      <span className="text-theme-muted px-3">—</span>
                     )}
                   </td>
                   <td className="py-2">
@@ -135,7 +135,7 @@ export default function TransportMapModal({ onClose }) {
           <div className="flex gap-3">
             <button
               onClick={onClose}
-              className="bg-navy-600 hover:bg-navy-500 text-gray-300 px-5 py-2 rounded-xl text-base font-semibold min-h-0"
+              className="bg-navy-600 hover:bg-navy-500 text-theme-secondary px-5 py-2 rounded-xl text-base font-semibold min-h-0"
             >
               Zavřít
             </button>

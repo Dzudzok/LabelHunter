@@ -10,9 +10,11 @@ import PackageCard from './PackageCard'
 import TransportMapModal from './TransportMapModal'
 import StatsModal from './StatsModal'
 import SearchPanel from '../Search/SearchPanel'
+import { useThemeStore } from '../../store/themeStore'
 
 export default function Dashboard() {
   const navigate = useNavigate()
+  const { theme, toggleTheme } = useThemeStore()
   const worker = useAuthStore(s => s.worker)
   const logout = useAuthStore(s => s.logout)
   const {
@@ -165,8 +167,8 @@ export default function Dashboard() {
               {initials}
             </div>
             <div>
-              <div className="text-base font-semibold text-white">{worker?.name}</div>
-              <button onClick={logout} className="text-xs text-gray-500 hover:text-red-400 min-h-0">
+              <div className="text-base font-semibold text-theme-primary">{worker?.name}</div>
+              <button onClick={logout} className="text-xs text-theme-muted hover:text-red-400 min-h-0">
                 Odhlásit
               </button>
             </div>
@@ -176,7 +178,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2">
             <button
               onClick={() => changeDate(-1)}
-              className="bg-navy-700 hover:bg-navy-600 px-3 py-1.5 rounded-lg text-lg text-white min-h-0"
+              className="bg-navy-700 hover:bg-navy-600 px-3 py-1.5 rounded-lg text-lg text-theme-primary min-h-0"
             >
               &larr;
             </button>
@@ -184,11 +186,11 @@ export default function Dashboard() {
               type="date"
               value={selectedDate}
               onChange={(e) => setSelectedDate(e.target.value)}
-              className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-1.5 text-lg text-white min-h-0"
+              className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-1.5 text-lg text-theme-primary min-h-0"
             />
             <button
               onClick={() => changeDate(1)}
-              className="bg-navy-700 hover:bg-navy-600 px-3 py-1.5 rounded-lg text-lg text-white min-h-0"
+              className="bg-navy-700 hover:bg-navy-600 px-3 py-1.5 rounded-lg text-lg text-theme-primary min-h-0"
             >
               &rarr;
             </button>
@@ -214,15 +216,22 @@ export default function Dashboard() {
             </button>
             <button
               onClick={() => setShowStats(true)}
-              className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+              className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
               Statistiky
             </button>
             <button
               onClick={() => setShowTransportMap(true)}
-              className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+              className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
               Přepravci
+            </button>
+            <button
+              onClick={toggleTheme}
+              className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+              title={theme === 'dark' ? 'Světlý režim' : 'Tmavý režim'}
+            >
+              {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
           </div>
         </div>
@@ -250,7 +259,7 @@ export default function Dashboard() {
               value={scanValue}
               onChange={(e) => setScanValue(e.target.value)}
               placeholder="Naskenuj číslo faktury..."
-              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-5 py-4 text-2xl text-white placeholder-gray-600 outline-none transition-colors"
+              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-5 py-4 text-2xl text-theme-primary placeholder-theme-muted outline-none transition-colors"
             />
           </form>
 
@@ -264,10 +273,10 @@ export default function Dashboard() {
 
           <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
             {loading && (
-              <div className="text-center py-8 text-gray-500 text-sm">Načítám...</div>
+              <div className="text-center py-8 text-theme-muted text-sm">Načítám...</div>
             )}
             {!loading && pendingPackages.length === 0 && (
-              <div className="text-center py-12 text-gray-500 text-sm">
+              <div className="text-center py-12 text-theme-muted text-sm">
                 Žádné balíky k vyřízení
               </div>
             )}
@@ -286,7 +295,7 @@ export default function Dashboard() {
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Hledat balík (FV, zákazník, číslo...)"
-              className="flex-1 bg-navy-900 border-2 border-navy-600 focus:border-blue-500 rounded-xl px-5 py-4 text-xl text-white placeholder-gray-600 outline-none transition-colors"
+              className="flex-1 bg-navy-900 border-2 border-navy-600 focus:border-blue-500 rounded-xl px-5 py-4 text-xl text-theme-primary placeholder-theme-muted outline-none transition-colors"
             />
             <button
               type="submit"
@@ -299,7 +308,7 @@ export default function Dashboard() {
               <button
                 type="button"
                 onClick={clearSearch}
-                className="bg-navy-600 hover:bg-navy-500 text-gray-300 px-4 rounded-xl text-sm transition-colors"
+                className="bg-navy-600 hover:bg-navy-500 text-theme-secondary px-4 rounded-xl text-sm transition-colors"
               >
                 × Zrušit
               </button>
@@ -319,10 +328,10 @@ export default function Dashboard() {
 
           <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
             {searchLoading && (
-              <div className="text-center py-8 text-gray-500 text-sm">Hledám...</div>
+              <div className="text-center py-8 text-theme-muted text-sm">Hledám...</div>
             )}
             {!searchLoading && rightPackages.length === 0 && (
-              <div className="text-center py-12 text-gray-500 text-sm">
+              <div className="text-center py-12 text-theme-muted text-sm">
                 {searchResults !== null ? 'Nic nenalezeno' : 'Žádné odeslané balíky dnes'}
               </div>
             )}

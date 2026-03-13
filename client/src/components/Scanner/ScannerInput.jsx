@@ -33,7 +33,7 @@ export default function ScannerInput({ onScan, placeholder, className }) {
         type="text"
         onKeyDown={handleKeyDown}
         placeholder={placeholder || 'Naskenujte barcode...'}
-        className={`w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-6 py-4 text-2xl text-white placeholder-gray-600 outline-none transition-colors ${className || ''}`}
+        className={`w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-6 py-4 text-2xl text-theme-primary placeholder-theme-muted outline-none transition-colors ${className || ''}`}
         style={{ minHeight: '64px' }}
         autoComplete="off"
         autoCorrect="off"
@@ -43,7 +43,7 @@ export default function ScannerInput({ onScan, placeholder, className }) {
       {/* Active indicator */}
       <div className="absolute right-4 top-1/2 -translate-y-1/2 flex items-center gap-2">
         <div className="w-3 h-3 rounded-full bg-green-500 animate-pulse" />
-        <span className="text-sm text-gray-500">Aktivni</span>
+        <span className="text-sm text-theme-muted">Aktivni</span>
       </div>
     </div>
   )

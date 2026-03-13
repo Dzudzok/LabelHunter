@@ -79,10 +79,10 @@ export default function WorkersPanel({ isOpen, onClose }) {
       <div className="bg-navy-800 rounded-2xl border border-navy-600 w-full max-w-2xl max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-navy-700">
-          <h2 className="text-2xl font-bold text-white">Sprava pracovniku</h2>
+          <h2 className="text-2xl font-bold text-theme-primary">Sprava pracovniku</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-2xl min-h-0 px-2"
+            className="text-theme-secondary hover:text-theme-primary text-2xl min-h-0 px-2"
           >
             &#10005;
           </button>
@@ -91,7 +91,7 @@ export default function WorkersPanel({ isOpen, onClose }) {
         {/* Workers list */}
         <div className="p-6">
           {loading ? (
-            <div className="text-center text-gray-400 py-8">Nacitani...</div>
+            <div className="text-center text-theme-secondary py-8">Nacitani...</div>
           ) : (
             <div className="flex flex-col gap-3">
               {workers.map(w => (
@@ -114,7 +114,7 @@ export default function WorkersPanel({ isOpen, onClose }) {
                           type="text"
                           value={editName}
                           onChange={(e) => setEditName(e.target.value)}
-                          className="bg-navy-900 border border-navy-600 rounded-lg px-3 py-1 text-white flex-1 min-h-0"
+                          className="bg-navy-900 border border-navy-600 rounded-lg px-3 py-1 text-theme-primary flex-1 min-h-0"
                           autoFocus
                         />
                         <button
@@ -125,19 +125,19 @@ export default function WorkersPanel({ isOpen, onClose }) {
                         </button>
                         <button
                           onClick={() => { setEditingId(null); setEditName('') }}
-                          className="text-gray-400 px-2 min-h-0 text-sm"
+                          className="text-theme-secondary px-2 min-h-0 text-sm"
                         >
                           Zrusit
                         </button>
                       </div>
                     ) : (
-                      <div className="text-lg font-semibold text-white">{w.name}</div>
+                      <div className="text-lg font-semibold text-theme-primary">{w.name}</div>
                     )}
                   </div>
 
                   {/* Status badge */}
                   <span className={`text-sm px-3 py-1 rounded-full shrink-0 ${
-                    w.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-gray-400'
+                    w.is_active ? 'bg-green-500/20 text-green-400' : 'bg-gray-500/20 text-theme-secondary'
                   }`}>
                     {w.is_active ? 'Aktivni' : 'Neaktivni'}
                   </span>
@@ -146,13 +146,13 @@ export default function WorkersPanel({ isOpen, onClose }) {
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => handleToggleActive(w)}
-                      className="bg-navy-600 hover:bg-navy-500 text-gray-300 px-3 py-2 rounded-lg min-h-0 text-sm"
+                      className="bg-navy-600 hover:bg-navy-500 text-theme-secondary px-3 py-2 rounded-lg min-h-0 text-sm"
                     >
                       {w.is_active ? 'Deaktivovat' : 'Aktivovat'}
                     </button>
                     <button
                       onClick={() => { setEditingId(w.id); setEditName(w.name) }}
-                      className="bg-navy-600 hover:bg-navy-500 text-gray-300 px-3 py-2 rounded-lg min-h-0 text-sm"
+                      className="bg-navy-600 hover:bg-navy-500 text-theme-secondary px-3 py-2 rounded-lg min-h-0 text-sm"
                     >
                       Upravit
                     </button>
@@ -166,7 +166,7 @@ export default function WorkersPanel({ isOpen, onClose }) {
                         </button>
                         <button
                           onClick={() => setDeleteConfirm(null)}
-                          className="text-gray-400 px-2 min-h-0 text-sm"
+                          className="text-theme-secondary px-2 min-h-0 text-sm"
                         >
                           Ne
                         </button>
@@ -188,14 +188,14 @@ export default function WorkersPanel({ isOpen, onClose }) {
           {/* Add worker form */}
           {showAddForm ? (
             <form onSubmit={handleAdd} className="mt-6 bg-navy-700 rounded-xl p-6 border border-navy-600">
-              <h3 className="text-lg font-bold text-white mb-4">Novy pracovnik</h3>
+              <h3 className="text-lg font-bold text-theme-primary mb-4">Novy pracovnik</h3>
               <div className="flex flex-col gap-3">
                 <input
                   type="text"
                   placeholder="Jmeno"
                   value={newName}
                   onChange={(e) => setNewName(e.target.value)}
-                  className="bg-navy-900 border border-navy-600 rounded-lg px-4 py-3 text-lg text-white placeholder-gray-600 outline-none"
+                  className="bg-navy-900 border border-navy-600 rounded-lg px-4 py-3 text-lg text-theme-primary placeholder-theme-muted outline-none"
                 />
                 <input
                   type="password"
@@ -203,7 +203,7 @@ export default function WorkersPanel({ isOpen, onClose }) {
                   value={newPin}
                   onChange={(e) => setNewPin(e.target.value)}
                   maxLength={4}
-                  className="bg-navy-900 border border-navy-600 rounded-lg px-4 py-3 text-lg text-white placeholder-gray-600 outline-none"
+                  className="bg-navy-900 border border-navy-600 rounded-lg px-4 py-3 text-lg text-theme-primary placeholder-theme-muted outline-none"
                 />
                 <div className="flex gap-3">
                   <button
@@ -215,7 +215,7 @@ export default function WorkersPanel({ isOpen, onClose }) {
                   <button
                     type="button"
                     onClick={() => { setShowAddForm(false); setNewName(''); setNewPin('') }}
-                    className="flex-1 bg-navy-600 text-gray-300 py-3 rounded-xl font-bold text-lg"
+                    className="flex-1 bg-navy-600 text-theme-secondary py-3 rounded-xl font-bold text-lg"
                   >
                     Zrusit
                   </button>
@@ -225,7 +225,7 @@ export default function WorkersPanel({ isOpen, onClose }) {
           ) : (
             <button
               onClick={() => setShowAddForm(true)}
-              className="mt-6 w-full bg-navy-700 hover:bg-navy-600 border-2 border-dashed border-navy-600 text-gray-400 hover:text-white py-4 rounded-xl text-lg font-semibold transition-colors"
+              className="mt-6 w-full bg-navy-700 hover:bg-navy-600 border-2 border-dashed border-navy-600 text-theme-secondary hover:text-theme-primary py-4 rounded-xl text-lg font-semibold transition-colors"
             >
               + Pridat pracovnika
             </button>

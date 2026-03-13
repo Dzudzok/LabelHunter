@@ -70,10 +70,10 @@ export default function SentPackages({ isOpen, onClose }) {
       <div className="bg-navy-800 rounded-2xl border border-navy-600 w-full max-w-4xl max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-navy-700">
-          <h2 className="text-2xl font-bold text-white">Odeslane zasilky</h2>
+          <h2 className="text-2xl font-bold text-theme-primary">Odeslane zasilky</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-2xl min-h-0 px-2"
+            className="text-theme-secondary hover:text-theme-primary text-2xl min-h-0 px-2"
           >
             &#10005;
           </button>
@@ -83,29 +83,29 @@ export default function SentPackages({ isOpen, onClose }) {
           {/* Filters */}
           <div className="flex gap-4 mb-6 flex-wrap">
             <div>
-              <label className="text-sm text-gray-500 mb-1 block">Od</label>
+              <label className="text-sm text-theme-muted mb-1 block">Od</label>
               <input
                 type="date"
                 value={dateFrom}
                 onChange={(e) => setDateFrom(e.target.value)}
-                className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white min-h-0"
+                className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary min-h-0"
               />
             </div>
             <div>
-              <label className="text-sm text-gray-500 mb-1 block">Do</label>
+              <label className="text-sm text-theme-muted mb-1 block">Do</label>
               <input
                 type="date"
                 value={dateTo}
                 onChange={(e) => setDateTo(e.target.value)}
-                className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white min-h-0"
+                className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary min-h-0"
               />
             </div>
             <div>
-              <label className="text-sm text-gray-500 mb-1 block">Status</label>
+              <label className="text-sm text-theme-muted mb-1 block">Status</label>
               <select
                 value={statusFilter}
                 onChange={(e) => setStatusFilter(e.target.value)}
-                className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white min-h-0"
+                className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary min-h-0"
               >
                 <option value="">Vse</option>
                 <option value="shipped">Odeslano</option>
@@ -115,13 +115,13 @@ export default function SentPackages({ isOpen, onClose }) {
               </select>
             </div>
             <div>
-              <label className="text-sm text-gray-500 mb-1 block">Prepravce</label>
+              <label className="text-sm text-theme-muted mb-1 block">Prepravce</label>
               <input
                 type="text"
                 value={carrierFilter}
                 onChange={(e) => setCarrierFilter(e.target.value)}
                 placeholder="Vse"
-                className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white min-h-0 w-32"
+                className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary min-h-0 w-32"
               />
             </div>
           </div>
@@ -148,9 +148,9 @@ export default function SentPackages({ isOpen, onClose }) {
 
           {/* Package list */}
           {loading ? (
-            <div className="text-center py-8 text-gray-400">Nacitani...</div>
+            <div className="text-center py-8 text-theme-secondary">Nacitani...</div>
           ) : packages.length === 0 ? (
-            <div className="text-center py-8 text-gray-500">Zadne zasilky</div>
+            <div className="text-center py-8 text-theme-muted">Zadne zasilky</div>
           ) : (
             <div className="flex flex-col gap-2">
               {packages.map(pkg => (
@@ -160,21 +160,21 @@ export default function SentPackages({ isOpen, onClose }) {
                 >
                   {/* Invoice */}
                   <div className="flex-1 min-w-0">
-                    <div className="text-lg font-bold text-white truncate">
+                    <div className="text-lg font-bold text-theme-primary truncate">
                       {pkg.invoice_number}
                     </div>
-                    <div className="text-gray-400 text-sm truncate">{pkg.customer_name}</div>
+                    <div className="text-theme-secondary text-sm truncate">{pkg.customer_name}</div>
                   </div>
 
                   {/* Carrier */}
                   <div className={`px-3 py-1 rounded-lg text-sm font-medium shrink-0 ${
-                    CARRIER_COLORS[pkg.shipper_code?.toLowerCase()] || 'bg-navy-600 text-gray-300'
+                    CARRIER_COLORS[pkg.shipper_code?.toLowerCase()] || 'bg-navy-600 text-theme-secondary'
                   }`}>
                     {pkg.transport_name || pkg.shipper_code || '-'}
                   </div>
 
                   {/* Tracking number */}
-                  <div className="text-sm font-mono text-gray-400 shrink-0">
+                  <div className="text-sm font-mono text-theme-secondary shrink-0">
                     {pkg.tracking_number || '-'}
                   </div>
 
@@ -183,13 +183,13 @@ export default function SentPackages({ isOpen, onClose }) {
                     pkg.status === 'delivered' ? 'bg-green-500/20 text-green-400' :
                     pkg.status === 'shipped' ? 'bg-blue-500/20 text-blue-400' :
                     pkg.status === 'problem' ? 'bg-red-500/20 text-red-400' :
-                    'bg-gray-500/20 text-gray-400'
+                    'bg-gray-500/20 text-theme-secondary'
                   }`}>
                     {pkg.status}
                   </div>
 
                   {/* Sent date */}
-                  <div className="text-sm text-gray-500 shrink-0">
+                  <div className="text-sm text-theme-muted shrink-0">
                     {pkg.shipped_at
                       ? new Date(pkg.shipped_at).toLocaleDateString('cs-CZ')
                       : ''}
@@ -199,7 +199,7 @@ export default function SentPackages({ isOpen, onClose }) {
                   <div className="flex gap-2 shrink-0">
                     <button
                       onClick={() => { onClose(); navigate(`/package/${pkg.id}`) }}
-                      className="bg-navy-600 hover:bg-navy-500 text-gray-300 px-3 py-2 rounded-lg min-h-0 text-sm"
+                      className="bg-navy-600 hover:bg-navy-500 text-theme-secondary px-3 py-2 rounded-lg min-h-0 text-sm"
                     >
                       Detail
                     </button>
@@ -214,7 +214,7 @@ export default function SentPackages({ isOpen, onClose }) {
                           </button>
                           <button
                             onClick={() => setCancellingId(null)}
-                            className="text-gray-400 px-2 min-h-0 text-sm"
+                            className="text-theme-secondary px-2 min-h-0 text-sm"
                           >
                             Ne
                           </button>

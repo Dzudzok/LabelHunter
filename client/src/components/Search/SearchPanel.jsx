@@ -55,14 +55,14 @@ export default function SearchPanel({ isOpen, onClose }) {
   if (!isOpen) return null
 
   return (
-    <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center p-4">
+    <div className="fixed inset-0 overlay-bg z-50 flex items-center justify-center p-4">
       <div className="bg-navy-800 rounded-2xl border border-navy-600 w-full max-w-3xl max-h-[90vh] overflow-auto">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-navy-700">
-          <h2 className="text-2xl font-bold text-white">Rozsirene hledani</h2>
+          <h2 className="text-2xl font-bold text-theme-primary">Rozsirene hledani</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-white text-2xl min-h-0 px-2"
+            className="text-theme-secondary hover:text-theme-primary text-2xl min-h-0 px-2"
           >
             &#10005;
           </button>
@@ -85,7 +85,7 @@ export default function SearchPanel({ isOpen, onClose }) {
                   className={`px-4 py-2 rounded-lg text-lg font-medium transition-colors ${
                     searchType === opt.value
                       ? 'bg-brand-orange text-white'
-                      : 'bg-navy-700 text-gray-400 hover:text-white'
+                      : 'bg-navy-700 text-theme-secondary hover:text-theme-primary'
                   }`}
                 >
                   {opt.label}
@@ -99,35 +99,35 @@ export default function SearchPanel({ isOpen, onClose }) {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Hledat..."
-              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-4 text-xl text-white placeholder-gray-600 outline-none mb-4"
+              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-4 text-xl text-theme-primary placeholder-theme-muted outline-none mb-4"
               style={{ minHeight: '64px' }}
             />
 
             {/* Date range */}
             <div className="flex gap-4 mb-4">
               <div className="flex-1">
-                <label className="text-sm text-gray-500 mb-1 block">Od</label>
+                <label className="text-sm text-theme-muted mb-1 block">Od</label>
                 <input
                   type="date"
                   value={dateFrom}
                   onChange={(e) => setDateFrom(e.target.value)}
-                  className="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white min-h-0"
+                  className="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary min-h-0"
                 />
               </div>
               <div className="flex-1">
-                <label className="text-sm text-gray-500 mb-1 block">Do</label>
+                <label className="text-sm text-theme-muted mb-1 block">Do</label>
                 <input
                   type="date"
                   value={dateTo}
                   onChange={(e) => setDateTo(e.target.value)}
-                  className="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-white min-h-0"
+                  className="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary min-h-0"
                 />
               </div>
             </div>
 
             {/* Status filter */}
             <div className="mb-4">
-              <label className="text-sm text-gray-500 mb-2 block">Status</label>
+              <label className="text-sm text-theme-muted mb-2 block">Status</label>
               <div className="flex gap-2 flex-wrap">
                 {STATUS_OPTIONS.map(opt => (
                   <button
@@ -137,7 +137,7 @@ export default function SearchPanel({ isOpen, onClose }) {
                     className={`px-3 py-1 rounded-lg text-sm font-medium transition-colors min-h-0 ${
                       statusFilter.includes(opt.value)
                         ? 'bg-brand-orange text-white'
-                        : 'bg-navy-700 text-gray-400'
+                        : 'bg-navy-700 text-theme-secondary'
                     }`}
                   >
                     {opt.label}
@@ -159,11 +159,11 @@ export default function SearchPanel({ isOpen, onClose }) {
           {/* Results */}
           {searched && (
             <div className="mt-6">
-              <h3 className="text-lg font-bold text-gray-400 mb-3">
+              <h3 className="text-lg font-bold text-theme-secondary mb-3">
                 Vysledky ({results.length})
               </h3>
               {results.length === 0 ? (
-                <div className="text-center py-8 text-gray-500">Nic nenalezeno</div>
+                <div className="text-center py-8 text-theme-muted">Nic nenalezeno</div>
               ) : (
                 <div className="flex flex-col gap-2">
                   {results.map(pkg => (
@@ -173,14 +173,14 @@ export default function SearchPanel({ isOpen, onClose }) {
                       className="w-full bg-navy-700 hover:bg-navy-600 rounded-xl p-4 text-left transition-colors flex items-center gap-4"
                     >
                       <div className="flex-1 min-w-0">
-                        <div className="text-xl font-bold text-white truncate">
+                        <div className="text-xl font-bold text-theme-primary truncate">
                           {pkg.invoice_number}
                         </div>
-                        <div className="text-gray-400 truncate">
+                        <div className="text-theme-secondary truncate">
                           {pkg.customer_name}
                         </div>
                       </div>
-                      <div className="text-sm text-gray-500 shrink-0">
+                      <div className="text-sm text-theme-muted shrink-0">
                         {pkg.imported_at
                           ? new Date(pkg.imported_at).toLocaleDateString('cs-CZ')
                           : ''}

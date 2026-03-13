@@ -63,7 +63,7 @@ export default function AuthPage() {
   if (loading) {
     return (
       <div className="min-h-screen bg-navy-800 flex items-center justify-center">
-        <div className="text-2xl text-white">Nacitani...</div>
+        <div className="text-2xl text-theme-primary">Nacitani...</div>
       </div>
     )
   }
@@ -72,16 +72,16 @@ export default function AuthPage() {
     <div className="min-h-screen bg-navy-800 flex flex-col items-center justify-center p-6">
       {/* Header */}
       <div className="text-center mb-12">
-        <h1 className="text-5xl font-black text-white mb-2">
+        <h1 className="text-5xl font-black text-theme-primary mb-2">
           Label<span className="text-brand-orange">Hunter</span>
         </h1>
-        <p className="text-xl text-gray-400">MROAUTO AUTODILY s.r.o.</p>
+        <p className="text-xl text-theme-secondary">MROAUTO AUTODILY s.r.o.</p>
       </div>
 
       {!selectedWorker ? (
         /* Worker selection */
         <div className="w-full max-w-2xl">
-          <h2 className="text-2xl font-bold text-center mb-8 text-gray-300">
+          <h2 className="text-2xl font-bold text-center mb-8 text-theme-secondary">
             Vyberte pracovnika
           </h2>
           <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
@@ -94,7 +94,7 @@ export default function AuthPage() {
                 <div className="w-16 h-16 rounded-full bg-brand-orange flex items-center justify-center text-2xl font-bold text-white">
                   {w.name.split(' ').map(n => n[0]).join('').toUpperCase()}
                 </div>
-                <span className="text-xl font-semibold text-white">{w.name}</span>
+                <span className="text-xl font-semibold text-theme-primary">{w.name}</span>
               </button>
             ))}
           </div>
@@ -104,7 +104,7 @@ export default function AuthPage() {
         <div className="w-full max-w-md">
           <button
             onClick={() => { setSelectedWorker(null); setPin(''); setError('') }}
-            className="text-gray-400 hover:text-white mb-6 text-lg min-h-0"
+            className="text-theme-secondary hover:text-theme-primary mb-6 text-lg min-h-0"
           >
             &larr; Zpet
           </button>
@@ -113,8 +113,8 @@ export default function AuthPage() {
             <div className="w-20 h-20 rounded-full bg-brand-orange flex items-center justify-center text-3xl font-bold text-white mx-auto mb-4">
               {selectedWorker.name.split(' ').map(n => n[0]).join('').toUpperCase()}
             </div>
-            <h2 className="text-2xl font-bold text-white">{selectedWorker.name}</h2>
-            <p className="text-gray-400 mt-1">Zadejte PIN</p>
+            <h2 className="text-2xl font-bold text-theme-primary">{selectedWorker.name}</h2>
+            <p className="text-theme-secondary mt-1">Zadejte PIN</p>
           </div>
 
           {/* PIN dots */}
@@ -142,20 +142,20 @@ export default function AuthPage() {
               <button
                 key={digit}
                 onClick={() => handlePinDigit(String(digit))}
-                className="bg-navy-700 hover:bg-navy-600 border border-navy-600 rounded-xl text-3xl font-bold text-white h-20 transition-colors"
+                className="bg-navy-700 hover:bg-navy-600 border border-navy-600 rounded-xl text-3xl font-bold text-theme-primary h-20 transition-colors"
               >
                 {digit}
               </button>
             ))}
             <button
               onClick={handleBackspace}
-              className="bg-navy-700 hover:bg-navy-600 border border-navy-600 rounded-xl text-2xl text-gray-400 h-20 transition-colors"
+              className="bg-navy-700 hover:bg-navy-600 border border-navy-600 rounded-xl text-2xl text-theme-secondary h-20 transition-colors"
             >
               &larr;
             </button>
             <button
               onClick={() => handlePinDigit('0')}
-              className="bg-navy-700 hover:bg-navy-600 border border-navy-600 rounded-xl text-3xl font-bold text-white h-20 transition-colors"
+              className="bg-navy-700 hover:bg-navy-600 border border-navy-600 rounded-xl text-3xl font-bold text-theme-primary h-20 transition-colors"
             >
               0
             </button>

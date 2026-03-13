@@ -219,7 +219,7 @@ export default function PackageView() {
   if (loading) {
     return (
       <div className="min-h-screen bg-navy-800 flex items-center justify-center">
-        <div className="text-2xl text-gray-400">Nacitani baliku...</div>
+        <div className="text-2xl text-theme-secondary">Nacitani baliku...</div>
       </div>
     )
   }
@@ -227,7 +227,7 @@ export default function PackageView() {
   if (!pkg) {
     return (
       <div className="min-h-screen bg-navy-800 flex flex-col items-center justify-center gap-4">
-        <div className="text-2xl text-gray-400">Balik nenalezen</div>
+        <div className="text-2xl text-theme-secondary">Balik nenalezen</div>
         <button onClick={() => navigate('/')} className="bg-brand-orange text-white px-6 py-3 rounded-xl text-lg font-bold">
           Zpet na Dashboard
         </button>
@@ -239,7 +239,7 @@ export default function PackageView() {
     <div className="min-h-screen bg-navy-800">
       {/* Top bar */}
       <div className="bg-navy-900 border-b border-navy-700 px-6 py-4">
-        <button onClick={() => navigate('/')} className="text-gray-400 hover:text-white text-xl min-h-0">
+        <button onClick={() => navigate('/')} className="text-theme-secondary hover:text-theme-primary text-xl min-h-0">
           &larr; Dashboard
         </button>
       </div>
@@ -253,11 +253,11 @@ export default function PackageView() {
             {/* Customer info / Address edit */}
             <div className="bg-navy-700 rounded-xl p-6 border border-navy-600">
               <div className="flex items-center justify-between mb-4">
-                <h2 className="text-2xl font-bold text-white">Zakaznik</h2>
+                <h2 className="text-2xl font-bold text-theme-primary">Zakaznik</h2>
                 {!labelData && !editingAddress && (
                   <button
                     onClick={startEditAddress}
-                    className="bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white px-4 py-2 rounded-lg text-base transition-colors"
+                    className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-4 py-2 rounded-lg text-base transition-colors"
                   >
                     Upravit adresu
                   </button>
@@ -270,26 +270,26 @@ export default function PackageView() {
                     value={addressForm.customer_name}
                     onChange={e => setAddressForm(p => ({ ...p, customer_name: e.target.value }))}
                     placeholder="Jméno / firma"
-                    className="w-full bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                    className="w-full bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                   />
                   <input
                     value={addressForm.delivery_street}
                     onChange={e => setAddressForm(p => ({ ...p, delivery_street: e.target.value }))}
                     placeholder="Ulice"
-                    className="w-full bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                    className="w-full bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <input
                       value={addressForm.delivery_city}
                       onChange={e => setAddressForm(p => ({ ...p, delivery_city: e.target.value }))}
                       placeholder="Město"
-                      className="col-span-2 bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                      className="col-span-2 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                     />
                     <input
                       value={addressForm.delivery_postal_code}
                       onChange={e => setAddressForm(p => ({ ...p, delivery_postal_code: e.target.value }))}
                       placeholder="PSČ"
-                      className="bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                      className="bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                     />
                   </div>
                   <div className="grid grid-cols-2 gap-2">
@@ -297,13 +297,13 @@ export default function PackageView() {
                       value={addressForm.delivery_phone}
                       onChange={e => setAddressForm(p => ({ ...p, delivery_phone: e.target.value }))}
                       placeholder="Telefon"
-                      className="bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                      className="bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                     />
                     <input
                       value={addressForm.delivery_email}
                       onChange={e => setAddressForm(p => ({ ...p, delivery_email: e.target.value }))}
                       placeholder="Email"
-                      className="bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                      className="bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                     />
                   </div>
                   <div className="flex gap-3 pt-1">
@@ -316,7 +316,7 @@ export default function PackageView() {
                     </button>
                     <button
                       onClick={() => setEditingAddress(false)}
-                      className="px-5 bg-navy-600 hover:bg-navy-500 text-gray-300 py-3 rounded-lg text-base transition-colors"
+                      className="px-5 bg-navy-600 hover:bg-navy-500 text-theme-secondary py-3 rounded-lg text-base transition-colors"
                     >
                       Zrušit
                     </button>
@@ -324,11 +324,11 @@ export default function PackageView() {
                 </div>
               ) : (
                 <div className="space-y-2 text-lg">
-                  <div className="text-white font-semibold text-xl">{pkg.customer_name}</div>
+                  <div className="text-theme-primary font-semibold text-xl">{pkg.customer_name}</div>
                   {(pkg.delivery_street || pkg.customer_street) && (
-                    <div className="text-gray-400">{pkg.delivery_street || pkg.customer_street}</div>
+                    <div className="text-theme-secondary">{pkg.delivery_street || pkg.customer_street}</div>
                   )}
-                  <div className="text-gray-400">
+                  <div className="text-theme-secondary">
                     {[pkg.delivery_city || pkg.customer_city, pkg.delivery_postal_code || pkg.customer_postal_code, pkg.delivery_country || pkg.customer_country].filter(Boolean).join(', ')}
                   </div>
                   {(pkg.delivery_phone || pkg.customer_phone) && (
@@ -337,7 +337,7 @@ export default function PackageView() {
                     </a>
                   )}
                   {(pkg.delivery_email || pkg.customer_email) && (
-                    <div className="text-gray-400">{pkg.delivery_email || pkg.customer_email}</div>
+                    <div className="text-theme-secondary">{pkg.delivery_email || pkg.customer_email}</div>
                   )}
                 </div>
               )}
@@ -345,30 +345,30 @@ export default function PackageView() {
 
             {/* Package info */}
             <div className="bg-navy-700 rounded-xl p-6 border border-navy-600">
-              <h2 className="text-2xl font-bold text-white mb-4">Detail baliku</h2>
+              <h2 className="text-2xl font-bold text-theme-primary mb-4">Detail baliku</h2>
               <div className="grid grid-cols-2 gap-4 text-lg">
                 <div>
-                  <span className="text-gray-500">Faktura:</span>
-                  <div className="text-white font-bold text-xl">{pkg.invoice_number}</div>
+                  <span className="text-theme-muted">Faktura:</span>
+                  <div className="text-theme-primary font-bold text-xl">{pkg.invoice_number}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">Objednavka:</span>
-                  <div className="text-white font-semibold">{pkg.order_number || '-'}</div>
+                  <span className="text-theme-muted">Objednavka:</span>
+                  <div className="text-theme-primary font-semibold">{pkg.order_number || '-'}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">Prepravce:</span>
-                  <div className="text-white font-semibold">{pkg.transport_name || '-'}</div>
+                  <span className="text-theme-muted">Prepravce:</span>
+                  <div className="text-theme-primary font-semibold">{pkg.transport_name || '-'}</div>
                 </div>
                 <div>
-                  <span className="text-gray-500">Castka:</span>
-                  <div className="text-white font-semibold">
+                  <span className="text-theme-muted">Castka:</span>
+                  <div className="text-theme-primary font-semibold">
                     {pkg.amount_brutto ? `${pkg.amount_brutto} ${pkg.currency || 'CZK'}` : '-'}
                   </div>
                 </div>
                 {pkg.doc_number && (
                   <div>
-                    <span className="text-gray-500">Doklad:</span>
-                    <div className="text-white font-semibold">{pkg.doc_number}</div>
+                    <span className="text-theme-muted">Doklad:</span>
+                    <div className="text-theme-primary font-semibold">{pkg.doc_number}</div>
                   </div>
                 )}
               </div>
@@ -378,8 +378,8 @@ export default function PackageView() {
             {!labelData && (
               <div className="bg-navy-700 rounded-xl p-6 border border-navy-600">
                 <div className="flex items-center justify-between mb-4">
-                  <h2 className="text-xl font-bold text-white">
-                    Balíky <span className="text-gray-400 text-base font-normal">({parcels.length} ks)</span>
+                  <h2 className="text-xl font-bold text-theme-primary">
+                    Balíky <span className="text-theme-secondary text-base font-normal">({parcels.length} ks)</span>
                   </h2>
                   <button
                     onClick={addParcel}
@@ -391,16 +391,16 @@ export default function PackageView() {
                 <div className="space-y-3">
                   {parcels.map((parcel, idx) => (
                     <div key={idx} className="flex items-center gap-3">
-                      <div className="text-gray-400 text-base w-20 shrink-0">Balík {idx + 1}</div>
+                      <div className="text-theme-secondary text-base w-20 shrink-0">Balík {idx + 1}</div>
                       <input
                         type="number"
                         min="0.1"
                         step="0.1"
                         value={parcel.weight}
                         onChange={e => updateParcelWeight(idx, e.target.value)}
-                        className="w-28 bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                        className="w-28 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                       />
-                      <span className="text-gray-400">kg</span>
+                      <span className="text-theme-secondary">kg</span>
                       {parcels.length > 1 && (
                         <button
                           onClick={() => removeParcel(idx)}
@@ -412,7 +412,7 @@ export default function PackageView() {
                     </div>
                   ))}
                 </div>
-                <div className="mt-3 text-gray-500 text-sm">
+                <div className="mt-3 text-theme-muted text-sm">
                   Celková hmotnost: {totalWeight.toFixed(2)} kg
                 </div>
               </div>
@@ -422,8 +422,8 @@ export default function PackageView() {
           {/* RIGHT SIDE - 40% */}
           <div className="lg:col-span-2 flex flex-col gap-6">
             <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-white">Produkty k naskenovani</h2>
-              <span className="text-gray-400 text-lg">
+              <h2 className="text-xl font-bold text-theme-primary">Produkty k naskenovani</h2>
+              <span className="text-theme-secondary text-lg">
                 {goodsItems.filter(i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified).length}
                 /{goodsItems.length}
               </span>
@@ -435,7 +435,7 @@ export default function PackageView() {
               ref={scanInputRef}
               type="text"
               placeholder="Naskenuj produkt..."
-              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-4 text-xl text-white placeholder-gray-600 outline-none"
+              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-4 text-xl text-theme-primary placeholder-theme-muted outline-none"
               style={{ minHeight: '64px' }}
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.target.value.trim()) {
@@ -448,14 +448,14 @@ export default function PackageView() {
             {/* Shipper override */}
             {!labelData && (
               <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
-                <div className="text-sm text-gray-400 mb-2">
-                  Přepravce <span className="text-gray-500">(Nextis: {pkg.transport_name || '—'})</span>
+                <div className="text-sm text-theme-secondary mb-2">
+                  Přepravce <span className="text-theme-muted">(Nextis: {pkg.transport_name || '—'})</span>
                 </div>
                 <div className="flex gap-2">
                   <select
                     value={overrideShipper}
                     onChange={(e) => { setOverrideShipper(e.target.value); setOverrideService(''); setLabelError(null) }}
-                    className="flex-1 bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-3 text-base outline-none focus:border-brand-orange"
+                    className="flex-1 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-3 text-base outline-none focus:border-brand-orange"
                   >
                     <option value="">Auto (z Nextis)</option>
                     {shippers.map(s => (
@@ -466,7 +466,7 @@ export default function PackageView() {
                     <select
                       value={overrideService}
                       onChange={(e) => setOverrideService(e.target.value)}
-                      className="flex-1 bg-navy-900 border border-navy-500 text-white rounded-lg px-3 py-3 text-base outline-none focus:border-brand-orange"
+                      className="flex-1 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-3 text-base outline-none focus:border-brand-orange"
                     >
                       <option value="">— Vyberte službu —</option>
                       {selectedShipperObj.services.map(svc => (
@@ -493,7 +493,7 @@ export default function PackageView() {
             {!allVerified && (
               <button
                 onClick={handleSkipAll}
-                className="w-full bg-navy-600 hover:bg-navy-500 text-gray-300 hover:text-white py-4 rounded-xl text-lg font-semibold transition-colors"
+                className="w-full bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary py-4 rounded-xl text-lg font-semibold transition-colors"
               >
                 Preskocit vse
               </button>
@@ -546,7 +546,7 @@ export default function PackageView() {
         <div className="mt-6">
           <button
             onClick={() => setHistoryOpen(!historyOpen)}
-            className="flex items-center gap-2 text-gray-400 hover:text-white text-lg font-semibold transition-colors"
+            className="flex items-center gap-2 text-theme-secondary hover:text-theme-primary text-lg font-semibold transition-colors"
           >
             <span className="text-base">{historyOpen ? '▼' : '▶'}</span>
             Historie ({history.length})
@@ -555,9 +555,9 @@ export default function PackageView() {
           {historyOpen && (
             <div className="mt-3 bg-navy-700 rounded-xl border border-navy-600 overflow-hidden">
               {historyLoading ? (
-                <div className="text-center py-6 text-gray-500">Načítám historii...</div>
+                <div className="text-center py-6 text-theme-muted">Načítám historii...</div>
               ) : history.length === 0 ? (
-                <div className="text-center py-6 text-gray-500">Žádná historie</div>
+                <div className="text-center py-6 text-theme-muted">Žádná historie</div>
               ) : (
                 <div className="divide-y divide-navy-600">
                   {history.map(h => (
@@ -616,17 +616,17 @@ function HistoryRow({ entry }) {
 
   return (
     <div className="flex items-center gap-4 px-4 py-3 text-sm">
-      <div className="text-gray-500 shrink-0 w-28">
+      <div className="text-theme-muted shrink-0 w-28">
         <div>{dateStr}</div>
         <div>{timeStr}</div>
       </div>
-      <div className={`font-semibold shrink-0 w-44 ${ACTION_COLORS[entry.action] || 'text-gray-400'}`}>
+      <div className={`font-semibold shrink-0 w-44 ${ACTION_COLORS[entry.action] || 'text-theme-secondary'}`}>
         {ACTION_LABELS[entry.action] || entry.action}
       </div>
-      <div className="text-gray-400 flex-1 truncate">
+      <div className="text-theme-secondary flex-1 truncate">
         {detail}
       </div>
-      <div className="text-gray-500 shrink-0 w-32 text-right">
+      <div className="text-theme-muted shrink-0 w-32 text-right">
         {entry.worker_name || '—'}
       </div>
     </div>

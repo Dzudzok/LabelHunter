@@ -30,7 +30,7 @@ export default function BarcodeAction({ value, label, onConfirm }) {
     <div className="bg-navy-900 rounded-xl p-6 border-2 border-navy-600 flex flex-col items-center">
       {/* Label text */}
       {label && (
-        <div className="text-xl font-semibold text-gray-300 mb-4 text-center">
+        <div className="text-xl font-semibold text-theme-secondary mb-4 text-center">
           {label}
         </div>
       )}
@@ -41,7 +41,7 @@ export default function BarcodeAction({ value, label, onConfirm }) {
       </div>
 
       {/* Code text */}
-      <div className="text-lg font-mono text-gray-400 mt-2 text-center">
+      <div className="text-lg font-mono text-theme-secondary mt-2 text-center">
         {value}
       </div>
 

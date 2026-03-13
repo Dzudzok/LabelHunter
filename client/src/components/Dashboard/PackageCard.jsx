@@ -49,23 +49,23 @@ export default function PackageCard({ pkg }) {
     >
       {/* Invoice number */}
       <div className="flex-1 min-w-0">
-        <div className="text-2xl font-bold text-white truncate">
+        <div className="text-2xl font-bold text-theme-primary truncate">
           {pkg.invoice_number}
         </div>
-        <div className="text-lg text-gray-400 truncate">
+        <div className="text-lg text-theme-secondary truncate">
           {pkg.customer_name || 'Neznamy zakaznik'}
         </div>
       </div>
 
       {/* Carrier badge */}
       {pkg.transport_name && (
-        <div className="bg-navy-600 px-3 py-1 rounded-lg text-sm font-medium text-gray-300 shrink-0">
+        <div className="bg-navy-600 px-3 py-1 rounded-lg text-sm font-medium text-theme-secondary shrink-0">
           {pkg.transport_name}
         </div>
       )}
 
       {/* Items count */}
-      <div className="text-gray-400 text-lg shrink-0">
+      <div className="text-theme-secondary text-lg shrink-0">
         {itemCount} pozic
       </div>
 
@@ -77,7 +77,7 @@ export default function PackageCard({ pkg }) {
       </div>
 
       {/* Timestamp */}
-      <div className="text-sm text-gray-500 shrink-0 hidden lg:block">
+      <div className="text-sm text-theme-muted shrink-0 hidden lg:block">
         {pkg.imported_at
           ? new Date(pkg.imported_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
           : ''}

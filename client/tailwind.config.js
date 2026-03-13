@@ -5,15 +5,21 @@ export default {
     extend: {
       colors: {
         navy: {
-          900: '#0f1923',
-          800: '#1a2332',
-          700: '#243447',
-          600: '#2e4560',
+          900: 'var(--navy-900)',
+          800: 'var(--navy-800)',
+          700: 'var(--navy-700)',
+          600: 'var(--navy-600)',
+          500: 'var(--navy-500)',
         },
         brand: {
           orange: '#f97316',
           'orange-dark': '#ea6c0a',
-        }
+        },
+        theme: {
+          primary: 'var(--text-primary)',
+          secondary: 'var(--text-secondary)',
+          muted: 'var(--text-muted)',
+        },
       },
       fontSize: {
         '2xl': '1.5rem',

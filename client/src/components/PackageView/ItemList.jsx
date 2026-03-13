@@ -4,7 +4,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
 
   if (goodsItems.length === 0) {
     return (
-      <div className="text-center py-8 text-gray-400">
+      <div className="text-center py-8 text-theme-secondary">
         Zadne produkty k naskenovanim
       </div>
     )
@@ -36,13 +36,13 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
                 {isComplete ? (
                   <span className="text-green-400">&#10003;</span>
                 ) : (
-                  <span className="text-gray-600">&#9744;</span>
+                  <span className="text-theme-muted">&#9744;</span>
                 )}
               </div>
 
               {/* Quantity counter */}
               <div className={`text-xl font-bold shrink-0 min-w-[80px] text-center ${
-                isComplete ? 'text-green-400' : isPartial ? 'text-yellow-400' : 'text-gray-400'
+                isComplete ? 'text-green-400' : isPartial ? 'text-yellow-400' : 'text-theme-secondary'
               }`}>
                 {scanned}z{total}
               </div>
@@ -55,11 +55,11 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
                       {item.brand}
                     </span>
                   )}
-                  <span className="text-lg font-mono text-gray-300 truncate">
+                  <span className="text-lg font-mono text-theme-secondary truncate">
                     {item.code}
                   </span>
                 </div>
-                <div className="text-base text-gray-400 truncate mt-1">
+                <div className="text-base text-theme-secondary truncate mt-1">
                   {item.name || item.text}
                 </div>
               </div>
@@ -68,7 +68,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
               {!isComplete && !isSkipped && (
                 <button
                   onClick={() => onSkipItem(item.id)}
-                  className="bg-navy-600 hover:bg-navy-500 text-gray-400 hover:text-white px-4 py-2 rounded-lg text-sm font-medium shrink-0 transition-colors"
+                  className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-4 py-2 rounded-lg text-sm font-medium shrink-0 transition-colors"
                 >
                   Preskocit
                 </button>

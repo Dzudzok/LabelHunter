@@ -4,6 +4,32 @@
 @tailwind components;
 @tailwind utilities;
 
+/* ===== DARK THEME (default) ===== */
+:root {
+  --navy-900: #0f1923;
+  --navy-800: #1a2332;
+  --navy-700: #243447;
+  --navy-600: #2e4560;
+  --navy-500: #3a5a7c;
+  --text-primary: #ffffff;
+  --text-secondary: #9ca3af;
+  --text-muted: #6b7280;
+  --overlay-bg: rgba(0, 0, 0, 0.6);
+}
+
+/* ===== LIGHT THEME ===== */
+:root[data-theme="light"] {
+  --navy-900: #f1f5f9;
+  --navy-800: #f8fafc;
+  --navy-700: #e2e8f0;
+  --navy-600: #cbd5e1;
+  --navy-500: #94a3b8;
+  --text-primary: #1e293b;
+  --text-secondary: #475569;
+  --text-muted: #94a3b8;
+  --overlay-bg: rgba(0, 0, 0, 0.3);
+}
+
 * {
   box-sizing: border-box;
 }
@@ -11,8 +37,8 @@
 body {
   margin: 0;
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
-  background-color: #1a2332;
-  color: white;
+  background-color: var(--navy-800);
+  color: var(--text-primary);
   -webkit-user-select: none;
   user-select: none;
 }
@@ -28,3 +54,7 @@ button {
   cursor: pointer;
 }
 
+/* Modal overlay using CSS var */
+.overlay-bg {
+  background-color: var(--overlay-bg);
+}
