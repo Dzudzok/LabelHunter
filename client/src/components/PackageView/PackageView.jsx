@@ -415,6 +415,15 @@ export default function PackageView() {
                 </div>
               </div>
             )}
+
+            {/* Hunter — pinned bottom-left */}
+            <div className="mt-auto pt-2">
+              <HunterPanel
+                packageId={parseInt(id)}
+                workerId={worker?.id}
+                itemsCount={goodsItems.length}
+              />
+            </div>
           </div>
 
           {/* RIGHT SIDE - 50% */}
@@ -440,13 +449,6 @@ export default function PackageView() {
                   e.target.value = ''
                 }
               }}
-            />
-
-            {/* Hunter assignment */}
-            <HunterPanel
-              packageId={parseInt(id)}
-              workerId={worker?.id}
-              itemsCount={goodsItems.length}
             />
 
             {/* Shipper override */}
