@@ -248,7 +248,7 @@ export default function PackageView() {
       <div className="flex-1 overflow-hidden flex gap-4 px-5 py-4">
 
           {/* LEFT SIDE - 50% */}
-          <div className="w-1/2 shrink-0 flex flex-col gap-4 overflow-y-auto pr-1">
+          <div className="w-1/2 shrink-0 flex flex-col gap-4 pr-1">
 
             {/* Customer info / Address edit */}
             <div className="bg-navy-700 rounded-xl p-5 border border-navy-600">
@@ -415,8 +415,8 @@ export default function PackageView() {
               )}
             </div>
 
-            {/* Hunter — pinned bottom-left */}
-            <div className="mt-auto pt-2">
+            {/* Hunter — fills remaining height */}
+            <div className="flex-1 pt-2 flex flex-col min-h-0">
               <HunterPanel
                 packageId={parseInt(id)}
                 workerId={worker?.id}

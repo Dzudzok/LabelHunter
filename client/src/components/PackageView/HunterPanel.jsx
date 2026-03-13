@@ -85,10 +85,14 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
 
   const hunterName = hunters.find(h => h.id === selectedHunter)?.name
 
+  // Calculate grid: split hunters into rows that fill height
+  const cols = Math.ceil(hunters.length / 2) // 2 rows max
+  const hasSecondRow = hunters.length > cols
+
   return (
-    <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
+    <div className="bg-navy-700 rounded-xl p-4 border border-navy-600 flex-1 flex flex-col">
       {/* Header row */}
-      <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center justify-between mb-3 shrink-0">
         <h3 className="text-lg font-bold text-theme-primary">Szykoval:</h3>
         <div className="flex items-center gap-2">
           {savedMsg && (
@@ -107,16 +111,17 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
 
       {/* Hunter tiles — auto-size to fill available space */}
       <div
-        className="grid gap-2"
+        className="grid gap-2 flex-1 content-stretch"
         style={{
-          gridTemplateColumns: `repeat(${hunters.length}, 1fr)`,
+          gridTemplateColumns: `repeat(${cols}, 1fr)`,
+          gridTemplateRows: hasSecondRow ? '1fr 1fr' : '1fr',
         }}
       >
         {hunters.map(h => (
           <button
             key={h.id}
             onClick={() => handleAssign(h.id)}
-            className={`py-3 rounded-lg text-base font-semibold transition-colors truncate ${
+            className={`rounded-lg text-lg font-semibold transition-colors truncate flex items-center justify-center ${
               selectedHunter === h.id
                 ? 'bg-brand-orange text-white'
                 : 'bg-navy-800 border border-navy-600 text-theme-secondary hover:text-theme-primary hover:border-brand-orange'
@@ -129,7 +134,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
 
       {/* Error type selection — inline row */}
       {showErrorPanel && selectedHunter && (
-        <div className="flex items-center gap-2 mt-3">
+        <div className="flex items-center gap-2 mt-3 shrink-0">
           {ERROR_TYPES.map(et => (
             <button
               key={et.value}
@@ -151,7 +156,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
 
       {/* Error badges */}
       {errors.length > 0 && (
-        <div className="flex flex-wrap gap-1.5 mt-3">
+        <div className="flex flex-wrap gap-1.5 mt-3 shrink-0">
           {errors.map(e => (
             <span key={e.id} className="bg-red-900/40 text-red-400 text-sm px-2.5 py-0.5 rounded font-semibold">
               {ERROR_TYPES.find(t => t.value === e.error_type)?.label || e.error_type}
