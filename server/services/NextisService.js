@@ -31,7 +31,7 @@ class NextisService {
         dateFrom,
         dateTo,
       },
-      { timeout: 60000 }
+      { timeout: 300000 }
     );
     return this.trimObject(response.data);
   }

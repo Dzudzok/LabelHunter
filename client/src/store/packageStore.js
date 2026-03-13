@@ -33,7 +33,7 @@ export const usePackageStore = create((set, get) => ({
       }
     }
     if (limit) params.set('limit', limit)
-    const res = await api.post(`/nextis/import?${params.toString()}`, null, { timeout: 90000 })
+    const res = await api.post(`/nextis/import?${params.toString()}`, null, { timeout: 300000 })
     return res.data
   },
 

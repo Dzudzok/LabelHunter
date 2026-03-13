@@ -43,19 +43,31 @@ async function importDeliveryNotes(dateFrom, dateTo, limit = null) {
 
   console.log(`[Nextis Import] Processing ${deliveryNotes.length} delivery notes`);
 
+  // Pre-fetch all existing nextis_ids in one query to avoid N+1
+  const nextisIds = deliveryNotes.map(n => n.id).filter(Boolean);
+  const existingIds = new Set();
+  if (nextisIds.length > 0) {
+    // Supabase IN query has a limit, so batch in chunks of 500
+    for (let i = 0; i < nextisIds.length; i += 500) {
+      const chunk = nextisIds.slice(i, i + 500);
+      const { data: existingRows } = await supabase
+        .from('delivery_notes')
+        .select('nextis_id')
+        .in('nextis_id', chunk);
+      if (existingRows) {
+        for (const row of existingRows) existingIds.add(row.nextis_id);
+      }
+    }
+  }
+  console.log(`[Nextis Import] Found ${existingIds.size} already imported notes`);
+
   let imported = 0;
   let skipped = 0;
 
   for (const note of deliveryNotes) {
     try {
-      // Check if already imported
-      const { data: existing } = await supabase
-        .from('delivery_notes')
-        .select('id')
-        .eq('nextis_id', note.id)
-        .single();
-
-      if (existing) {
+      // Check if already imported (from pre-fetched set)
+      if (existingIds.has(note.id)) {
         skipped++;
         continue;
       }
