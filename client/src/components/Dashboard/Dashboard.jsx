@@ -93,7 +93,11 @@ export default function Dashboard() {
     setImportMsg('')
     try {
       const result = await importFromNextis(selectedDate)
-      setImportMsg(`✓ ${result.imported || 0} importováno, ${result.skipped || 0} přeskočeno`)
+      let msg = `✓ ${result.imported || 0} importováno, ${result.skipped || 0} přeskočeno`
+      if (result.newTransports && result.newTransports.length > 0) {
+        msg += ` | NOVÉ přepravce: ${result.newTransports.join(', ')} — nastavte mapování!`
+      }
+      setImportMsg(msg)
       fetchPackages(selectedDate)
     } catch (err) {
       setImportMsg('✗ ' + (err?.response?.data?.error || err.message))

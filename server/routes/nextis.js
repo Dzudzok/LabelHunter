@@ -61,6 +61,10 @@ async function importDeliveryNotes(dateFrom, dateTo, limit = null) {
   }
   console.log(`[Nextis Import] Found ${existingIds.size} already imported notes`);
 
+  // Load transport map once before the loop
+  const transportMap = await getTransportMap();
+  const newTransports = [];
+
   let imported = 0;
   let skipped = 0;
 
@@ -74,8 +78,29 @@ async function importDeliveryNotes(dateFrom, dateTo, limit = null) {
 
       // Map transport name to shipper
       const transportName = (note.transportName || '').trim();
-      const transportMap = await getTransportMap();
-      const transport = transportMap[transportName] || { shipperCode: null, serviceCode: null, skip: false };
+      let transport = transportMap[transportName];
+
+      // Auto-register unknown transport names
+      if (!transport && transportName && !transportName.startsWith('Rozvoz')) {
+        console.log(`[Nextis Import] New transport detected: "${transportName}" — adding to transport_map (unmapped)`);
+        try {
+          await supabase.from('transport_map').insert({
+            nextis_name: transportName,
+            shipper_code: null,
+            service_code: null,
+            skip: false,
+          });
+        } catch (insertErr) {
+          // ignore duplicate insert errors
+        }
+        transport = { shipperCode: null, serviceCode: null, skip: false };
+        transportMap[transportName] = transport; // cache for remaining notes
+        newTransports.push(transportName);
+      }
+
+      if (!transport) {
+        transport = { shipperCode: null, serviceCode: null, skip: false };
+      }
 
       // LEJEK: pomiń jeśli oznaczone skip=true w transport_map,
       // lub jeśli nazwa transportu zaczyna się od "Rozvoz" (własna dostawa)
@@ -168,8 +193,11 @@ async function importDeliveryNotes(dateFrom, dateTo, limit = null) {
     }
   }
 
+  if (newTransports.length > 0) {
+    console.log(`[Nextis Import] New transports found: ${newTransports.join(', ')}`);
+  }
   console.log(`[Nextis Import] Done. Imported: ${imported}, Skipped: ${skipped}`);
-  return { imported, skipped, total: deliveryNotes.length };
+  return { imported, skipped, total: deliveryNotes.length, newTransports };
 }
 
 // Export both router and import function (for cron)
