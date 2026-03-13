@@ -427,21 +427,12 @@ export default function PackageView() {
 
           {/* RIGHT SIDE - 50% */}
           <div className="flex-1 flex flex-col gap-3 overflow-y-auto pl-1">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-bold text-theme-primary">Produkty k naskenovani</h2>
-              <span className="text-theme-secondary text-lg font-bold">
-                {goodsItems.filter(i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified).length}
-                /{goodsItems.length}
-              </span>
-            </div>
-
-            <ItemList items={pkg.items || []} onSkipItem={handleSkipItem} onScanItem={handleScan} />
 
             <input
               ref={scanInputRef}
               type="text"
               placeholder="Naskenuj produkt..."
-              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-3 text-xl text-theme-primary placeholder-theme-muted outline-none"
+              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-3 text-xl text-theme-primary placeholder-theme-muted outline-none shrink-0"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.target.value.trim()) {
                   handleScan(e.target.value.trim())
@@ -452,7 +443,7 @@ export default function PackageView() {
 
             {/* Shipper override */}
             {!labelData && (
-              <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
+              <div className="bg-navy-700 rounded-xl p-4 border border-navy-600 shrink-0">
                 <div className="text-sm text-theme-secondary mb-2">
                   Přepravce <span className="text-theme-muted">(Nextis: {pkg.transport_name || '—'})</span>
                 </div>
@@ -488,27 +479,27 @@ export default function PackageView() {
               </div>
             )}
 
-            {labelError && (
-              <div className="bg-red-900/40 border border-red-600 rounded-xl p-4">
-                <div className="text-red-400 font-bold text-base mb-1">Chyba generování etikety (LP API):</div>
-                <pre className="text-red-300 text-xs whitespace-pre-wrap break-all">{labelError}</pre>
-              </div>
-            )}
-
             {!allVerified && (
               <button
                 onClick={handleSkipAll}
-                className="w-full bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary py-4 rounded-xl text-lg font-semibold transition-colors"
+                className="w-full bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary py-4 rounded-xl text-lg font-semibold transition-colors shrink-0"
               >
                 Preskocit vse
               </button>
+            )}
+
+            {labelError && (
+              <div className="bg-red-900/40 border border-red-600 rounded-xl p-4 shrink-0">
+                <div className="text-red-400 font-bold text-base mb-1">Chyba generování etikety (LP API):</div>
+                <pre className="text-red-300 text-xs whitespace-pre-wrap break-all">{labelError}</pre>
+              </div>
             )}
 
             {allVerified && !labelData && (
               <button
                 onClick={handleGenerateLabel}
                 disabled={generating || (overrideShipper && !overrideService && selectedShipperObj?.services?.length > 0)}
-                className="w-full bg-green-600 hover:bg-green-500 text-white py-5 rounded-xl text-2xl font-black transition-colors disabled:opacity-50"
+                className="w-full bg-green-600 hover:bg-green-500 text-white py-5 rounded-xl text-2xl font-black transition-colors disabled:opacity-50 shrink-0"
               >
                 {generating ? 'Generuji...' : overrideShipper
                   ? `GENERUJ (${overrideShipper}${overrideService ? '/' + overrideService : ''})`
@@ -517,7 +508,7 @@ export default function PackageView() {
             )}
 
             {labelData && (
-              <div className="mt-4">
+              <div className="mt-4 shrink-0">
                 <BarcodeAction
                   value={labelData.barcode || labelData.tracking_number || ''}
                   label="Etiketa vygenerovana"
@@ -543,6 +534,17 @@ export default function PackageView() {
                 onConfirm={handleGenerateLabel}
               />
             )}
+
+            {/* Products list — at the bottom */}
+            <div className="flex items-center justify-between shrink-0">
+              <h2 className="text-xl font-bold text-theme-primary">Produkty k naskenovani</h2>
+              <span className="text-theme-secondary text-lg font-bold">
+                {goodsItems.filter(i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified).length}
+                /{goodsItems.length}
+              </span>
+            </div>
+
+            <ItemList items={pkg.items || []} onSkipItem={handleSkipItem} onScanItem={handleScan} />
           </div>
       </div>
 
