@@ -345,76 +345,75 @@ export default function PackageView() {
               )}
             </div>
 
-            {/* Package info */}
-            <div className="bg-navy-700 rounded-xl p-5 border border-navy-600">
-              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-base">
-                <div>
-                  <span className="text-theme-muted text-sm">Faktura:</span>
-                  <div className="text-theme-primary font-bold text-xl">{pkg.invoice_number}</div>
-                </div>
-                <div>
-                  <span className="text-theme-muted text-sm">Objednavka:</span>
-                  <div className="text-theme-primary font-semibold">{pkg.order_number || '-'}</div>
-                </div>
-                <div>
-                  <span className="text-theme-muted text-sm">Prepravce:</span>
-                  <div className="text-theme-primary font-semibold">{pkg.transport_name || '-'}</div>
-                </div>
-                <div>
-                  <span className="text-theme-muted text-sm">Castka:</span>
-                  <div className="text-theme-primary font-semibold">
-                    {pkg.amount_brutto ? `${pkg.amount_brutto} ${pkg.currency || 'CZK'}` : '-'}
-                  </div>
-                </div>
-                {pkg.doc_number && (
+            {/* Package info + Parcels — side by side */}
+            <div className="flex gap-4">
+              <div className="flex-1 bg-navy-700 rounded-xl p-5 border border-navy-600">
+                <div className="grid grid-cols-2 gap-x-6 gap-y-2 text-base">
                   <div>
-                    <span className="text-theme-muted text-sm">Doklad:</span>
-                    <div className="text-theme-primary font-semibold">{pkg.doc_number}</div>
+                    <span className="text-theme-muted text-sm">Faktura:</span>
+                    <div className="text-theme-primary font-bold text-xl">{pkg.invoice_number}</div>
                   </div>
-                )}
+                  <div>
+                    <span className="text-theme-muted text-sm">Objednavka:</span>
+                    <div className="text-theme-primary font-semibold">{pkg.order_number || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-theme-muted text-sm">Prepravce:</span>
+                    <div className="text-theme-primary font-semibold">{pkg.transport_name || '-'}</div>
+                  </div>
+                  <div>
+                    <span className="text-theme-muted text-sm">Castka:</span>
+                    <div className="text-theme-primary font-semibold">
+                      {pkg.amount_brutto ? `${pkg.amount_brutto} ${pkg.currency || 'CZK'}` : '-'}
+                    </div>
+                  </div>
+                  {pkg.doc_number && (
+                    <div>
+                      <span className="text-theme-muted text-sm">Doklad:</span>
+                      <div className="text-theme-primary font-semibold">{pkg.doc_number}</div>
+                    </div>
+                  )}
+                </div>
               </div>
-            </div>
 
-            {/* Multi-parcel section */}
-            {!labelData && (
-              <div className="bg-navy-700 rounded-xl p-5 border border-navy-600">
-                <div className="flex items-center justify-between mb-3">
-                  <h2 className="text-lg font-bold text-theme-primary">
+              {!labelData && (
+                <div className="w-[280px] shrink-0 bg-navy-700 rounded-xl p-5 border border-navy-600 flex flex-col">
+                  <div className="text-lg font-bold text-theme-primary mb-2">
                     Balíky ({parcels.length} ks) — {totalWeight.toFixed(2)} kg
-                  </h2>
+                  </div>
+                  <div className="flex flex-col gap-2 flex-1">
+                    {parcels.map((parcel, idx) => (
+                      <div key={idx} className="flex items-center gap-2">
+                        <span className="text-theme-secondary text-base">#{idx + 1}</span>
+                        <input
+                          type="number"
+                          min="0.1"
+                          step="0.1"
+                          value={parcel.weight}
+                          onChange={e => updateParcelWeight(idx, e.target.value)}
+                          className="w-24 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                        />
+                        <span className="text-theme-secondary text-sm">kg</span>
+                        {parcels.length > 1 && (
+                          <button
+                            onClick={() => removeParcel(idx)}
+                            className="text-red-400 hover:text-red-300 text-xl leading-none px-1"
+                          >
+                            ×
+                          </button>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                   <button
                     onClick={addParcel}
-                    className="bg-brand-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-base font-bold transition-colors"
+                    className="bg-brand-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-base font-bold transition-colors mt-2"
                   >
                     + Pridat balík
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-3">
-                  {parcels.map((parcel, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
-                      <span className="text-theme-secondary text-base">#{idx + 1}</span>
-                      <input
-                        type="number"
-                        min="0.1"
-                        step="0.1"
-                        value={parcel.weight}
-                        onChange={e => updateParcelWeight(idx, e.target.value)}
-                        className="w-24 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
-                      />
-                      <span className="text-theme-secondary text-base">kg</span>
-                      {parcels.length > 1 && (
-                        <button
-                          onClick={() => removeParcel(idx)}
-                          className="text-red-400 hover:text-red-300 text-2xl leading-none px-1"
-                        >
-                          ×
-                        </button>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
+              )}
+            </div>
 
             {/* Hunter — pinned bottom-left */}
             <div className="mt-auto pt-2">

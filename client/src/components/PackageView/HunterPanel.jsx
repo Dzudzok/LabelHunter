@@ -105,13 +105,18 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
         </div>
       </div>
 
-      {/* Hunter tiles */}
-      <div className="flex flex-wrap gap-2">
+      {/* Hunter tiles — auto-size to fill available space */}
+      <div
+        className="grid gap-2"
+        style={{
+          gridTemplateColumns: `repeat(${hunters.length}, 1fr)`,
+        }}
+      >
         {hunters.map(h => (
           <button
             key={h.id}
             onClick={() => handleAssign(h.id)}
-            className={`px-4 py-2.5 rounded-lg text-base font-semibold transition-colors ${
+            className={`py-3 rounded-lg text-base font-semibold transition-colors truncate ${
               selectedHunter === h.id
                 ? 'bg-brand-orange text-white'
                 : 'bg-navy-800 border border-navy-600 text-theme-secondary hover:text-theme-primary hover:border-brand-orange'
