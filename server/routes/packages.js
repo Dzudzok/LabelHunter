@@ -8,6 +8,26 @@ const labelPrinterService = require('../services/LabelPrinterService');
 const emailService = require('../services/EmailService');
 const { getTransportMap } = require('../utils/transportMap');
 
+// Helper: log action to package_history
+async function logHistory(deliveryNoteId, action, workerId, details) {
+  try {
+    let workerName = null;
+    if (workerId) {
+      const { data: w } = await supabase.from('workers').select('name').eq('id', workerId).single();
+      workerName = w?.name || null;
+    }
+    await supabase.from('package_history').insert({
+      delivery_note_id: deliveryNoteId,
+      action,
+      worker_id: workerId || null,
+      worker_name: workerName,
+      details: details || null,
+    });
+  } catch (err) {
+    console.error('[audit] Failed to log history:', err.message);
+  }
+}
+
 // GET / - list packages with filtering
 router.get('/', async (req, res, next) => {
   try {
@@ -30,6 +50,53 @@ router.get('/', async (req, res, next) => {
 
     if (search) {
       query = query.or(`invoice_number.ilike.%${search}%,doc_number.ilike.%${search}%,customer_name.ilike.%${search}%`);
+    }
+
+    const { data, error } = await query;
+    if (error) throw error;
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /search - advanced search across all dates
+// MUST be before /:id to avoid Express matching "search" as an id
+router.get('/search', async (req, res, next) => {
+  try {
+    const { invoice_number, order_number, customer_name, doc_number, date_from, date_to, status } = req.query;
+
+    let query = supabase
+      .from('delivery_notes')
+      .select('*')
+      .order('date_issued', { ascending: false })
+      .limit(100);
+
+    if (invoice_number) {
+      query = query.ilike('invoice_number', `%${invoice_number}%`);
+    }
+    if (order_number) {
+      query = query.ilike('order_number', `%${order_number}%`);
+    }
+    if (customer_name) {
+      query = query.ilike('customer_name', `%${customer_name}%`);
+    }
+    if (doc_number) {
+      query = query.ilike('doc_number', `%${doc_number}%`);
+    }
+    if (date_from) {
+      query = query.gte('date_issued', `${date_from}T00:00:00.000Z`);
+    }
+    if (date_to) {
+      query = query.lte('date_issued', `${date_to}T23:59:59.999Z`);
+    }
+    if (status) {
+      const statuses = status.split(',');
+      if (statuses.length === 1) {
+        query = query.eq('status', statuses[0]);
+      } else {
+        query = query.in('status', statuses);
+      }
     }
 
     const { data, error } = await query;
@@ -194,6 +261,12 @@ router.put('/:id/address', async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    await logHistory(parseInt(id), 'address_update', null, {
+      customer_name,
+      delivery_street, delivery_city, delivery_postal_code, delivery_country,
+    });
+
     res.json(data);
   } catch (err) {
     next(err);
@@ -204,7 +277,10 @@ router.put('/:id/address', async (req, res, next) => {
 router.put('/:id/status', async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { status } = req.body;
+    const { status, workerId } = req.body;
+
+    // Get old status for history
+    const { data: old } = await supabase.from('delivery_notes').select('status').eq('id', id).single();
 
     const { data, error } = await supabase
       .from('delivery_notes')
@@ -214,6 +290,12 @@ router.put('/:id/status', async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    await logHistory(parseInt(id), 'status_change', workerId || null, {
+      old_status: old?.status,
+      new_status: status,
+    });
+
     res.json(data);
   } catch (err) {
     next(err);
@@ -247,6 +329,12 @@ router.put('/:id/scan-item', async (req, res, next) => {
         .is('scanned_by', null);
     }
 
+    await logHistory(parseInt(id), 'scan_item', workerId, {
+      item_id: itemId,
+      item_code: data.code,
+      scanned_qty: qty,
+    });
+
     res.json(data);
   } catch (err) {
     next(err);
@@ -265,6 +353,8 @@ router.put('/:id/skip-item', async (req, res, next) => {
       .eq('id', itemId);
 
     if (skipError) throw skipError;
+
+    await logHistory(parseInt(id), 'skip_item', null, { item_id: itemId });
 
     // Return full package with items (same as GET /:id)
     const { data: dn, error: dnError } = await supabase
@@ -300,6 +390,9 @@ router.put('/:id/skip-all', async (req, res, next) => {
       .eq('delivery_note_id', id);
 
     if (error) throw error;
+
+    await logHistory(parseInt(id), 'skip_all', null, {});
+
     res.json({ success: true });
   } catch (err) {
     next(err);
@@ -452,6 +545,13 @@ router.post('/:id/generate-label', async (req, res, next) => {
 
     if (updateError) throw updateError;
 
+    await logHistory(parseInt(id), 'generate_label', workerId || null, {
+      tracking_number: updated.tracking_number,
+      shipper_code: transport.shipperCode,
+      shipper_service: transport.serviceCode,
+      lp_shipment_id: shipmentResult.id,
+    });
+
     // Delete items after label generated — not needed anymore, LP desktop is the archive
     await supabase.from('delivery_note_items').delete().eq('delivery_note_id', id);
 
@@ -565,7 +665,30 @@ router.delete('/:id/label', async (req, res, next) => {
       .single();
 
     if (updateError) throw updateError;
+
+    await logHistory(parseInt(id), 'cancel_label', null, {
+      lp_shipment_id: dn.lp_shipment_id,
+    });
+
     res.json({ success: true, deliveryNote: updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /:id/history - get audit history for a package
+router.get('/:id/history', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const { data, error } = await supabase
+      .from('package_history')
+      .select('*')
+      .eq('delivery_note_id', id)
+      .order('created_at', { ascending: false });
+
+    if (error) throw error;
+    res.json(data || []);
   } catch (err) {
     next(err);
   }

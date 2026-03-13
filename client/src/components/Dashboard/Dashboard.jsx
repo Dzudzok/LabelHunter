@@ -9,6 +9,7 @@ import StatsBar from './StatsBar'
 import PackageCard from './PackageCard'
 import TransportMapModal from './TransportMapModal'
 import StatsModal from './StatsModal'
+import SearchPanel from '../Search/SearchPanel'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -27,10 +28,9 @@ export default function Dashboard() {
   const [scanValue, setScanValue] = useState('')
   const [importing, setImporting] = useState(false)
   const [importMsg, setImportMsg] = useState('')
-  const [importHourFrom, setImportHourFrom] = useState('06')
-  const [importHourTo, setImportHourTo] = useState('18')
   const [showTransportMap, setShowTransportMap] = useState(false)
   const [showStats, setShowStats] = useState(false)
+  const [showSearch, setShowSearch] = useState(false)
 
   // Right panel search
   const [searchQuery, setSearchQuery] = useState('')
@@ -90,9 +90,7 @@ export default function Dashboard() {
     setImporting(true)
     setImportMsg('')
     try {
-      const dateFrom = `${selectedDate}T${importHourFrom}:00:00.000Z`
-      const dateTo   = `${selectedDate}T${importHourTo}:59:59.000Z`
-      const result = await importFromNextis(null, null, dateFrom, dateTo)
+      const result = await importFromNextis(selectedDate)
       setImportMsg(`✓ ${result.imported || 0} importováno, ${result.skipped || 0} přeskočeno`)
       fetchPackages(selectedDate)
     } catch (err) {
@@ -198,28 +196,6 @@ export default function Dashboard() {
 
           {/* Import controls */}
           <div className="flex items-center gap-2 flex-wrap">
-            <div className="flex items-center gap-1 text-gray-300 text-sm">
-              <span>Od</span>
-              <select
-                value={importHourFrom}
-                onChange={e => setImportHourFrom(e.target.value)}
-                className="bg-navy-700 border border-navy-600 rounded px-2 py-1 text-white min-h-0 text-sm"
-              >
-                {Array.from({length: 24}, (_, i) => String(i).padStart(2,'0')).map(h => (
-                  <option key={h} value={h}>{h}:00</option>
-                ))}
-              </select>
-              <span>do</span>
-              <select
-                value={importHourTo}
-                onChange={e => setImportHourTo(e.target.value)}
-                className="bg-navy-700 border border-navy-600 rounded px-2 py-1 text-white min-h-0 text-sm"
-              >
-                {Array.from({length: 24}, (_, i) => String(i).padStart(2,'0')).map(h => (
-                  <option key={h} value={h}>{h}:59</option>
-                ))}
-              </select>
-            </div>
             {importMsg && (
               <span className="text-brand-orange font-semibold text-xs">{importMsg}</span>
             )}
@@ -229,6 +205,12 @@ export default function Dashboard() {
               className="bg-brand-orange hover:bg-brand-orange-dark text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
             >
               {importing ? 'Importuji...' : 'Importuj'}
+            </button>
+            <button
+              onClick={() => setShowSearch(true)}
+              className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
+            >
+              Vyhledávání
             </button>
             <button
               onClick={() => setShowStats(true)}
@@ -246,6 +228,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {showSearch && <SearchPanel isOpen={showSearch} onClose={() => setShowSearch(false)} />}
       {showStats && <StatsModal date={selectedDate} onClose={() => setShowStats(false)} />}
       {showTransportMap && <TransportMapModal onClose={() => setShowTransportMap(false)} />}
 

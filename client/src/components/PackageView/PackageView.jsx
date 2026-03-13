@@ -23,6 +23,11 @@ export default function PackageView() {
   const [overrideService, setOverrideService] = useState('')
   const [shippers, setShippers] = useState([])
 
+  // History state
+  const [history, setHistory] = useState([])
+  const [historyOpen, setHistoryOpen] = useState(false)
+  const [historyLoading, setHistoryLoading] = useState(false)
+
   // Address edit state
   const [editingAddress, setEditingAddress] = useState(false)
   const [addressForm, setAddressForm] = useState({})
@@ -60,9 +65,22 @@ export default function PackageView() {
     }
   }, [id])
 
+  const fetchHistory = useCallback(async () => {
+    setHistoryLoading(true)
+    try {
+      const res = await api.get(`/packages/${id}/history`)
+      setHistory(res.data)
+    } catch {
+      setHistory([])
+    } finally {
+      setHistoryLoading(false)
+    }
+  }, [id])
+
   useEffect(() => {
     fetchPackage()
-  }, [fetchPackage])
+    fetchHistory()
+  }, [fetchPackage, fetchHistory])
 
   useEffect(() => {
     api.get('/labelprinter/shippers')
@@ -523,6 +541,93 @@ export default function PackageView() {
             )}
           </div>
         </div>
+
+        {/* History section */}
+        <div className="mt-6">
+          <button
+            onClick={() => setHistoryOpen(!historyOpen)}
+            className="flex items-center gap-2 text-gray-400 hover:text-white text-lg font-semibold transition-colors"
+          >
+            <span className="text-base">{historyOpen ? '▼' : '▶'}</span>
+            Historie ({history.length})
+          </button>
+
+          {historyOpen && (
+            <div className="mt-3 bg-navy-700 rounded-xl border border-navy-600 overflow-hidden">
+              {historyLoading ? (
+                <div className="text-center py-6 text-gray-500">Načítám historii...</div>
+              ) : history.length === 0 ? (
+                <div className="text-center py-6 text-gray-500">Žádná historie</div>
+              ) : (
+                <div className="divide-y divide-navy-600">
+                  {history.map(h => (
+                    <HistoryRow key={h.id} entry={h} />
+                  ))}
+                </div>
+              )}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  )
+}
+
+const ACTION_LABELS = {
+  scan_item: 'Naskenován produkt',
+  skip_item: 'Produkt přeskočen',
+  skip_all: 'Vše přeskočeno',
+  generate_label: 'Etiketa vygenerována',
+  cancel_label: 'Etiketa zrušena',
+  status_change: 'Změna statusu',
+  address_update: 'Adresa upravena',
+  import: 'Import z Nextis',
+}
+
+const ACTION_COLORS = {
+  scan_item: 'text-blue-400',
+  skip_item: 'text-yellow-400',
+  skip_all: 'text-yellow-400',
+  generate_label: 'text-green-400',
+  cancel_label: 'text-red-400',
+  status_change: 'text-purple-400',
+  address_update: 'text-orange-400',
+  import: 'text-gray-400',
+}
+
+function HistoryRow({ entry }) {
+  const time = new Date(entry.created_at)
+  const dateStr = time.toLocaleDateString('cs-CZ')
+  const timeStr = time.toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+  const details = entry.details || {}
+
+  let detail = ''
+  if (entry.action === 'scan_item' && details.item_code) {
+    detail = `${details.item_code} (qty: ${details.scanned_qty})`
+  } else if (entry.action === 'status_change') {
+    detail = `${details.old_status || '?'} → ${details.new_status || '?'}`
+  } else if (entry.action === 'generate_label' && details.tracking_number) {
+    detail = `${details.shipper_code} / ${details.tracking_number}`
+  } else if (entry.action === 'address_update' && details.customer_name) {
+    detail = `${details.customer_name}, ${details.delivery_city || ''}`
+  } else if (entry.action === 'cancel_label') {
+    detail = `LP #${details.lp_shipment_id || '?'}`
+  }
+
+  return (
+    <div className="flex items-center gap-4 px-4 py-3 text-sm">
+      <div className="text-gray-500 shrink-0 w-28">
+        <div>{dateStr}</div>
+        <div>{timeStr}</div>
+      </div>
+      <div className={`font-semibold shrink-0 w-44 ${ACTION_COLORS[entry.action] || 'text-gray-400'}`}>
+        {ACTION_LABELS[entry.action] || entry.action}
+      </div>
+      <div className="text-gray-400 flex-1 truncate">
+        {detail}
+      </div>
+      <div className="text-gray-500 shrink-0 w-32 text-right">
+        {entry.worker_name || '—'}
       </div>
     </div>
   )
