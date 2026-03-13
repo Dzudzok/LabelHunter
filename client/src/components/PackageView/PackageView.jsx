@@ -245,15 +245,15 @@ export default function PackageView() {
         </button>
       </div>
 
-      <div className="flex-1 overflow-hidden flex gap-3 px-4 py-3">
+      <div className="flex-1 overflow-hidden flex gap-4 px-5 py-4">
 
-          {/* LEFT SIDE - 55% */}
-          <div className="w-[55%] shrink-0 flex flex-col gap-3 overflow-y-auto">
+          {/* LEFT SIDE - 50% */}
+          <div className="w-1/2 shrink-0 flex flex-col gap-4 overflow-y-auto pr-1">
 
             {/* Customer info / Address edit */}
-            <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
-              <div className="flex items-center justify-between mb-2">
-                <h2 className="text-lg font-bold text-theme-primary">Zakaznik</h2>
+            <div className="bg-navy-700 rounded-xl p-5 border border-navy-600">
+              <div className="flex items-center justify-between mb-3">
+                <h2 className="text-xl font-bold text-theme-primary">Zakaznik</h2>
                 {!labelData && !editingAddress && (
                   <button
                     onClick={startEditAddress}
@@ -323,86 +323,89 @@ export default function PackageView() {
                   </div>
                 </div>
               ) : (
-                <div className="space-y-1 text-sm">
-                  <div className="text-theme-primary font-semibold text-base">{pkg.customer_name}</div>
-                  <div className="text-theme-secondary">
-                    {[pkg.delivery_street || pkg.customer_street, pkg.delivery_city || pkg.customer_city, pkg.delivery_postal_code || pkg.customer_postal_code, pkg.delivery_country || pkg.customer_country].filter(Boolean).join(', ')}
+                <div className="space-y-1">
+                  <div className="text-theme-primary font-semibold text-lg">{pkg.customer_name}</div>
+                  {(pkg.delivery_street || pkg.customer_street) && (
+                    <div className="text-theme-secondary text-base">{pkg.delivery_street || pkg.customer_street}</div>
+                  )}
+                  <div className="text-theme-secondary text-base">
+                    {[pkg.delivery_city || pkg.customer_city, pkg.delivery_postal_code || pkg.customer_postal_code, pkg.delivery_country || pkg.customer_country].filter(Boolean).join(', ')}
                   </div>
-                  <div className="flex gap-4">
+                  <div className="flex gap-6 pt-1">
                     {(pkg.delivery_phone || pkg.customer_phone) && (
-                      <a href={`tel:${pkg.delivery_phone || pkg.customer_phone}`} className="text-brand-orange hover:underline text-sm">
+                      <a href={`tel:${pkg.delivery_phone || pkg.customer_phone}`} className="text-brand-orange hover:underline text-base font-semibold">
                         {pkg.delivery_phone || pkg.customer_phone}
                       </a>
                     )}
                     {(pkg.delivery_email || pkg.customer_email) && (
-                      <span className="text-theme-muted text-sm">{pkg.delivery_email || pkg.customer_email}</span>
+                      <span className="text-theme-muted text-base">{pkg.delivery_email || pkg.customer_email}</span>
                     )}
                   </div>
                 </div>
               )}
             </div>
 
-            {/* Package info — compact inline */}
-            <div className="bg-navy-700 rounded-xl p-4 border border-navy-600">
-              <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm">
+            {/* Package info */}
+            <div className="bg-navy-700 rounded-xl p-5 border border-navy-600">
+              <div className="grid grid-cols-2 gap-x-8 gap-y-2 text-base">
                 <div>
-                  <span className="text-theme-muted">FV: </span>
-                  <span className="text-theme-primary font-bold text-base">{pkg.invoice_number}</span>
+                  <span className="text-theme-muted text-sm">Faktura:</span>
+                  <div className="text-theme-primary font-bold text-xl">{pkg.invoice_number}</div>
                 </div>
                 <div>
-                  <span className="text-theme-muted">Obj: </span>
-                  <span className="text-theme-primary font-semibold">{pkg.order_number || '-'}</span>
+                  <span className="text-theme-muted text-sm">Objednavka:</span>
+                  <div className="text-theme-primary font-semibold">{pkg.order_number || '-'}</div>
                 </div>
                 <div>
-                  <span className="text-theme-muted">Prepravce: </span>
-                  <span className="text-theme-primary font-semibold">{pkg.transport_name || '-'}</span>
+                  <span className="text-theme-muted text-sm">Prepravce:</span>
+                  <div className="text-theme-primary font-semibold">{pkg.transport_name || '-'}</div>
                 </div>
                 <div>
-                  <span className="text-theme-muted">Castka: </span>
-                  <span className="text-theme-primary font-semibold">
+                  <span className="text-theme-muted text-sm">Castka:</span>
+                  <div className="text-theme-primary font-semibold">
                     {pkg.amount_brutto ? `${pkg.amount_brutto} ${pkg.currency || 'CZK'}` : '-'}
-                  </span>
+                  </div>
                 </div>
                 {pkg.doc_number && (
                   <div>
-                    <span className="text-theme-muted">Dok: </span>
-                    <span className="text-theme-primary font-semibold">{pkg.doc_number}</span>
+                    <span className="text-theme-muted text-sm">Doklad:</span>
+                    <div className="text-theme-primary font-semibold">{pkg.doc_number}</div>
                   </div>
                 )}
               </div>
             </div>
 
-            {/* Multi-parcel section — compact */}
+            {/* Multi-parcel section */}
             {!labelData && (
-              <div className="bg-navy-700 rounded-xl p-3 border border-navy-600">
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-sm font-bold text-theme-primary">
+              <div className="bg-navy-700 rounded-xl p-5 border border-navy-600">
+                <div className="flex items-center justify-between mb-3">
+                  <h2 className="text-lg font-bold text-theme-primary">
                     Balíky ({parcels.length} ks) — {totalWeight.toFixed(2)} kg
-                  </span>
+                  </h2>
                   <button
                     onClick={addParcel}
-                    className="bg-brand-orange hover:bg-orange-600 text-white px-3 py-1 rounded-lg text-sm font-bold transition-colors"
+                    className="bg-brand-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-base font-bold transition-colors"
                   >
-                    + Pridat
+                    + Pridat balík
                   </button>
                 </div>
-                <div className="flex flex-wrap gap-2">
+                <div className="flex flex-wrap gap-3">
                   {parcels.map((parcel, idx) => (
-                    <div key={idx} className="flex items-center gap-1">
-                      <span className="text-theme-secondary text-xs">#{idx + 1}</span>
+                    <div key={idx} className="flex items-center gap-2">
+                      <span className="text-theme-secondary text-base">#{idx + 1}</span>
                       <input
                         type="number"
                         min="0.1"
                         step="0.1"
                         value={parcel.weight}
                         onChange={e => updateParcelWeight(idx, e.target.value)}
-                        className="w-20 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-2 py-1 text-sm outline-none focus:border-brand-orange"
+                        className="w-24 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                       />
-                      <span className="text-theme-muted text-xs">kg</span>
+                      <span className="text-theme-secondary text-base">kg</span>
                       {parcels.length > 1 && (
                         <button
                           onClick={() => removeParcel(idx)}
-                          className="text-red-400 hover:text-red-300 text-lg leading-none px-1"
+                          className="text-red-400 hover:text-red-300 text-2xl leading-none px-1"
                         >
                           ×
                         </button>
@@ -414,11 +417,11 @@ export default function PackageView() {
             )}
           </div>
 
-          {/* RIGHT SIDE - 45% */}
-          <div className="flex-1 flex flex-col gap-2 overflow-y-auto">
+          {/* RIGHT SIDE - 50% */}
+          <div className="flex-1 flex flex-col gap-3 overflow-y-auto pl-1">
             <div className="flex items-center justify-between">
-              <h2 className="text-base font-bold text-theme-primary">Produkty</h2>
-              <span className="text-theme-secondary text-sm font-bold">
+              <h2 className="text-xl font-bold text-theme-primary">Produkty k naskenovani</h2>
+              <span className="text-theme-secondary text-lg font-bold">
                 {goodsItems.filter(i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified).length}
                 /{goodsItems.length}
               </span>
@@ -430,7 +433,7 @@ export default function PackageView() {
               ref={scanInputRef}
               type="text"
               placeholder="Naskenuj produkt..."
-              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-3 py-3 text-lg text-theme-primary placeholder-theme-muted outline-none"
+              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-3 text-xl text-theme-primary placeholder-theme-muted outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.target.value.trim()) {
                   handleScan(e.target.value.trim())
@@ -494,7 +497,7 @@ export default function PackageView() {
             {!allVerified && (
               <button
                 onClick={handleSkipAll}
-                className="w-full bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary py-3 rounded-xl text-base font-semibold transition-colors"
+                className="w-full bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary py-4 rounded-xl text-lg font-semibold transition-colors"
               >
                 Preskocit vse
               </button>
@@ -504,7 +507,7 @@ export default function PackageView() {
               <button
                 onClick={handleGenerateLabel}
                 disabled={generating || (overrideShipper && !overrideService && selectedShipperObj?.services?.length > 0)}
-                className="w-full bg-green-600 hover:bg-green-500 text-white py-4 rounded-xl text-xl font-black transition-colors disabled:opacity-50"
+                className="w-full bg-green-600 hover:bg-green-500 text-white py-5 rounded-xl text-2xl font-black transition-colors disabled:opacity-50"
               >
                 {generating ? 'Generuji...' : overrideShipper
                   ? `GENERUJ (${overrideShipper}${overrideService ? '/' + overrideService : ''})`

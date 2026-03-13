@@ -3,14 +3,14 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
 
   if (goodsItems.length === 0) {
     return (
-      <div className="text-center py-4 text-theme-secondary text-sm">
+      <div className="text-center py-6 text-theme-secondary">
         Zadne produkty k naskenovanim
       </div>
     )
   }
 
   return (
-    <div className="flex flex-col gap-1.5">
+    <div className="flex flex-col gap-2">
       {goodsItems.map(item => {
         const scanned = parseFloat(item.scanned_qty) || 0
         const total = parseFloat(item.qty) || 1
@@ -21,7 +21,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
         return (
           <div
             key={item.id}
-            className={`rounded-lg px-3 py-2 border-2 transition-colors ${
+            className={`rounded-xl px-4 py-3 border-2 transition-colors ${
               isComplete
                 ? 'bg-green-900/30 border-green-600'
                 : isPartial
@@ -31,7 +31,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
           >
             <div className="flex items-center gap-3">
               {/* Checkbox */}
-              <div className="text-lg shrink-0">
+              <div className="text-2xl shrink-0">
                 {isComplete ? (
                   <span className="text-green-400">&#10003;</span>
                 ) : (
@@ -40,7 +40,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
               </div>
 
               {/* Quantity counter */}
-              <div className={`text-base font-bold shrink-0 min-w-[50px] text-center ${
+              <div className={`text-xl font-bold shrink-0 min-w-[60px] text-center ${
                 isComplete ? 'text-green-400' : isPartial ? 'text-yellow-400' : 'text-theme-secondary'
               }`}>
                 {scanned}z{total}
@@ -48,17 +48,17 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
 
               {/* Product info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-1.5">
+                <div className="flex items-center gap-2">
                   {item.brand && (
-                    <span className="text-xs font-semibold text-brand-orange bg-brand-orange/20 px-1.5 py-0.5 rounded">
+                    <span className="text-sm font-semibold text-brand-orange bg-brand-orange/20 px-2 py-0.5 rounded">
                       {item.brand}
                     </span>
                   )}
-                  <span className="text-sm font-mono text-theme-secondary truncate">
+                  <span className="text-base font-mono text-theme-secondary truncate">
                     {item.code}
                   </span>
                 </div>
-                <div className="text-xs text-theme-muted truncate">
+                <div className="text-sm text-theme-muted truncate mt-0.5">
                   {item.name || item.text}
                 </div>
               </div>
@@ -67,9 +67,9 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
               {!isComplete && !isSkipped && (
                 <button
                   onClick={() => onSkipItem(item.id)}
-                  className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-1.5 rounded-lg text-xs font-medium shrink-0 transition-colors"
+                  className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-4 py-2 rounded-lg text-sm font-medium shrink-0 transition-colors"
                 >
-                  Skip
+                  Preskocit
                 </button>
               )}
             </div>
