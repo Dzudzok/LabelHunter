@@ -465,7 +465,7 @@ export default function PackageView() {
             {!labelData && (
               <div className="bg-navy-700 rounded-xl p-4 border border-navy-600 shrink-0">
                 <div className="text-sm text-theme-secondary mb-2">
-                  Přepravce <span className="text-theme-muted">(Nextis: {pkg.transport_name || '—'})</span>
+                  Přepravce <span className="text-theme-muted">(LP: {pkg.shipper_code ? `${pkg.shipper_code}${pkg.shipper_service ? '/' + pkg.shipper_service : ''}` : pkg.transport_name || '—'})</span>
                 </div>
                 <div className="flex gap-2">
                   <select
@@ -473,7 +473,7 @@ export default function PackageView() {
                     onChange={(e) => { setOverrideShipper(e.target.value); setOverrideService(''); setLabelError(null) }}
                     className="flex-1 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-3 text-base outline-none focus:border-brand-orange"
                   >
-                    <option value="">Auto (z Nextis)</option>
+                    <option value="">Auto (z LP)</option>
                     {shippers.map(s => (
                       <option key={s.code} value={s.code}>{s.name || s.code}</option>
                     ))}
