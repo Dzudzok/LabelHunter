@@ -3,12 +3,12 @@
 
 const API = import.meta.env.VITE_API_URL || '/api'
 
-async function getConnectedQZ() {
-  const q = window.qz
-  if (!q) throw new Error('QZ Tray JS not loaded')
-  if (q.websocket.isActive()) return q
+let securityConfigured = false
 
-  // Use server-side certificate + signing (no anonymous mode needed)
+function configureQZSecurity(q) {
+  if (securityConfigured) return
+  securityConfigured = true
+
   q.security.setCertificatePromise((resolve, reject) => {
     fetch(`${API}/qz/certificate`)
       .then(r => r.ok ? r.text() : Promise.reject(r.statusText))
@@ -26,8 +26,18 @@ async function getConnectedQZ() {
       .then(d => resolve(d.signature))
       .catch(reject)
   })
+}
 
-  await q.websocket.connect({ retries: 3, delay: 1 })
+async function getConnectedQZ() {
+  const q = window.qz
+  if (!q) throw new Error('QZ Tray JS not loaded')
+
+  // Always configure security BEFORE connecting
+  configureQZSecurity(q)
+
+  if (!q.websocket.isActive()) {
+    await q.websocket.connect({ retries: 3, delay: 1 })
+  }
   return q
 }
 
