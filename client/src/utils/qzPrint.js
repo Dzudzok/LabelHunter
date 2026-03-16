@@ -1,15 +1,33 @@
 // QZ Tray integration for silent label printing
 // QZ Tray must be running on the local machine (https://qz.io)
-// "Block anonymous requests" must be UNCHECKED in QZ Tray tray menu
+
+const API = import.meta.env.VITE_API_URL || '/api'
 
 async function getConnectedQZ() {
   const q = window.qz
   if (!q) throw new Error('QZ Tray JS not loaded')
-  if (!q.websocket.isActive()) {
-    q.security.setCertificatePromise((resolve) => resolve())
-    q.security.setSignaturePromise(() => (resolve) => resolve())
-    await q.websocket.connect({ retries: 3, delay: 1 })
-  }
+  if (q.websocket.isActive()) return q
+
+  // Use server-side certificate + signing (no anonymous mode needed)
+  q.security.setCertificatePromise((resolve, reject) => {
+    fetch(`${API}/qz/certificate`)
+      .then(r => r.ok ? r.text() : Promise.reject(r.statusText))
+      .then(resolve)
+      .catch(reject)
+  })
+
+  q.security.setSignaturePromise((toSign) => (resolve, reject) => {
+    fetch(`${API}/qz/sign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ request: toSign }),
+    })
+      .then(r => r.json())
+      .then(d => resolve(d.signature))
+      .catch(reject)
+  })
+
+  await q.websocket.connect({ retries: 3, delay: 1 })
   return q
 }
 
