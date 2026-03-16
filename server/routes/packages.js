@@ -470,7 +470,7 @@ router.post('/manual-label', async (req, res, next) => {
         phone: recipientPhone || '',
         email: recipientEmail || '',
       },
-      parcels: [{ weight: Math.max(parseFloat(weight) || 0.5, 0.1) }],
+      parcels: [{ weight: Math.max(parseFloat(weight) || 0.5, 0.1), ...((shipperCode || '').toUpperCase() === 'UPS' ? { packageType: '02' } : {}) }],
       labels: { format: 'A6' },
     };
 
@@ -598,13 +598,15 @@ router.post('/:id/generate-label', async (req, res, next) => {
     if (autoWeight < 0.5) autoWeight = 0.5;
 
     // Build parcels array — from body (user-defined) or auto single parcel
+    const isUPS = (transport.shipperCode || '').toUpperCase() === 'UPS';
     let parcelsForLP;
     if (bodyParcels && Array.isArray(bodyParcels) && bodyParcels.length > 0) {
       parcelsForLP = bodyParcels.map(p => ({
         weight: Math.round(Math.max(parseFloat(p.weight) || 0.5, 0.1) * 100) / 100,
+        ...(isUPS ? { packageType: '02' } : {}),
       }));
     } else {
-      parcelsForLP = [{ weight: Math.round(autoWeight * 100) / 100 }];
+      parcelsForLP = [{ weight: Math.round(autoWeight * 100) / 100, ...(isUPS ? { packageType: '02' } : {}) }];
     }
 
     // Build shipment data for LP API
