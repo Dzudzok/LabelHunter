@@ -9,6 +9,8 @@ function configureQZSecurity(q) {
   if (securityConfigured) return
   securityConfigured = true
 
+  q.security.setSignatureAlgorithm('SHA512')
+
   q.security.setCertificatePromise((resolve, reject) => {
     fetch(`${API}/qz/certificate`)
       .then(r => r.ok ? r.text() : Promise.reject(r.statusText))
