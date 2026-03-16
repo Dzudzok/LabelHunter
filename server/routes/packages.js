@@ -432,8 +432,8 @@ router.post('/manual-label', async (req, res, next) => {
     const shipmentData = {
       shipperCode,
       serviceCode,
-      variableSymbol: invoiceNumber || '',
-      orderNumber: orderNumber || '',
+      variableSymbol: invoiceNumber || orderNumber || `M${Date.now()}`,
+      orderNumber: orderNumber || invoiceNumber || `M${Date.now()}`,
       paymentInAdvance: !cod,
       price: cod || 0,
       priceCurrency: curr,

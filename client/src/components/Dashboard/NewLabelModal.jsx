@@ -173,7 +173,7 @@ export default function NewLabelModal({ onClose }) {
             </div>
 
             {/* Weight + COD + refs */}
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="text-theme-muted text-xs mb-1 block">Váha (kg)</label>
                 <input type="number" min="0.1" step="0.1" value={form.weight} onChange={e => set('weight', e.target.value)} className={inputCls} />
@@ -190,6 +190,10 @@ export default function NewLabelModal({ onClose }) {
               <div>
                 <label className="text-theme-muted text-xs mb-1 block">Faktura</label>
                 <input value={form.invoiceNumber} onChange={e => set('invoiceNumber', e.target.value)} placeholder="FV-1234" className={inputCls} />
+              </div>
+              <div>
+                <label className="text-theme-muted text-xs mb-1 block">Objednávka</label>
+                <input value={form.orderNumber} onChange={e => set('orderNumber', e.target.value)} placeholder="OBJ-1234" className={inputCls} />
               </div>
             </div>
 
