@@ -49,7 +49,7 @@ export default function TransportMapModal({ onClose }) {
       <div className="bg-navy-800 border border-navy-600 rounded-2xl w-full max-w-4xl">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-navy-700">
-          <h2 className="text-xl font-bold text-theme-primary">Mapování přepravců (Nextis → LP API)</h2>
+          <h2 className="text-xl font-bold text-theme-primary">Mapování přepravců (LP záloha)</h2>
           <button onClick={onClose} className="text-theme-secondary hover:text-theme-primary text-2xl min-h-0 leading-none">&times;</button>
         </div>
 
@@ -58,7 +58,7 @@ export default function TransportMapModal({ onClose }) {
           <table className="w-full text-sm">
             <thead>
               <tr className="text-theme-secondary text-left border-b border-navy-700">
-                <th className="pb-2 pr-4 font-semibold">Název z Nextis</th>
+                <th className="pb-2 pr-4 font-semibold">Název služby (LP)</th>
                 <th className="pb-2 pr-4 font-semibold">Přepravce (LP)</th>
                 <th className="pb-2 pr-4 font-semibold">Služba (LP)</th>
                 <th className="pb-2 font-semibold"></th>
@@ -72,7 +72,7 @@ export default function TransportMapModal({ onClose }) {
                       value={row.nextisName || ''}
                       onChange={e => update(i, 'nextisName', e.target.value)}
                       className="w-full bg-navy-900 border border-navy-600 rounded-lg px-3 py-2 text-theme-primary text-sm outline-none focus:border-brand-orange"
-                      placeholder="Název přepravce z Nextis..."
+                      placeholder="Název služby z LP (transport_name)..."
                     />
                   </td>
                   <td className="py-2 pr-4">

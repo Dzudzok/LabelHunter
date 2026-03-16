@@ -433,11 +433,13 @@ router.post('/:id/generate-label', async (req, res, next) => {
 
     if (itemsError) throw itemsError;
 
-    // Map transport to shipper — body overrides auto-mapping
+    // Map transport to shipper — priority: body override > LP sync codes > transport_map fallback
     const { shipperCode: bodyShipper, serviceCode: bodyService, workerId, parcels: bodyParcels } = req.body || {};
     let transport;
     if (bodyShipper) {
       transport = { shipperCode: bodyShipper, serviceCode: bodyService || bodyShipper };
+    } else if (dn.shipper_code) {
+      transport = { shipperCode: dn.shipper_code, serviceCode: dn.shipper_service || dn.shipper_code };
     } else {
       const transportMap = await getTransportMap();
       transport = transportMap[dn.transport_name];
@@ -473,11 +475,11 @@ router.post('/:id/generate-label', async (req, res, next) => {
       serviceCode: transport.serviceCode,
       variableSymbol: dn.invoice_number || dn.doc_number,
       orderNumber: dn.order_number || '',
-      paymentInAdvance: true,
+      paymentInAdvance: dn.amount_brutto ? false : true,
       price: dn.amount_brutto ? parseFloat(dn.amount_brutto) : 0,
       priceCurrency: dn.currency || 'CZK',
-      cod: null,
-      codCurrency: null,
+      cod: dn.amount_brutto ? parseFloat(dn.amount_brutto) : null,
+      codCurrency: dn.amount_brutto ? (dn.currency || 'CZK') : null,
       description: 'Autodíly',
       recipient: {
         company: dn.customer_name,
