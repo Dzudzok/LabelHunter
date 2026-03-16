@@ -33,29 +33,39 @@ router.get('/', async (req, res, next) => {
   try {
     const { date, status, search } = req.query;
 
-    let query = supabase
-      .from('delivery_notes')
-      .select('*')
-      .order('date_issued', { ascending: false })
-      .limit(5000);
+    // Paginate to bypass Supabase max_rows=1000 limit
+    const PAGE_SIZE = 1000;
+    let allData = [];
+    let page = 0;
 
-    if (date) {
-      const dayStart = `${date}T00:00:00.000Z`;
-      const dayEnd = `${date}T23:59:59.999Z`;
-      query = query.gte('date_issued', dayStart).lte('date_issued', dayEnd);
+    while (true) {
+      let query = supabase
+        .from('delivery_notes')
+        .select('*')
+        .order('date_issued', { ascending: false })
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+
+      if (date) {
+        const dayStart = `${date}T00:00:00.000Z`;
+        const dayEnd = `${date}T23:59:59.999Z`;
+        query = query.gte('date_issued', dayStart).lte('date_issued', dayEnd);
+      }
+      if (status) {
+        query = query.eq('status', status);
+      }
+      if (search) {
+        query = query.or(`invoice_number.ilike.%${search}%,doc_number.ilike.%${search}%,customer_name.ilike.%${search}%`);
+      }
+
+      const { data, error } = await query;
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      allData = allData.concat(data);
+      if (data.length < PAGE_SIZE) break;
+      page++;
     }
 
-    if (status) {
-      query = query.eq('status', status);
-    }
-
-    if (search) {
-      query = query.or(`invoice_number.ilike.%${search}%,doc_number.ilike.%${search}%,customer_name.ilike.%${search}%`);
-    }
-
-    const { data, error } = await query;
-    if (error) throw error;
-    res.json(data);
+    res.json(allData);
   } catch (err) {
     next(err);
   }
