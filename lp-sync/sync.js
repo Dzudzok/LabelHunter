@@ -44,9 +44,17 @@ async function main() {
         s.weight,
         s.numberOfPackages,
         s.dateCreated,
-        st.name AS service_name
+        s.codIndex,
+        s.price,
+        s.isPaymentInAdvance,
+        s.ico,
+        st.name AS service_name,
+        c.iso2Letters AS country_code,
+        cur.iso4217 AS currency_code
       FROM dbo.shipment s
       LEFT JOIN dbo.service_type st ON s.fk_service_type = st.pk_service_type
+      LEFT JOIN dbo.country c ON s.fk_country = c.pk_country
+      LEFT JOIN dbo.currency cur ON s.fk_currency = cur.pk_currency
       WHERE s.fk_shipment_state = 4
       ORDER BY s.pk_shipment DESC
     `);
@@ -128,13 +136,19 @@ async function main() {
         const invoiceNumber = (ship.reference1 || '').trim();
         const orderNumber = (ship.reference2 || '').trim();
         const shipperCode = null;
+        const isCod = (ship.codIndex || 0) > 0;
+        const codAmount = isCod ? (ship.price || 0) : 0;
+        const countryCode = (ship.country_code || 'CZ').trim();
+        const currencyCode = (ship.currency_code || 'CZK').trim();
 
-        // Parcels from barcode table
-        const lpParcels = barcodes.map(b => ({
-          barcode: b.barcode,
-          trackingNumber: b.trackingNumber || b.barcode,
-          weight: b.weight,
-        }));
+        // Parcels from barcode table (skip placeholder barcodes)
+        const lpParcels = barcodes
+          .filter(b => b.barcode && !b.barcode.includes('PŘEGENEROVÁNO'))
+          .map(b => ({
+            barcode: b.barcode,
+            trackingNumber: b.trackingNumber || b.barcode,
+            weight: b.weight,
+          }));
 
         const firstParcel = lpParcels[0] || {};
 
@@ -155,19 +169,19 @@ async function main() {
             customer_street: (ship.address1 || '').trim(),
             customer_city: (ship.city || '').trim(),
             customer_postal_code: (ship.postalCode || '').trim(),
-            customer_country: 'CZ',
+            customer_country: countryCode,
             delivery_street: (ship.address1 || '').trim(),
             delivery_city: (ship.city || '').trim(),
             delivery_postal_code: (ship.postalCode || '').trim(),
-            delivery_country: 'CZ',
+            delivery_country: countryCode,
             delivery_phone: (ship.phone || '').trim(),
             delivery_email: (ship.email || '').trim(),
             transport_name: ship.service_name || '',
             shipper_code: shipperCode,
             shipper_service: ship.service_name || null,
             amount_netto: 0,
-            amount_brutto: 0,
-            currency: 'CZK',
+            amount_brutto: codAmount,
+            currency: currencyCode,
             status: 'pending',
             lp_shipment_id: ship.pk_shipment,
             lp_barcode: firstParcel.barcode || null,
