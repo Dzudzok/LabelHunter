@@ -36,7 +36,8 @@ router.get('/', async (req, res, next) => {
     let query = supabase
       .from('delivery_notes')
       .select('*')
-      .order('date_issued', { ascending: false });
+      .order('date_issued', { ascending: false })
+      .limit(5000);
 
     if (date) {
       const dayStart = `${date}T00:00:00.000Z`;
