@@ -38,15 +38,27 @@ export default function NewLabelModal({ onClose }) {
   const selectedShipper = shippers.find(s => s.code === form.shipperCode)
   const services = selectedShipper?.services || []
 
-  const printLabel = (pkgId) => {
+  const printLabel = async (pkgId) => {
     const url = `${import.meta.env.VITE_API_URL || '/api'}/packages/${pkgId}/view-label`
-    const iframe = document.createElement('iframe')
-    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
-    iframe.src = url
-    document.body.appendChild(iframe)
-    iframe.onload = () => {
-      try { iframe.contentWindow.print() } catch { window.open(url, '_blank') }
-      setTimeout(() => document.body.removeChild(iframe), 120000)
+    try {
+      const resp = await fetch(url)
+      if (!resp.ok) throw new Error('fetch failed')
+      const blob = await resp.blob()
+      const blobUrl = URL.createObjectURL(blob)
+      const iframe = document.createElement('iframe')
+      iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+      iframe.src = blobUrl
+      document.body.appendChild(iframe)
+      iframe.onload = () => {
+        iframe.contentWindow.focus()
+        iframe.contentWindow.print()
+        setTimeout(() => {
+          document.body.removeChild(iframe)
+          URL.revokeObjectURL(blobUrl)
+        }, 60000)
+      }
+    } catch {
+      window.open(url, '_blank')
     }
   }
 
