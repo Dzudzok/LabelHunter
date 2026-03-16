@@ -1,5 +1,5 @@
 import { useState, useCallback } from 'react'
-import { connectQZ, getPrinters, printPdfBlob, isQZAvailable } from '../utils/qzPrint'
+import { getPrinters, printPdfBlob, isQZAvailable, isQZConnected } from '../utils/qzPrint'
 
 const STORAGE_KEY = 'labelHunter_selectedPrinter'
 
@@ -21,9 +21,10 @@ export function usePrinter() {
     setLoadingPrinters(true)
     try {
       const list = await getPrinters()
-      setPrinters(Array.isArray(list) ? list : [list])
+      setPrinters(list)
     } catch (e) {
-      setPrinterError('QZ Tray není dostupný. Nainstalujte a spusťte QZ Tray na tomto počítači.')
+      console.error('[QZ] getPrinters error:', e)
+      setPrinterError(`QZ Tray chyba: ${e.message || 'Neznámá chyba'}. Ujistěte se, že QZ Tray běží a "Block anonymous requests" je odškrtnuté.`)
     } finally {
       setLoadingPrinters(false)
     }

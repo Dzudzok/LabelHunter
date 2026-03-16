@@ -40,8 +40,15 @@ export default function PrinterSelector({ selectedPrinter, setSelectedPrinter, p
               <div className="font-semibold text-blue-100">Jak zprovoznit tisk bez dialogu:</div>
               <ol className="list-decimal list-inside space-y-1 text-blue-300">
                 <li>Stáhněte a nainstalujte <strong>QZ Tray</strong></li>
-                <li>Spusťte QZ Tray (ikona v systray)</li>
-                <li>Klikněte "Načíst tiskárny" a vyberte Zebru</li>
+                <li>Spusťte QZ Tray (ikona v systray), odškrtněte <strong>Block anonymous requests</strong></li>
+                <li>
+                  Otevřete v prohlížeči{' '}
+                  <a href="https://localhost:8181" target="_blank" rel="noreferrer" className="underline text-blue-200 hover:text-white">
+                    https://localhost:8181
+                  </a>
+                  {' '}→ klikněte <strong>Pokračovat</strong> (přijmout certifikát)
+                </li>
+                <li>Vraťte se sem a klikněte <strong>Načíst tiskárny</strong></li>
               </ol>
               <a
                 href="https://github.com/qzind/tray/releases/download/v2.2.5/qz-tray-2.2.5-x86_64.exe"

@@ -1,47 +1,34 @@
 // QZ Tray integration for silent label printing
 // QZ Tray must be running on the local machine (https://qz.io)
+// Requires "Block anonymous requests" to be UNCHECKED in QZ Tray tray menu
 
-let qz = null
-let connected = false
-
-async function loadQZ() {
-  if (qz) return qz
-  // QZ Tray JS is loaded via CDN in index.html as window.qz
-  if (window.qz) {
-    qz = window.qz
-    return qz
-  }
-  throw new Error('QZ Tray JS not loaded')
+function getQZ() {
+  if (!window.qz) throw new Error('QZ Tray JS not loaded')
+  return window.qz
 }
 
-export async function connectQZ() {
-  const q = await loadQZ()
-  if (q.websocket.isActive()) { connected = true; return }
-  // Disable certificate check for self-signed/unsigned
+async function ensureConnected() {
+  const q = getQZ()
+  if (q.websocket.isActive()) return q
   q.security.setCertificatePromise(() => Promise.resolve(''))
-  q.security.setSignatureAlgorithm('SHA512')
   q.security.setSignaturePromise(() => Promise.resolve(''))
-  await q.websocket.connect({ retries: 1, delay: 0 })
-  connected = true
-}
-
-export async function disconnectQZ() {
-  if (!qz || !connected) return
-  try { await qz.websocket.disconnect() } catch {}
-  connected = false
+  await q.websocket.connect({ retries: 3, delay: 1 })
+  return q
 }
 
 export async function getPrinters() {
-  await connectQZ()
-  return await qz.printers.find()
+  const q = await ensureConnected()
+  const result = await q.printers.find()
+  if (!result) return []
+  return Array.isArray(result) ? result : [result]
 }
 
 export async function printPdfBlob(printerName, blob) {
-  await connectQZ()
+  const q = await ensureConnected()
   const base64 = await blobToBase64(blob)
-  const config = qz.configs.create(printerName)
+  const config = q.configs.create(printerName)
   const data = [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: base64 }]
-  await qz.print(config, data)
+  await q.print(config, data)
 }
 
 function blobToBase64(blob) {
@@ -55,4 +42,8 @@ function blobToBase64(blob) {
 
 export function isQZAvailable() {
   return !!window.qz
+}
+
+export function isQZConnected() {
+  return !!window.qz && window.qz.websocket.isActive()
 }
