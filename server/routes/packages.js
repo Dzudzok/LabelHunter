@@ -206,13 +206,25 @@ router.get('/by-invoice/:invoice', async (req, res, next) => {
   try {
     const { invoice } = req.params;
 
-    const { data: dn, error: dnError } = await supabase
-      .from('delivery_notes')
-      .select('*')
-      .eq('invoice_number', invoice)
-      .single();
+    // Try exact match first, then zero-padded variants (e.g. "47015826" → "0047015826")
+    const candidates = [invoice];
+    if (/^\d+$/.test(invoice)) {
+      for (let len = invoice.length + 1; len <= 12; len++) {
+        candidates.push(invoice.padStart(len, '0'));
+      }
+    }
 
-    if (dnError || !dn) {
+    let dn = null;
+    for (const candidate of candidates) {
+      const { data } = await supabase
+        .from('delivery_notes')
+        .select('*')
+        .eq('invoice_number', candidate)
+        .maybeSingle();
+      if (data) { dn = data; break; }
+    }
+
+    if (!dn) {
       return res.status(404).json({ error: 'Package not found for this invoice' });
     }
 

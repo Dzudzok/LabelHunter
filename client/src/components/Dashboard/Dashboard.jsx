@@ -48,6 +48,7 @@ export default function Dashboard() {
   const [searchLoading, setSearchLoading] = useState(false)
 
   const scanRef = useRef(null)
+  const scanAutoSubmitTimer = useRef(null)
 
   // Fetch packages on mount and date change
   useEffect(() => {
@@ -69,22 +70,26 @@ export default function Dashboard() {
     }
   }, [])
 
-  // Handle scanned barcode (physical scanner)
-  const handleScan = useCallback(async (code) => {
-    const classified = classifyBarcode(code)
-    if (classified.type === 'invoice') {
-      try {
-        const pkg = await getPackageByInvoice(classified.value)
-        if (pkg) {
-          navigate(`/package/${pkg.id}`)
-        }
-      } catch {
-        setScanValue(code)
+  // Navigate by invoice/barcode value
+  const navigateByCode = useCallback(async (code) => {
+    const val = code.trim()
+    if (!val) return
+    const classified = classifyBarcode(val)
+    const lookupVal = classified.type === 'invoice' ? classified.value : val
+    try {
+      const pkg = await getPackageByInvoice(lookupVal)
+      if (pkg) {
+        setScanValue('')
+        navigate(`/package/${pkg.id}`)
       }
-    } else {
-      setScanValue(code)
-    }
+    } catch {}
   }, [getPackageByInvoice, navigate])
+
+  // Handle scanned barcode via useScanner hook (physical scanner, global keydown)
+  const handleScan = useCallback((code) => {
+    setScanValue(code)
+    navigateByCode(code)
+  }, [navigateByCode])
 
   useScanner(handleScan)
 
@@ -101,20 +106,24 @@ export default function Dashboard() {
     fetchPackages(selectedDate)
   }
 
-  // Scan input submit — navigate to package
+  // Scan input submit — on Enter or form submit
   const handleScanSubmit = async (e) => {
     e.preventDefault()
-    const val = scanValue.trim()
-    if (!val) return
-    try {
-      const pkg = await getPackageByInvoice(val)
-      if (pkg) {
-        navigate(`/package/${pkg.id}`)
-      }
-    } catch {
-      // not found — keep value shown
-    }
+    await navigateByCode(scanValue)
     setScanValue('')
+  }
+
+  // Auto-submit when input stops changing (scanner without Enter suffix)
+  const handleScanChange = (e) => {
+    const val = e.target.value
+    setScanValue(val)
+    if (scanAutoSubmitTimer.current) clearTimeout(scanAutoSubmitTimer.current)
+    if (val.length >= 4) {
+      scanAutoSubmitTimer.current = setTimeout(() => {
+        navigateByCode(val)
+        setScanValue('')
+      }, 300)
+    }
   }
 
   // Right panel search
@@ -279,7 +288,7 @@ export default function Dashboard() {
               ref={scanRef}
               type="text"
               value={scanValue}
-              onChange={(e) => setScanValue(e.target.value)}
+              onChange={handleScanChange}
               placeholder="Naskenuj číslo faktury..."
               className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-5 py-4 text-2xl text-theme-primary placeholder-theme-muted outline-none transition-colors"
             />

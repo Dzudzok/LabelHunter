@@ -14,6 +14,13 @@ export default function AuthPage() {
   const [error, setError] = useState('')
   const [loading, setLoading] = useState(true)
 
+  const [showAddWorker, setShowAddWorker] = useState(false)
+  const [newName, setNewName] = useState('')
+  const [newPin, setNewPin] = useState('')
+  const [newPin2, setNewPin2] = useState('')
+  const [addError, setAddError] = useState('')
+  const [addLoading, setAddLoading] = useState(false)
+
   useEffect(() => {
     if (worker) {
       navigate('/', { replace: true })
@@ -60,6 +67,25 @@ export default function AuthPage() {
     }
   }, [pin])
 
+  const handleAddWorker = async () => {
+    setAddError('')
+    if (!newName.trim()) return setAddError('Zadejte jméno')
+    if (newPin.length !== 4) return setAddError('PIN musí mít 4 číslice')
+    if (newPin !== newPin2) return setAddError('PINy se neshodují')
+    setAddLoading(true)
+    try {
+      await api.post('/workers', { name: newName.trim(), pin: newPin })
+      const res = await api.get('/workers')
+      setWorkers(res.data.filter(w => w.is_active))
+      setShowAddWorker(false)
+      setNewName(''); setNewPin(''); setNewPin2('')
+    } catch (e) {
+      setAddError(e.response?.data?.error || 'Chyba při vytváření')
+    } finally {
+      setAddLoading(false)
+    }
+  }
+
   if (loading) {
     return (
       <div className="min-h-screen bg-navy-800 flex items-center justify-center">
@@ -97,7 +123,77 @@ export default function AuthPage() {
                 <span className="text-xl font-semibold text-theme-primary">{w.name}</span>
               </button>
             ))}
+            <button
+              onClick={() => setShowAddWorker(true)}
+              className="bg-navy-700 hover:bg-navy-600 border-2 border-dashed border-navy-500 hover:border-brand-orange rounded-xl p-6 flex flex-col items-center gap-3 transition-colors"
+            >
+              <div className="w-16 h-16 rounded-full bg-navy-600 flex items-center justify-center text-3xl text-theme-secondary">
+                +
+              </div>
+              <span className="text-xl font-semibold text-theme-secondary">Přidat</span>
+            </button>
           </div>
+
+          {showAddWorker && (
+            <div className="fixed inset-0 flex items-center justify-center z-50" onClick={() => setShowAddWorker(false)}>
+              <div className="bg-navy-700 border border-navy-500 rounded-2xl p-8 w-full max-w-sm shadow-2xl" onClick={e => e.stopPropagation()}>
+                <h3 className="text-xl font-bold text-theme-primary mb-6 text-center">Nový pracovník</h3>
+                <div className="space-y-4">
+                  <div>
+                    <label className="block text-sm text-theme-secondary mb-1">Jméno</label>
+                    <input
+                      type="text"
+                      value={newName}
+                      onChange={e => setNewName(e.target.value)}
+                      placeholder="Jan Novák"
+                      className="w-full bg-navy-800 border border-navy-500 rounded-lg px-4 py-3 text-theme-primary text-lg focus:outline-none focus:border-brand-orange"
+                      autoFocus
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-theme-secondary mb-1">PIN (4 číslice)</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={newPin}
+                      onChange={e => setNewPin(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full bg-navy-800 border border-navy-500 rounded-lg px-4 py-3 text-theme-primary text-lg focus:outline-none focus:border-brand-orange tracking-widest"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm text-theme-secondary mb-1">Potvrdit PIN</label>
+                    <input
+                      type="password"
+                      inputMode="numeric"
+                      maxLength={4}
+                      value={newPin2}
+                      onChange={e => setNewPin2(e.target.value.replace(/\D/g, '').slice(0, 4))}
+                      placeholder="••••"
+                      className="w-full bg-navy-800 border border-navy-500 rounded-lg px-4 py-3 text-theme-primary text-lg focus:outline-none focus:border-brand-orange tracking-widest"
+                    />
+                  </div>
+                  {addError && <div className="text-red-400 text-sm text-center">{addError}</div>}
+                  <div className="flex gap-3 pt-2">
+                    <button
+                      onClick={() => { setShowAddWorker(false); setNewName(''); setNewPin(''); setNewPin2(''); setAddError('') }}
+                      className="flex-1 bg-navy-600 hover:bg-navy-500 text-theme-secondary rounded-lg py-3 font-semibold transition-colors"
+                    >
+                      Zrušit
+                    </button>
+                    <button
+                      onClick={handleAddWorker}
+                      disabled={addLoading}
+                      className="flex-1 bg-brand-orange hover:bg-brand-orange-dark disabled:opacity-50 text-white rounded-lg py-3 font-bold transition-colors"
+                    >
+                      {addLoading ? '...' : 'Přidat'}
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       ) : (
         /* PIN entry */
