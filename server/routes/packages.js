@@ -589,7 +589,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
   }
 });
 
-// GET /:id/download-label - stream label PDF
+// GET /:id/download-label - stream label PDF (as attachment)
 router.get('/:id/download-label', async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -610,6 +610,33 @@ router.get('/:id/download-label', async (req, res, next) => {
     const stat = fs.statSync(filePath);
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.setHeader('Content-Length', stat.size);
+    fs.createReadStream(filePath).pipe(res);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /:id/view-label - stream label PDF inline (for printing in iframe)
+router.get('/:id/view-label', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const { data: dn, error } = await supabase
+      .from('delivery_notes')
+      .select('label_pdf_url, invoice_number')
+      .eq('id', id)
+      .single();
+
+    if (error) throw error;
+    if (!dn?.label_pdf_url) return res.status(404).json({ error: 'No label found' });
+
+    const filePath = path.join(__dirname, '..', dn.label_pdf_url);
+    if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });
+
+    const stat = fs.statSync(filePath);
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Content-Length', stat.size);
     fs.createReadStream(filePath).pipe(res);
   } catch (err) {

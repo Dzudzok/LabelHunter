@@ -185,6 +185,23 @@ export default function PackageView() {
     setParcels(prev => prev.map((p, i) => i === idx ? { ...p, weight: val } : p))
   }
 
+  // --- Print label via hidden iframe ---
+  const printLabel = (pkgId) => {
+    const url = `${import.meta.env.VITE_API_URL || '/api'}/packages/${pkgId}/view-label`
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    iframe.src = url
+    document.body.appendChild(iframe)
+    iframe.onload = () => {
+      try {
+        iframe.contentWindow.print()
+      } catch {
+        window.open(url, '_blank')
+      }
+      setTimeout(() => document.body.removeChild(iframe), 120000)
+    }
+  }
+
   // --- Generate label ---
   const handleGenerateLabel = async () => {
     if (generating) return
@@ -200,6 +217,9 @@ export default function PackageView() {
       })
       setLabelData(res.data)
       fetchPackage()
+      if (res.data.label_url) {
+        printLabel(pkg.id)
+      }
     } catch (err) {
       const errData = err.response?.data
       if (errData?.details) {
@@ -515,14 +535,22 @@ export default function PackageView() {
                   onConfirm={() => navigate('/')}
                 />
                 {labelData.label_url && (
-                  <a
-                    href={`${import.meta.env.VITE_API_URL || '/api'}/packages/${pkg.id}/download-label`}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="block w-full bg-brand-orange hover:bg-brand-orange-dark text-white py-4 rounded-xl text-xl font-bold text-center mt-4 transition-colors"
-                  >
-                    Stahnout etiketu (PDF)
-                  </a>
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() => printLabel(pkg.id)}
+                      className="flex-1 bg-brand-orange hover:bg-orange-600 text-white py-4 rounded-xl text-xl font-bold text-center transition-colors"
+                    >
+                      Tisknout znovu
+                    </button>
+                    <a
+                      href={`${import.meta.env.VITE_API_URL || '/api'}/packages/${pkg.id}/download-label`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-6 bg-navy-600 hover:bg-navy-500 text-theme-secondary py-4 rounded-xl text-xl font-bold text-center transition-colors"
+                    >
+                      PDF
+                    </a>
+                  </div>
                 )}
               </div>
             )}
