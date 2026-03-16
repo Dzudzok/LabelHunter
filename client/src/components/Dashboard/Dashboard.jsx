@@ -14,6 +14,8 @@ import { useThemeStore } from '../../store/themeStore'
 import HunterManageModal from './HunterManageModal'
 import HunterStatsModal from './HunterStatsModal'
 import NewLabelModal from './NewLabelModal'
+import PrinterSelector from './PrinterSelector'
+import { usePrinter } from '../../hooks/usePrinter'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -38,6 +40,7 @@ export default function Dashboard() {
   const [showHunterManage, setShowHunterManage] = useState(false)
   const [showHunterStats, setShowHunterStats] = useState(false)
   const [showNewLabel, setShowNewLabel] = useState(false)
+  const { selectedPrinter, setSelectedPrinter, printers, loadingPrinters, printerError, fetchPrinters, printLabel } = usePrinter()
 
   // Right panel search
   const [searchQuery, setSearchQuery] = useState('')
@@ -234,6 +237,14 @@ export default function Dashboard() {
             >
               Přepravci
             </button>
+            <PrinterSelector
+              selectedPrinter={selectedPrinter}
+              setSelectedPrinter={setSelectedPrinter}
+              printers={printers}
+              loadingPrinters={loadingPrinters}
+              printerError={printerError}
+              fetchPrinters={fetchPrinters}
+            />
             <button
               onClick={toggleTheme}
               className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
