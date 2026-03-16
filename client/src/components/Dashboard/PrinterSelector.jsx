@@ -23,32 +23,26 @@ export default function PrinterSelector({ selectedPrinter, setSelectedPrinter, p
       </button>
 
       {open && (
-        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50" onClick={() => setOpen(false)}>
-          <div className="bg-theme-card rounded-xl shadow-2xl p-6 w-96 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 flex items-center justify-center z-50" onClick={() => setOpen(false)}>
+          <div className="bg-[#1e2130] border border-gray-700 rounded-xl shadow-2xl p-6 w-96 max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
             <div className="flex justify-between items-center mb-4">
-              <h2 className="text-lg font-bold text-theme-primary">Vybrat tiskárnu</h2>
-              <button onClick={() => setOpen(false)} className="text-theme-muted hover:text-theme-primary text-xl">✕</button>
+              <h2 className="text-lg font-bold text-white">Vybrat tiskárnu</h2>
+              <button onClick={() => setOpen(false)} className="text-gray-400 hover:text-white text-xl">✕</button>
             </div>
 
             {printerError && (
-              <div className="bg-red-900/40 border border-red-600 rounded p-3 mb-4 text-red-300 text-sm">
+              <div className="bg-red-900/40 border border-red-600 rounded p-3 mb-3 text-red-300 text-sm">
                 {printerError}
               </div>
             )}
 
-            <div className="bg-blue-900/30 border border-blue-700 rounded p-3 mb-4 text-blue-200 text-xs space-y-2">
-              <div className="font-semibold text-blue-100">Jak zprovoznit tisk bez dialogu:</div>
+            <div className="bg-blue-900/20 border border-blue-800 rounded p-3 mb-3 text-xs space-y-1.5">
+              <div className="font-semibold text-blue-100">Nový počítač — jak nastavit:</div>
               <ol className="list-decimal list-inside space-y-1 text-blue-300">
-                <li>Stáhněte a nainstalujte <strong>QZ Tray</strong></li>
-                <li>Spusťte QZ Tray (ikona v systray), odškrtněte <strong>Block anonymous requests</strong></li>
-                <li>
-                  Otevřete v prohlížeči{' '}
-                  <a href="https://localhost:8181" target="_blank" rel="noreferrer" className="underline text-blue-200 hover:text-white">
-                    https://localhost:8181
-                  </a>
-                  {' '}→ klikněte <strong>Pokračovat</strong> (přijmout certifikát)
-                </li>
-                <li>Vraťte se sem a klikněte <strong>Načíst tiskárny</strong></li>
+                <li>Stáhněte a nainstalujte <strong className="text-blue-100">QZ Tray</strong></li>
+                <li>Spusťte QZ Tray (ikona v systray)</li>
+                <li>Klikněte <strong className="text-blue-100">Načíst tiskárny</strong> — QZ Tray zobrazí dialog → zaškrtněte <strong className="text-blue-100">Remember</strong> → <strong className="text-blue-100">Allow</strong></li>
+                <li>Vyberte tiskárnu ze seznamu</li>
               </ol>
               <a
                 href="https://github.com/qzind/tray/releases/download/v2.2.5/qz-tray-2.2.5-x86_64.exe"
@@ -69,7 +63,7 @@ export default function PrinterSelector({ selectedPrinter, setSelectedPrinter, p
             </button>
 
             {!loadingPrinters && !printerError && printers.length === 0 && (
-              <div className="text-theme-muted text-sm text-center py-2">Žádné tiskárny nenalezeny</div>
+              <div className="text-gray-500 text-sm text-center py-2">Žádné tiskárny nenalezeny</div>
             )}
 
             <div className="overflow-y-auto flex-1 space-y-1">
@@ -80,7 +74,7 @@ export default function PrinterSelector({ selectedPrinter, setSelectedPrinter, p
                   className={`w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                     selectedPrinter === p
                       ? 'bg-green-600 text-white font-semibold'
-                      : 'bg-theme-hover text-theme-primary hover:bg-green-700/30'
+                      : 'bg-gray-700/50 text-gray-200 hover:bg-green-700/30'
                   }`}
                 >
                   {p}
