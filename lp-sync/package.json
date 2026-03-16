@@ -1,0 +1,15 @@
+{
+  "name": "lp-sync",
+  "version": "1.0.0",
+  "description": "Sync LP MSSQL shipments to Supabase (runs on BOLOPC)",
+  "main": "sync.js",
+  "scripts": {
+    "sync": "node sync.js",
+    "test": "node sync.js --limit 3"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.39.7",
+    "mssql": "^11.0.0",
+    "msnodesqlv8": "^4.3.0"
+  }
+}

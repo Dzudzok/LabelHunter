@@ -26,13 +26,11 @@ export default function Dashboard() {
     setSelectedDate,
     fetchPackages,
     importFromNextis,
-    importFromLP,
     getPackageByInvoice,
   } = usePackageStore()
 
   const [scanValue, setScanValue] = useState('')
   const [importing, setImporting] = useState(false)
-  const [importingLP, setImportingLP] = useState(false)
   const [importMsg, setImportMsg] = useState('')
   const [showTransportMap, setShowTransportMap] = useState(false)
   const [showStats, setShowStats] = useState(false)
@@ -113,20 +111,9 @@ export default function Dashboard() {
     }
   }
 
-  // Import from LP MSSQL
-  const handleImportLP = async () => {
-    setImportingLP(true)
-    setImportMsg('')
-    try {
-      const result = await importFromLP()
-      setImportMsg(`LP: ${result.imported || 0} importováno, ${result.skipped || 0} přeskočeno`)
-      fetchPackages(selectedDate)
-    } catch (err) {
-      setImportMsg('LP: ' + (err?.response?.data?.error || err.message))
-    } finally {
-      setImportingLP(false)
-      setTimeout(() => setImportMsg(''), 6000)
-    }
+  // Refresh packages (LP sync runs on BOLOPC, just reload here)
+  const handleRefresh = () => {
+    fetchPackages(selectedDate)
   }
 
   // Scan input submit — navigate to package
@@ -235,11 +222,10 @@ export default function Dashboard() {
               {importing ? 'Importuji...' : 'Importuj'}
             </button>
             <button
-              onClick={handleImportLP}
-              disabled={importingLP}
-              className="bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
+              onClick={handleRefresh}
+              className="bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
             >
-              {importingLP ? 'LP...' : 'Import LP'}
+              Refresh
             </button>
             <button
               onClick={() => setShowSearch(true)}

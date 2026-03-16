@@ -45,7 +45,8 @@ app.listen(PORT, () => {
   console.log(`LabelHunter server running on port ${PORT}`);
 
   // Start cron jobs
-  require('./cron/importDeliveryNotes').start();
+  // Nextis import disabled — import handled by lp-sync script on BOLOPC
+  // require('./cron/importDeliveryNotes').start();
   require('./cron/syncTrackingStatus').start();
 
   console.log('Cron jobs started');

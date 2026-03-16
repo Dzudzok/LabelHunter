@@ -89,6 +89,14 @@ class LabelPrinterService {
   async deleteShipment(id) {
     return this.delete(`/shipments/${id}`);
   }
+
+  async getShipment(id) {
+    return this.get(`/shipments/${id}`);
+  }
+
+  async getGoodsCheckings(shipmentId) {
+    return this.get(`/goodscheckings/${shipmentId}`);
+  }
 }
 
 module.exports = new LabelPrinterService();
