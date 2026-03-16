@@ -25,13 +25,12 @@ export default function Dashboard() {
     selectedDate,
     setSelectedDate,
     fetchPackages,
-    importFromNextis,
+
     getPackageByInvoice,
   } = usePackageStore()
 
   const [scanValue, setScanValue] = useState('')
-  const [importing, setImporting] = useState(false)
-  const [importMsg, setImportMsg] = useState('')
+
   const [showTransportMap, setShowTransportMap] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showSearch, setShowSearch] = useState(false)
@@ -91,25 +90,6 @@ export default function Dashboard() {
     setSelectedDate(d.toISOString().split('T')[0])
   }
 
-  // Import from Nextis
-  const handleImport = async () => {
-    setImporting(true)
-    setImportMsg('')
-    try {
-      const result = await importFromNextis(selectedDate)
-      let msg = `✓ ${result.imported || 0} importováno, ${result.skipped || 0} přeskočeno`
-      if (result.newTransports && result.newTransports.length > 0) {
-        msg += ` | NOVÉ přepravce: ${result.newTransports.join(', ')} — nastavte mapování!`
-      }
-      setImportMsg(msg)
-      fetchPackages(selectedDate)
-    } catch (err) {
-      setImportMsg('✗ ' + (err?.response?.data?.error || err.message))
-    } finally {
-      setImporting(false)
-      setTimeout(() => setImportMsg(''), 6000)
-    }
-  }
 
   // Refresh packages (LP sync runs on BOLOPC, just reload here)
   const handleRefresh = () => {
@@ -209,18 +189,7 @@ export default function Dashboard() {
             </button>
           </div>
 
-          {/* Import controls */}
           <div className="flex items-center gap-2 flex-wrap">
-            {importMsg && (
-              <span className="text-brand-orange font-semibold text-xs">{importMsg}</span>
-            )}
-            <button
-              onClick={handleImport}
-              disabled={importing}
-              className="bg-brand-orange hover:bg-brand-orange-dark text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
-            >
-              {importing ? 'Importuji...' : 'Importuj'}
-            </button>
             <button
               onClick={handleRefresh}
               className="bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
