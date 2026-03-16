@@ -49,10 +49,13 @@ async function main() {
         s.isPaymentInAdvance,
         s.ico,
         st.name AS service_name,
+        st.serviceTypeCode AS lp_service_code,
+        pt.code AS lp_shipper_code,
         c.iso2Letters AS country_code,
         cur.iso4217 AS currency_code
       FROM dbo.shipment s
       LEFT JOIN dbo.service_type st ON s.fk_service_type = st.pk_service_type
+      LEFT JOIN dbo.package_type pt ON st.fk_package_type = pt.pk_package_type
       LEFT JOIN dbo.country c ON s.fk_country = c.pk_country
       LEFT JOIN dbo.currency cur ON s.fk_currency = cur.pk_currency
       WHERE s.fk_shipment_state = 4
@@ -135,7 +138,8 @@ async function main() {
 
         const invoiceNumber = (ship.reference1 || '').trim();
         const orderNumber = (ship.reference2 || '').trim();
-        const shipperCode = null;
+        const shipperCode = ship.lp_shipper_code || null;
+        const serviceCode = ship.lp_service_code || null;
         const isCod = (ship.codIndex || 0) > 0;
         const codAmount = isCod ? (ship.price || 0) : 0;
         const countryCode = (ship.country_code || 'CZ').trim();
@@ -178,7 +182,7 @@ async function main() {
             delivery_email: (ship.email || '').trim(),
             transport_name: ship.service_name || '',
             shipper_code: shipperCode,
-            shipper_service: ship.service_name || null,
+            shipper_service: serviceCode,
             amount_netto: 0,
             amount_brutto: codAmount,
             currency: currencyCode,
