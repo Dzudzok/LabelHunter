@@ -225,8 +225,9 @@ export default function PackageView() {
       }
     } catch (err) {
       const errData = err.response?.data
-      if (errData?.details) {
-        setLabelError(JSON.stringify(errData.details, null, 2))
+      const apiErrors = errData?.details?.errors
+      if (apiErrors && apiErrors.length > 0) {
+        setLabelError(apiErrors.map(e => e.message).join('\n'))
       } else if (errData?.error) {
         setLabelError(errData.error)
       } else {

@@ -127,14 +127,23 @@ router.get('/stats', async (req, res, next) => {
     const from = `${d}T00:00:00.000Z`;
     const to   = `${d}T23:59:59.999Z`;
 
-    // Fetch all notes for the day
-    const { data: notes, error } = await supabase
-      .from('delivery_notes')
-      .select('id, status, shipper_code, transport_name, invoice_number, doc_number, customer_name, scanned_by, scanned_at, label_generated_by, label_generated_at')
-      .gte('date_issued', from)
-      .lte('date_issued', to);
-
-    if (error) throw error;
+    // Fetch all notes for the day (paginated to bypass Supabase max_rows=1000)
+    const PAGE_SIZE = 1000;
+    let notes = [];
+    let page = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('delivery_notes')
+        .select('id, status, shipper_code, transport_name, invoice_number, doc_number, customer_name, scanned_by, scanned_at, label_generated_by, label_generated_at')
+        .gte('date_issued', from)
+        .lte('date_issued', to)
+        .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      notes = notes.concat(data);
+      if (data.length < PAGE_SIZE) break;
+      page++;
+    }
 
     // Fetch all workers for name lookup
     const { data: workers } = await supabase.from('workers').select('id, name');

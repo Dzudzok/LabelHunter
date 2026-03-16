@@ -70,7 +70,12 @@ export default function NewLabelModal({ onClose }) {
       if (res.data.label_url) printLabel(res.data.id)
     } catch (err) {
       const errData = err.response?.data
-      setError(errData?.error || err.message)
+      const apiErrors = errData?.details?.errors
+      if (apiErrors && apiErrors.length > 0) {
+        setError(apiErrors.map(e => e.message).join('\n'))
+      } else {
+        setError(errData?.error || err.message)
+      }
     } finally {
       setGenerating(false)
     }
@@ -197,7 +202,13 @@ export default function NewLabelModal({ onClose }) {
               </div>
             </div>
 
-            {error && <div className="text-red-400 text-sm">{error}</div>}
+            {error && (
+              <div className="bg-red-900/30 border border-red-600 rounded-lg px-4 py-3">
+                {error.split('\n').map((line, i) => (
+                  <div key={i} className="text-red-400 text-sm">{line}</div>
+                ))}
+              </div>
+            )}
 
             <div className="flex justify-end gap-3 pt-2 border-t border-navy-700">
               <button onClick={onClose} className="bg-navy-600 hover:bg-navy-500 text-theme-secondary px-5 py-2.5 rounded-xl text-sm font-semibold">
