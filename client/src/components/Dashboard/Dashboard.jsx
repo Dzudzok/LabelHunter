@@ -13,6 +13,7 @@ import SearchPanel from '../Search/SearchPanel'
 import { useThemeStore } from '../../store/themeStore'
 import HunterManageModal from './HunterManageModal'
 import HunterStatsModal from './HunterStatsModal'
+import NewLabelModal from './NewLabelModal'
 
 export default function Dashboard() {
   const navigate = useNavigate()
@@ -36,6 +37,7 @@ export default function Dashboard() {
   const [showSearch, setShowSearch] = useState(false)
   const [showHunterManage, setShowHunterManage] = useState(false)
   const [showHunterStats, setShowHunterStats] = useState(false)
+  const [showNewLabel, setShowNewLabel] = useState(false)
 
   // Right panel search
   const [searchQuery, setSearchQuery] = useState('')
@@ -191,6 +193,12 @@ export default function Dashboard() {
 
           <div className="flex items-center gap-2 flex-wrap">
             <button
+              onClick={() => setShowNewLabel(true)}
+              className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
+            >
+              + Nová etiketa
+            </button>
+            <button
               onClick={handleRefresh}
               className="bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
             >
@@ -237,6 +245,7 @@ export default function Dashboard() {
         </div>
       </div>
 
+      {showNewLabel && <NewLabelModal onClose={() => setShowNewLabel(false)} />}
       {showSearch && <SearchPanel isOpen={showSearch} onClose={() => setShowSearch(false)} />}
       {showStats && <StatsModal date={selectedDate} onClose={() => setShowStats(false)} />}
       {showTransportMap && <TransportMapModal onClose={() => setShowTransportMap(false)} />}

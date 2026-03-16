@@ -410,6 +410,123 @@ router.put('/:id/skip-all', async (req, res, next) => {
   }
 });
 
+// POST /manual-label - create a new manual shipment + generate LP label immediately
+router.post('/manual-label', async (req, res, next) => {
+  try {
+    const {
+      shipperCode, serviceCode,
+      recipientName, recipientStreet, recipientCity, recipientPostalCode,
+      recipientCountry, recipientPhone, recipientEmail,
+      weight, codAmount, currency,
+      invoiceNumber, orderNumber,
+      workerId,
+    } = req.body;
+
+    if (!shipperCode || !serviceCode) {
+      return res.status(400).json({ error: 'shipperCode a serviceCode jsou povinné' });
+    }
+
+    const cod = codAmount ? parseFloat(codAmount) : null;
+    const curr = currency || 'CZK';
+
+    const shipmentData = {
+      shipperCode,
+      serviceCode,
+      variableSymbol: invoiceNumber || '',
+      orderNumber: orderNumber || '',
+      paymentInAdvance: !cod,
+      price: cod || 0,
+      priceCurrency: curr,
+      cod: cod || null,
+      codCurrency: cod ? curr : null,
+      description: 'Autodíly',
+      recipient: {
+        company: recipientName || '',
+        street: recipientStreet || '',
+        city: recipientCity || '',
+        postalCode: recipientPostalCode || '',
+        countryCode: recipientCountry || 'CZ',
+        phone: recipientPhone || '',
+        email: recipientEmail || '',
+      },
+      parcels: [{ weight: Math.max(parseFloat(weight) || 0.5, 0.1) }],
+      labels: { format: 'A6' },
+    };
+
+    console.log('[manual-label] Sending to LP:', JSON.stringify(shipmentData));
+    const result = await labelPrinterService.createShipment(shipmentData);
+
+    const lpItem = result.data && result.data[0] ? result.data[0] : {};
+    let labelPdfUrl = null;
+    const labelsField = lpItem.labels;
+    const labelBase64 = Array.isArray(labelsField) ? labelsField[0] : labelsField;
+
+    if (labelBase64 && typeof labelBase64 === 'string' && labelBase64.length > 10) {
+      const labelsDir = path.join(__dirname, '..', 'labels');
+      const filename = `${lpItem.id}.pdf`;
+      fs.writeFileSync(path.join(labelsDir, filename), Buffer.from(labelBase64, 'base64'));
+      labelPdfUrl = `/labels/${filename}`;
+    }
+
+    const shipmentResult = result.data && result.data[0] ? result.data[0] : {};
+    const allParcels = shipmentResult.parcels || [];
+    const firstParcel = allParcels[0] || {};
+    const trackingToken = crypto.randomUUID();
+
+    const { data: dn, error: dnError } = await supabase
+      .from('delivery_notes')
+      .insert({
+        source: 'manual',
+        doc_number: `M${Date.now()}`,
+        invoice_number: invoiceNumber || '',
+        order_number: orderNumber || '',
+        date_issued: new Date().toISOString(),
+        customer_name: recipientName || '',
+        customer_street: recipientStreet || '',
+        customer_city: recipientCity || '',
+        customer_postal_code: recipientPostalCode || '',
+        customer_country: recipientCountry || 'CZ',
+        customer_phone: recipientPhone || '',
+        customer_email: recipientEmail || '',
+        delivery_street: recipientStreet || '',
+        delivery_city: recipientCity || '',
+        delivery_postal_code: recipientPostalCode || '',
+        delivery_country: recipientCountry || 'CZ',
+        delivery_phone: recipientPhone || '',
+        delivery_email: recipientEmail || '',
+        transport_name: serviceCode,
+        shipper_code: shipperCode,
+        shipper_service: serviceCode,
+        amount_netto: 0,
+        amount_brutto: cod || 0,
+        currency: curr,
+        status: 'label_generated',
+        lp_shipment_id: shipmentResult.id,
+        lp_barcode: firstParcel.barcode || null,
+        lp_parcels: allParcels.length > 0 ? allParcels.map(p => ({ barcode: p.barcode, trackingNumber: p.trackingNumber || p.barcode, weight: p.weight })) : null,
+        tracking_number: firstParcel.trackingNumber || firstParcel.barcode || null,
+        tracking_url: firstParcel.trackingUrl || null,
+        label_pdf_url: labelPdfUrl,
+        tracking_token: trackingToken,
+        label_generated_at: new Date().toISOString(),
+        label_generated_by: workerId || null,
+        updated_at: new Date().toISOString(),
+      })
+      .select()
+      .single();
+
+    if (dnError) throw dnError;
+
+    res.json({ id: dn.id, label_url: labelPdfUrl, tracking_number: firstParcel.trackingNumber || firstParcel.barcode, barcode: firstParcel.barcode });
+  } catch (err) {
+    if (err.response) {
+      console.error('[manual-label] LP API error:', JSON.stringify(err.response.data));
+      return res.status(400).json({ error: 'LP API error', details: err.response.data });
+    }
+    next(err);
+  }
+});
+
 // POST /:id/generate-label - generate LP label
 router.post('/:id/generate-label', async (req, res, next) => {
   try {
@@ -434,7 +551,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
     if (itemsError) throw itemsError;
 
     // Map transport to shipper — priority: body override > LP sync codes > transport_map fallback
-    const { shipperCode: bodyShipper, serviceCode: bodyService, workerId, parcels: bodyParcels } = req.body || {};
+    const { shipperCode: bodyShipper, serviceCode: bodyService, workerId, parcels: bodyParcels, codAmount: bodyCodAmount } = req.body || {};
     let transport;
     if (bodyShipper) {
       transport = { shipperCode: bodyShipper, serviceCode: bodyService || bodyShipper };
@@ -475,11 +592,11 @@ router.post('/:id/generate-label', async (req, res, next) => {
       serviceCode: transport.serviceCode,
       variableSymbol: dn.invoice_number || dn.doc_number,
       orderNumber: dn.order_number || '',
-      paymentInAdvance: dn.amount_brutto ? false : true,
-      price: dn.amount_brutto ? parseFloat(dn.amount_brutto) : 0,
+      paymentInAdvance: bodyCodAmount != null ? (parseFloat(bodyCodAmount) > 0 ? false : true) : (dn.amount_brutto ? false : true),
+      price: bodyCodAmount != null ? (parseFloat(bodyCodAmount) || 0) : (dn.amount_brutto ? parseFloat(dn.amount_brutto) : 0),
       priceCurrency: dn.currency || 'CZK',
-      cod: dn.amount_brutto ? parseFloat(dn.amount_brutto) : null,
-      codCurrency: dn.amount_brutto ? (dn.currency || 'CZK') : null,
+      cod: bodyCodAmount != null ? (parseFloat(bodyCodAmount) || null) : (dn.amount_brutto ? parseFloat(dn.amount_brutto) : null),
+      codCurrency: (bodyCodAmount != null ? parseFloat(bodyCodAmount) : parseFloat(dn.amount_brutto || 0)) > 0 ? (dn.currency || 'CZK') : null,
       description: 'Autodíly',
       recipient: {
         company: dn.customer_name,

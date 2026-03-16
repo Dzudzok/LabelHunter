@@ -36,6 +36,7 @@ export default function PackageView() {
 
   // Multi-parcel state: array of { weight }
   const [parcels, setParcels] = useState([])
+  const [codAmount, setCodAmount] = useState('')
   const parcelsInitialized = useRef(false)
   const scanInputRef = useRef(null)
 
@@ -60,6 +61,7 @@ export default function PackageView() {
         parcelsInitialized.current = true
         const autoW = calcAutoWeight(data.items || [])
         setParcels([{ weight: autoW }])
+        setCodAmount(data.amount_brutto ? String(data.amount_brutto) : '0')
       }
     } catch {
       setLoading(false)
@@ -214,6 +216,7 @@ export default function PackageView() {
         serviceCode: overrideService || null,
         workerId: worker?.id || null,
         parcels: parcelsPayload,
+        codAmount: parseFloat(codAmount) || 0,
       })
       setLabelData(res.data)
       fetchPackage()
@@ -377,14 +380,26 @@ export default function PackageView() {
                     <span className="text-theme-muted text-sm">Objednavka:</span>
                     <div className="text-theme-primary font-semibold">{pkg.order_number || '-'}</div>
                   </div>
-                  <div>
-                    <span className="text-theme-muted text-sm">Prepravce:</span>
-                    <div className="text-theme-primary font-semibold">{pkg.transport_name || '-'}</div>
-                  </div>
-                  <div>
-                    <span className="text-theme-muted text-sm">Castka:</span>
+                  <div className="col-span-2">
+                    <span className="text-theme-muted text-sm">Přepravce:</span>
                     <div className="text-theme-primary font-semibold">
-                      {pkg.amount_brutto ? `${pkg.amount_brutto} ${pkg.currency || 'CZK'}` : '-'}
+                      {pkg.shipper_code ? `${pkg.shipper_code} | ${pkg.transport_name || pkg.shipper_service || ''}` : pkg.transport_name || '-'}
+                    </div>
+                  </div>
+                  <div className="col-span-2">
+                    <span className="text-theme-muted text-sm">Dobírka:</span>
+                    <div className="flex items-center gap-2 mt-1">
+                      <input
+                        type="number"
+                        min="0"
+                        step="0.01"
+                        value={codAmount}
+                        onChange={e => setCodAmount(e.target.value)}
+                        disabled={!!labelData}
+                        className="w-32 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-1.5 text-base outline-none focus:border-brand-orange disabled:opacity-50"
+                      />
+                      <span className="text-theme-secondary text-sm">{pkg.currency || 'CZK'}</span>
+                      {parseFloat(codAmount) > 0 && <span className="text-orange-400 text-sm font-semibold">DOB</span>}
                     </div>
                   </div>
                   {pkg.doc_number && (
