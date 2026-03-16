@@ -41,7 +41,7 @@ router.get('/', async (req, res, next) => {
     while (true) {
       let query = supabase
         .from('delivery_notes')
-        .select('*')
+        .select('*, delivery_note_items(id, item_type)')
         .order('date_issued', { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 

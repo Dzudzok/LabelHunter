@@ -37,7 +37,7 @@ export default function PackageCard({ pkg }) {
   const navigate = useNavigate()
 
   const itemCount = pkg.delivery_note_items
-    ? pkg.delivery_note_items.filter(i => i.type === 'goods').length
+    ? pkg.delivery_note_items.filter(i => i.item_type === 'goods').length
     : 0
 
   return (
