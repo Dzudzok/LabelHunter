@@ -1,3 +1,5 @@
+require('dotenv').config();
+
 // MSSQL — LP database on BOLOPC
 // Tryb 1: Windows Authentication (domyslny — nie trzeba user/password)
 // Tryb 2: SQL Server Authentication — odkomentuj user/password
@@ -7,18 +9,20 @@ const MSSQL_CONFIG = {
   connectionString: 'Driver={SQL Server};Server=localhost,64575;Database=label_printer;Trusted_Connection=yes;',
 };
 
-// Supabase
-const SUPABASE_URL = 'https://wbbqqjsgkgpeatdstyui.supabase.co';
-const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiYnFxanNna2dwZWF0ZHN0eXVpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjM1OTIzMSwiZXhwIjoyMDg3OTM1MjMxfQ.AFfq-9nTxA_xinMs588n1E72tahy7Bj02TP2UTnkXZk';
+// Supabase — set SUPABASE_URL and SUPABASE_SERVICE_KEY in .env
+const SUPABASE_URL = process.env.SUPABASE_URL || '';
+const SUPABASE_SERVICE_KEY = process.env.SUPABASE_SERVICE_KEY || '';
 
 // SMTP — for sending shipment emails from BOLOPC
+// Set environment variables: SMTP_USER, SMTP_PASSWORD
+// Or create a local .env file (not committed to git)
 const SMTP_CONFIG = {
   host: 'smtp.gmail.com',
   port: 587,
   secure: false,
   auth: {
-    user: 'no.reply@mroauto.info',
-    pass: 'xwtb crzs hijt sldg',
+    user: process.env.SMTP_USER || '',
+    pass: process.env.SMTP_PASSWORD || '',
   },
   from: '"MROAUTO AUTODÍLY" <info@mroauto.cz>',
 };

@@ -32,3 +32,7 @@ Thumbs.db
 
 # Test/debug JSON files
 response_*.json
+
+# QZ Tray private key (secret - never commit)
+qz-private.pem
+server/qz-private.pem
