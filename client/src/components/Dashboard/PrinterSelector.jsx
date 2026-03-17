@@ -1,6 +1,6 @@
 import { useState } from 'react'
 
-const API = import.meta.env.VITE_API_URL || ''
+const API = import.meta.env.VITE_API_URL || '/api'
 
 export default function PrinterSelector({ selectedPrinter, setSelectedPrinter, printers, loadingPrinters, printerError, fetchPrinters }) {
   const [open, setOpen] = useState(false)
@@ -12,7 +12,7 @@ export default function PrinterSelector({ selectedPrinter, setSelectedPrinter, p
 
   const downloadCert = async () => {
     try {
-      const res = await fetch(`${API}/api/qz/certificate`)
+      const res = await fetch(`${API}/qz/certificate`)
       const text = await res.text()
       const blob = new Blob([text], { type: 'application/x-pem-file' })
       const url = URL.createObjectURL(blob)
