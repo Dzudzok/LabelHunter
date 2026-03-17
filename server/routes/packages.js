@@ -709,9 +709,12 @@ router.post('/:id/generate-label', async (req, res, next) => {
     await supabase.from('delivery_note_items').delete().eq('delivery_note_id', id);
 
     // Send shipping confirmation email — fire and forget, don't block response
-    const emailTo = updated.customer_email || updated.delivery_email;
-    console.log(`[Email] DISABLE_EMAIL=${process.env.DISABLE_EMAIL}, to=${emailTo}, has_tracking_token=${!!updated.tracking_token}`);
-    if (process.env.DISABLE_EMAIL !== 'true' && emailTo) {
+    const emailTo = updated.delivery_email || updated.customer_email;
+    console.log(`[Email] DISABLE_EMAIL=${process.env.DISABLE_EMAIL}, to=${emailTo}, delivery_email=${updated.delivery_email}, customer_email=${updated.customer_email}`);
+    const isMarketplaceEmail = emailTo && /marketplace\.(amazon|kaufland|ebay|allegro)/i.test(emailTo);
+    if (isMarketplaceEmail) {
+      console.log(`[Email] Skipped — marketplace email: ${emailTo}`);
+    } else if (process.env.DISABLE_EMAIL !== 'true' && emailTo) {
       const dnWithItems = { ...updated, items };
       emailService.sendShipmentEmail(dnWithItems)
         .then(() => {
