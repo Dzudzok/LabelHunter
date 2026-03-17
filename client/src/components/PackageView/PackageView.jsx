@@ -206,10 +206,10 @@ export default function PackageView() {
       setLabelData(res.data)
       fetchPackage()
       if (res.data.label_url) {
-        printLabel(pkg.id)
+        await printLabel(pkg.id)
       }
-      // Auto-redirect to dashboard after 1.5s so scanner is ready for next package
-      setTimeout(() => navigate('/'), 1500)
+      // Auto-redirect to dashboard after print so scanner is ready for next package
+      setTimeout(() => navigate('/'), 500)
     } catch (err) {
       const errData = err.response?.data
       const apiErrors = errData?.details?.errors
