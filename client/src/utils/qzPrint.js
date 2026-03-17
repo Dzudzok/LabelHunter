@@ -56,12 +56,13 @@ export async function printPdfBlob(printerName, blob) {
   const isImage = blob.type && blob.type.startsWith('image/')
   const config = isImage
     ? q.configs.create(printerName, {
-        size: { width: 4, height: 6 },
-        units: 'in',
+        size: { width: 102, height: 150 },
+        units: 'mm',
         scaleContent: true,
+        fitToPage: true,
         rasterize: true,
         orientation: 'landscape',
-        margins: { top: 0.4, right: 0.1, bottom: 0.1, left: 0.1 },
+        margins: 0,
       })
     : q.configs.create(printerName)
   // QZ Tray pixel formats: 'pdf', 'image' (for all image types), 'html'
