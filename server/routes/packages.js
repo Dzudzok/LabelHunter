@@ -638,6 +638,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
       },
       parcels: parcelsForLP,
       labels: { format: 'A6' },
+      ...(dn.delivery_point_id ? { deliveryPointId: dn.delivery_point_id } : {}),
     };
 
     // Create shipment in LP
