@@ -23,31 +23,31 @@ function buildShipmentEmailHtml(dn) {
   const carrierName = dn.transport_name || dn.shipper_code || 'Dopravce';
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
-<body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,sans-serif;">
-  <div style="max-width:600px;margin:0 auto;background:#fff;">
-    <div style="background:#1a2332;padding:30px;text-align:center;">
-      <h1 style="color:#f97316;margin:0;font-size:24px;">MROAUTO AUTOD&Iacute;LY</h1>
-      <p style="color:#fff;margin:5px 0 0;font-size:14px;">Va&scaron;e z&aacute;silka byla odesl&aacute;na!</p>
+<body style="margin:0;padding:0;background:#f0f2f5;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#ffffff;">
+    <div style="background:#0047ab;padding:30px;text-align:center;">
+      <img src="https://ckeditor.nextis.cz/filemanager/uploads/0E1D0AF7179CBD54DA902DDFAFD59F3F/MROdesign_2022_2%20(1).png" alt="MROAUTO" style="width:180px;height:auto;border-radius:8px;" />
+      <p style="color:#ffffff;margin:12px 0 0;font-size:15px;font-weight:bold;">Va\u0161e z\u00e1silka byla odesl\u00e1na!</p>
     </div>
-    <div style="padding:30px;color:#333;line-height:1.6;">
-      <p>Dobr&yacute; den${dn.customer_name ? ', <strong>' + dn.customer_name + '</strong>' : ''},</p>
-      <p>s radost&iacute; V&aacute;m oznamujeme, &zcaron;e Va&scaron;e z&aacute;silka byla odesl&aacute;na a je na cest&ecaron;!</p>
-      <div style="background:#f8f9fa;border-left:4px solid #f97316;padding:15px;margin:20px 0;">
+    <div style="padding:30px;color:#333333;line-height:1.7;">
+      <p style="font-size:16px;">Dobr\u00fd den${dn.customer_name ? ', <strong>' + dn.customer_name + '</strong>' : ''},</p>
+      <p style="font-size:15px;">s radost\u00ed V\u00e1m oznamujeme, \u017ee Va\u0161e z\u00e1silka byla odesl\u00e1na a je na cest\u011b!</p>
+      <div style="background:#f0f4ff;border-left:4px solid #0047ab;padding:18px;margin:25px 0;border-radius:0 8px 8px 0;">
         <strong>Faktura:</strong> ${dn.invoice_number || '-'}<br>
-        <strong>Objedn&aacute;vka:</strong> ${dn.order_number || '-'}<br>
+        <strong>Objedn\u00e1vka:</strong> ${dn.order_number || '-'}<br>
         <strong>Dopravce:</strong> ${carrierName}<br>
-        <strong>Sledovac&iacute; &ccaron;&iacute;slo:</strong> ${dn.tracking_number || dn.lp_barcode || '-'}
-        ${dn.tracking_url ? '<br><a href="' + dn.tracking_url + '">Sledovat u dopravce</a>' : ''}
+        <strong>Sledovac\u00ed \u010d\u00edslo:</strong> ${dn.tracking_number || dn.lp_barcode || '-'}
+        ${dn.tracking_url ? '<br><a href="' + dn.tracking_url + '" style="color:#0047ab;font-weight:bold;">Sledovat u dopravce</a>' : ''}
       </div>
       <p style="text-align:center;margin:30px 0;">
-        <a href="${trackingLink}" style="display:inline-block;padding:14px 30px;background:#f97316;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Sledovat z&aacute;silku</a>
+        <a href="${trackingLink}" style="display:inline-block;padding:16px 36px;background:#e31e24;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px;">Sledovat z\u00e1silku</a>
       </p>
-      <p style="margin-top:25px;">V p&rcaron;&iacute;pad&ecaron; dotaz&udblac; n&aacute;s nev&aacute;hejte kontaktovat.</p>
-      <p>S pozdravem,<br><strong>T&yacute;m MROAUTO</strong></p>
+      <p style="margin-top:25px;font-size:14px;color:#666;">V p\u0159\u00edpad\u011b dotaz\u016f n\u00e1s nev\u00e1hejte kontaktovat.</p>
+      <p style="font-size:14px;">S pozdravem,<br><strong>T\u00fdm MROAUTO</strong></p>
     </div>
-    <div style="background:#1a2332;padding:20px;text-align:center;color:#999;font-size:12px;">
-      <p>MROAUTO AUTOD&Iacute;LY s.r.o. | &Ccaron;s. arm&aacute;dy 360, Pudlov, 735 51 Bohum&iacute;n</p>
-      <p>Tel: +420 774 917 859 | <a href="mailto:info@mroauto.cz" style="color:#f97316;">info@mroauto.cz</a></p>
+    <div style="background:#0047ab;padding:20px;text-align:center;color:#c0d0f0;font-size:12px;">
+      <p style="margin:0 0 5px;">MROAUTO AUTOD\u00cdLY s.r.o. | \u010cs. arm\u00e1dy 360, Pudlov, 735 51 Bohum\u00edn</p>
+      <p style="margin:0;">Tel: +420 774 917 859 | <a href="mailto:info@mroauto.cz" style="color:#ffffff;">info@mroauto.cz</a></p>
     </div>
   </div>
 </body></html>`;
