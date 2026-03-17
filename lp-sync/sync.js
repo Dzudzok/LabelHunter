@@ -231,6 +231,7 @@ async function main() {
             amount_netto: shipmentValue,
             amount_brutto: shipmentValue,
             cod_amount: codAmount,
+            weight: ship.weight || 0,
             currency: currencyCode,
             status: 'pending',
             lp_shipment_id: ship.pk_shipment,

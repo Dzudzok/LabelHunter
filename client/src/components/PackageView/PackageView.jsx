@@ -379,6 +379,12 @@ export default function PackageView() {
                     </div>
                   </div>
                   <div>
+                    <span className="text-theme-muted text-sm">Váha:</span>
+                    <div className="text-theme-primary font-semibold">
+                      {pkg.weight ? `${pkg.weight} kg` : '-'}
+                    </div>
+                  </div>
+                  <div>
                     <span className="text-theme-muted text-sm">Dobírka:</span>
                     <div className="flex items-center gap-2 mt-1">
                       <input

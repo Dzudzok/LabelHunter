@@ -595,6 +595,8 @@ router.post('/:id/generate-label', async (req, res, next) => {
         }
       }
     }
+    // Use weight from LP sync if available, otherwise fallback to items calculation
+    if (autoWeight <= 0 && dn.weight) autoWeight = parseFloat(dn.weight);
     if (autoWeight < 0.5) autoWeight = 0.5;
 
     // Build parcels array — from body (user-defined) or auto single parcel
@@ -622,8 +624,12 @@ router.post('/:id/generate-label', async (req, res, next) => {
       codCurrency: (bodyCodAmount != null ? parseFloat(bodyCodAmount) : parseFloat(dn.cod_amount || 0)) > 0 ? (dn.currency || 'CZK') : null,
       description: 'Autodíly',
       recipient: {
-        company: dn.customer_name,
-        street: dn.delivery_street || dn.customer_street,
+        company: isUPS ? (dn.customer_name || '').replace(/[,]/g, ' ').replace(/\s+/g, ' ').trim() : dn.customer_name,
+        street: (() => {
+          let s = dn.delivery_street || dn.customer_street || '';
+          if (isUPS) s = s.replace(/[,]/g, ' ').replace(/\s+/g, ' ').trim();
+          return s;
+        })(),
         city: dn.delivery_city || dn.customer_city,
         postalCode: dn.delivery_postal_code || dn.customer_postal_code,
         countryCode: dn.delivery_country || dn.customer_country || 'CZ',
