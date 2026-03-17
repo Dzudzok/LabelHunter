@@ -11,7 +11,7 @@
 const sql = require('mssql/msnodesqlv8');
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
-const { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL } = require('./config');
+const { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL, DISABLE_EMAIL } = require('./config');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
@@ -322,6 +322,9 @@ async function main() {
     }
 
     // 7. Send pending shipment emails from BOLOPC (SMTP works here, not from Render)
+    if (DISABLE_EMAIL) {
+      console.log('[LP Sync] Email sending disabled (DISABLE_EMAIL=true in config.js)');
+    } else {
     console.log('[LP Sync] Checking for pending emails...');
     let pendingEmails = [];
     let emailPage = 0;
@@ -390,6 +393,7 @@ async function main() {
     } else {
       console.log('[LP Sync] No pending emails.');
     }
+    } // end DISABLE_EMAIL check
   } catch (err) {
     console.error('[LP Sync] Fatal error:', err.message);
     process.exit(1);

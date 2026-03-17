@@ -26,4 +26,7 @@ const SMTP_CONFIG = {
 // App URL for tracking links
 const APP_URL = 'https://labelhunter-client.onrender.com';
 
-module.exports = { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL };
+// Set to true to disable sending emails
+const DISABLE_EMAIL = false;
+
+module.exports = { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL, DISABLE_EMAIL };
