@@ -6,27 +6,27 @@
 
 /* ===== DARK THEME (default) ===== */
 :root {
-  --navy-900: #0f1923;
-  --navy-800: #1a2332;
-  --navy-700: #243447;
-  --navy-600: #2e4560;
-  --navy-500: #3a5a7c;
-  --text-primary: #ffffff;
-  --text-secondary: #9ca3af;
-  --text-muted: #6b7280;
+  --navy-900: #0d1520;
+  --navy-800: #151f2e;
+  --navy-700: #1e2d42;
+  --navy-600: #2a3f5a;
+  --navy-500: #3d5a80;
+  --text-primary: #f1f5f9;
+  --text-secondary: #c8d0da;
+  --text-muted: #8a95a5;
   --overlay-bg: rgba(0, 0, 0, 0.6);
 }
 
 /* ===== LIGHT THEME ===== */
 :root[data-theme="light"] {
-  --navy-900: #f1f5f9;
-  --navy-800: #f8fafc;
-  --navy-700: #e2e8f0;
-  --navy-600: #cbd5e1;
-  --navy-500: #94a3b8;
-  --text-primary: #1e293b;
-  --text-secondary: #475569;
-  --text-muted: #94a3b8;
+  --navy-900: #e8edf3;
+  --navy-800: #f3f6fa;
+  --navy-700: #dce3ed;
+  --navy-600: #b8c5d6;
+  --navy-500: #7a8da3;
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
   --overlay-bg: rgba(0, 0, 0, 0.3);
 }
 
