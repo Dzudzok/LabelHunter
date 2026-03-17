@@ -61,8 +61,8 @@ export default function PackageView() {
       // Init parcels only once
       if (!parcelsInitialized.current) {
         parcelsInitialized.current = true
-        const autoW = calcAutoWeight(data.items || [])
-        setParcels([{ weight: autoW }])
+        const autoW = data.weight ? parseFloat(data.weight) : calcAutoWeight(data.items || [])
+        setParcels([{ weight: autoW || 0.5 }])
         setCodAmount(data.cod_amount ? String(data.cod_amount) : '0')
       }
     } catch {
