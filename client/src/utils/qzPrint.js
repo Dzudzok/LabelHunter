@@ -60,7 +60,7 @@ export async function printPdfBlob(printerName, blob) {
     scaleContent: true,
     rasterize: true,
     orientation: isImage ? 'landscape' : 'portrait',
-    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+    margins: { top: 0.15, right: 0.1, bottom: 0, left: 0.1 },
   })
   // QZ Tray pixel formats: 'pdf', 'image' (for all image types), 'html'
   const format = isImage ? 'image' : 'pdf'
