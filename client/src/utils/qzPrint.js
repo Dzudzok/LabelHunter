@@ -65,7 +65,7 @@ export async function printPdfBlob(printerName, blob) {
         interpolation: 'bicubic',
         margins: { top: 2, right: 0, bottom: 0, left: 0 },
       })
-    : q.configs.create(printerName)
+    : q.configs.create(printerName, { margins: 0 })
   // QZ Tray pixel formats: 'pdf', 'image' (for all image types), 'html'
   const format = isImage ? 'image' : 'pdf'
   const data = [{ type: 'pixel', format, flavor: 'base64', data: base64 }]
