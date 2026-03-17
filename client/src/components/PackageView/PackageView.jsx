@@ -115,8 +115,8 @@ export default function PackageView() {
       )
       if (item) {
         try {
-          const updated = await updateItemScan(pkg.id, item.id, 1, worker?.id)
-          setPkg(updated)
+          await updateItemScan(pkg.id, item.id, (parseFloat(item.scanned_qty) || 0) + 1, worker?.id)
+          fetchPackage()
         } catch (err) {
           console.error('Scan error:', err)
         }
