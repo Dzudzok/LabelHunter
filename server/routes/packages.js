@@ -645,6 +645,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
     const labelsField = lpItem.labels;
 
     // Normalize: accept string or array of strings
+    console.log('[generate-label] labels field type:', typeof labelsField, Array.isArray(labelsField) ? `array[${labelsField.length}]` : '', labelsField ? `first20chars: ${String(labelsField).substring(0, 20)}` : 'null/undefined');
     const labelBase64 = Array.isArray(labelsField) ? labelsField[0] : labelsField;
 
     if (labelBase64 && typeof labelBase64 === 'string' && labelBase64.length > 10) {
