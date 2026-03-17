@@ -603,8 +603,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
     if (bodyParcels && Array.isArray(bodyParcels) && bodyParcels.length > 0) {
       parcelsForLP = bodyParcels.map(p => ({
         weight: Math.round(Math.max(parseFloat(p.weight) || 0.5, 0.1) * 100) / 100,
-        ...(isUPS ? { packagingType: '02' } : {}),
-      }));
+              }));
     } else {
       parcelsForLP = [{ weight: Math.round(autoWeight * 100) / 100, ...(isUPS ? { packagingType: '02' } : {}) }];
     }
@@ -632,6 +631,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
       },
       parcels: parcelsForLP,
       labels: { format: 'A6' },
+      ...(isUPS ? { packaging: '02' } : {}),
     };
 
     // Create shipment in LP
