@@ -87,7 +87,8 @@ async function main() {
         s.price,
         s.isPaymentInAdvance,
         s.ico,
-        s.deliveryPointId,
+        s.deliveryPointId AS shipment_deliveryPointId,
+        dp.deliveryPointId AS delivery_point_external_id,
         st.name AS service_name,
         st.serviceTypeCode AS lp_service_code,
         pt.code AS lp_shipper_code,
@@ -96,6 +97,7 @@ async function main() {
       FROM dbo.shipment s
       LEFT JOIN dbo.service_type st ON s.fk_service_type = st.pk_service_type
       LEFT JOIN dbo.package_type pt ON st.fk_package_type = pt.pk_package_type
+      LEFT JOIN dbo.delivery_point dp ON s.fk_delivery_point = dp.pk_delivery_point
       LEFT JOIN dbo.country c ON s.fk_country = c.pk_country
       LEFT JOIN dbo.currency cur ON s.fk_currency = cur.pk_currency
       WHERE s.fk_shipment_state = 4
@@ -233,7 +235,7 @@ async function main() {
             amount_brutto: shipmentValue,
             cod_amount: codAmount,
             weight: ship.weight || 0,
-            delivery_point_id: (ship.deliveryPointId || '').trim() || null,
+            delivery_point_id: (ship.delivery_point_external_id || ship.shipment_deliveryPointId || '').trim() || null,
             currency: currencyCode,
             status: 'pending',
             lp_shipment_id: ship.pk_shipment,
