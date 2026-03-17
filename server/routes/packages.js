@@ -650,12 +650,19 @@ router.post('/:id/generate-label', async (req, res, next) => {
 
     if (labelBase64 && typeof labelBase64 === 'string' && labelBase64.length > 10) {
       const labelsDir = path.join(__dirname, '..', 'labels');
-      const filename = `${lpItem.id}.pdf`;
+
+      // Detect format from base64 header
+      let ext = 'pdf';
+      if (labelBase64.startsWith('R0lGOD')) ext = 'gif';
+      else if (labelBase64.startsWith('iVBOR')) ext = 'png';
+      else if (labelBase64.startsWith('/9j/')) ext = 'jpg';
+
+      const filename = `${lpItem.id}.${ext}`;
       const filePath = path.join(labelsDir, filename);
 
-      const pdfBuffer = Buffer.from(labelBase64, 'base64');
-      console.log('[generate-label] PDF saved:', filename, pdfBuffer.length, 'bytes');
-      fs.writeFileSync(filePath, pdfBuffer);
+      const labelBuffer = Buffer.from(labelBase64, 'base64');
+      console.log('[generate-label] Label saved:', filename, labelBuffer.length, 'bytes', `(${ext})`);
+      fs.writeFileSync(filePath, labelBuffer);
       labelPdfUrl = `/labels/${filename}`;
     } else {
       console.warn('[generate-label] No labels in LP response. type:', typeof labelsField, Array.isArray(labelsField) ? 'array len=' + labelsField.length : '');
@@ -751,9 +758,12 @@ router.get('/:id/download-label', async (req, res, next) => {
     const filePath = path.join(__dirname, '..', dn.label_pdf_url);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });
 
-    const filename = `label-${dn.invoice_number || id}.pdf`;
+    const ext = path.extname(dn.label_pdf_url).toLowerCase();
+    const mimeTypes = { '.pdf': 'application/pdf', '.gif': 'image/gif', '.png': 'image/png', '.jpg': 'image/jpeg' };
+    const contentType = mimeTypes[ext] || 'application/pdf';
+    const filename = `label-${dn.invoice_number || id}${ext}`;
     const stat = fs.statSync(filePath);
-    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
     res.setHeader('Content-Length', stat.size);
     fs.createReadStream(filePath).pipe(res);
@@ -762,7 +772,7 @@ router.get('/:id/download-label', async (req, res, next) => {
   }
 });
 
-// GET /:id/view-label - stream label PDF inline (for printing in iframe)
+// GET /:id/view-label - stream label inline (for printing in iframe)
 router.get('/:id/view-label', async (req, res, next) => {
   try {
     const { id } = req.params;
@@ -779,8 +789,11 @@ router.get('/:id/view-label', async (req, res, next) => {
     const filePath = path.join(__dirname, '..', dn.label_pdf_url);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });
 
+    const ext = path.extname(dn.label_pdf_url).toLowerCase();
+    const mimeTypes = { '.pdf': 'application/pdf', '.gif': 'image/gif', '.png': 'image/png', '.jpg': 'image/jpeg' };
+    const contentType = mimeTypes[ext] || 'application/pdf';
     const stat = fs.statSync(filePath);
-    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Type', contentType);
     res.setHeader('Content-Disposition', 'inline');
     res.setHeader('Content-Length', stat.size);
     fs.createReadStream(filePath).pipe(res);

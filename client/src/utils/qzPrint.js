@@ -54,7 +54,10 @@ export async function printPdfBlob(printerName, blob) {
   const q = await getConnectedQZ()
   const base64 = await blobToBase64(blob)
   const config = q.configs.create(printerName)
-  const data = [{ type: 'pixel', format: 'pdf', flavor: 'base64', data: base64 }]
+  // Detect format from blob MIME type
+  const mimeMap = { 'image/gif': 'gif', 'image/png': 'png', 'image/jpeg': 'jpeg', 'application/pdf': 'pdf' }
+  const format = mimeMap[blob.type] || 'pdf'
+  const data = [{ type: 'pixel', format, flavor: 'base64', data: base64 }]
   await q.print(config, data)
 }
 
