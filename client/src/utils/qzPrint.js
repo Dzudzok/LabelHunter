@@ -62,9 +62,7 @@ export async function printPdfBlob(printerName, blob) {
     orientation: isImage ? 'landscape' : 'portrait',
     margins: { top: 0, right: 0, bottom: 0, left: 0 },
   })
-  // Detect format from blob MIME type
   // QZ Tray pixel formats: 'pdf', 'image' (for all image types), 'html'
-  const isImage = blob.type && blob.type.startsWith('image/')
   const format = isImage ? 'image' : 'pdf'
   const data = [{ type: 'pixel', format, flavor: 'base64', data: base64 }]
   await q.print(config, data)
