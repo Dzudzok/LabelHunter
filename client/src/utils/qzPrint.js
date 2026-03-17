@@ -61,7 +61,7 @@ export async function printPdfBlob(printerName, blob) {
         scaleContent: true,
         rasterize: true,
         orientation: 'landscape',
-        margins: { top: 0.2, right: 0.1, bottom: 0.1, left: 0.1 },
+        margins: { top: 0.4, right: 0.1, bottom: 0.1, left: 0.1 },
       })
     : q.configs.create(printerName)
   // QZ Tray pixel formats: 'pdf', 'image' (for all image types), 'html'
