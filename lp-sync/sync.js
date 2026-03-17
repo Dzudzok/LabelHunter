@@ -369,7 +369,7 @@ async function main() {
         const originalEmail = dn.delivery_email || dn.customer_email;
         if (!originalEmail) { emailsSkipped++; continue; }
         if (MARKETPLACE_PATTERN.test(originalEmail)) {
-          console.log(`  [Email] Skipped marketplace: ${emailTo}`);
+          console.log(`  [Email] Skipped marketplace: ${originalEmail}`);
           // Mark as sent so we don't retry
           await supabase.from('delivery_notes')
             .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
