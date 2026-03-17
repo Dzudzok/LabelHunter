@@ -50,15 +50,15 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
               <div className="flex-1 min-w-0">
                 <div className="flex items-center gap-2">
                   {item.brand && (
-                    <span className="text-sm font-semibold text-brand-orange bg-brand-orange/20 px-2 py-0.5 rounded">
+                    <span className="text-sm font-bold text-brand-orange bg-brand-orange/20 px-2 py-0.5 rounded">
                       {item.brand}
                     </span>
                   )}
-                  <span className="text-base font-mono text-theme-secondary truncate">
+                  <span className="text-lg font-mono text-theme-primary font-bold truncate">
                     {item.code}
                   </span>
                 </div>
-                <div className="text-sm text-theme-muted truncate mt-0.5">
+                <div className="text-sm text-theme-secondary truncate mt-0.5">
                   {item.name || item.text}
                 </div>
               </div>
