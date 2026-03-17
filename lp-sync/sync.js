@@ -184,6 +184,12 @@ async function main() {
         const countryCode = (ship.country_code || 'CZ').trim();
         const currencyCode = (ship.currency_code || 'CZK').trim();
 
+        // Calculate shipment value from goods (cena zásilky — always filled)
+        let shipmentValue = 0;
+        for (const g of goods) {
+          shipmentValue += (g.unitPrice || 0) * (g.quantity || 0);
+        }
+
         // Parcels from barcode table (skip placeholder barcodes)
         const lpParcels = barcodes
           .filter(b => b.barcode && !b.barcode.includes('PŘEGENEROVÁNO'))
@@ -222,8 +228,9 @@ async function main() {
             transport_name: ship.service_name || '',
             shipper_code: shipperCode,
             shipper_service: serviceCode,
-            amount_netto: 0,
-            amount_brutto: codAmount,
+            amount_netto: shipmentValue,
+            amount_brutto: shipmentValue,
+            cod_amount: codAmount,
             currency: currencyCode,
             status: 'pending',
             lp_shipment_id: ship.pk_shipment,

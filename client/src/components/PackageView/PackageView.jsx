@@ -63,7 +63,7 @@ export default function PackageView() {
         parcelsInitialized.current = true
         const autoW = calcAutoWeight(data.items || [])
         setParcels([{ weight: autoW }])
-        setCodAmount(data.amount_brutto ? String(data.amount_brutto) : '0')
+        setCodAmount(data.cod_amount ? String(data.cod_amount) : '0')
       }
     } catch {
       setLoading(false)
@@ -208,6 +208,8 @@ export default function PackageView() {
       if (res.data.label_url) {
         printLabel(pkg.id)
       }
+      // Auto-redirect to dashboard after 1.5s so scanner is ready for next package
+      setTimeout(() => navigate('/'), 1500)
     } catch (err) {
       const errData = err.response?.data
       const apiErrors = errData?.details?.errors
@@ -372,7 +374,13 @@ export default function PackageView() {
                       {pkg.shipper_code ? `${pkg.shipper_code} | ${pkg.transport_name || pkg.shipper_service || ''}` : pkg.transport_name || '-'}
                     </div>
                   </div>
-                  <div className="col-span-2">
+                  <div>
+                    <span className="text-theme-muted text-sm">Cena zásilky:</span>
+                    <div className="text-theme-primary font-semibold">
+                      {pkg.amount_brutto ? `${pkg.amount_brutto} ${pkg.currency || 'CZK'}` : '-'}
+                    </div>
+                  </div>
+                  <div>
                     <span className="text-theme-muted text-sm">Dobírka:</span>
                     <div className="flex items-center gap-2 mt-1">
                       <input
