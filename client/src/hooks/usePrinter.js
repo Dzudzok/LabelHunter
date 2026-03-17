@@ -47,7 +47,7 @@ export function usePrinter() {
       }
     }
 
-    // Fallback: blob iframe print (shows system dialog)
+    // Fallback: iframe print (shows system dialog)
     try {
       const resp = await fetch(url)
       if (!resp.ok) throw new Error('fetch failed')
@@ -55,16 +55,24 @@ export function usePrinter() {
       const blobUrl = URL.createObjectURL(blob)
       const iframe = document.createElement('iframe')
       iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
-      iframe.src = blobUrl
       document.body.appendChild(iframe)
-      iframe.onload = () => {
-        iframe.contentWindow.focus()
-        iframe.contentWindow.print()
-        setTimeout(() => {
-          document.body.removeChild(iframe)
-          URL.revokeObjectURL(blobUrl)
-        }, 60000)
+
+      const isImage = blob.type && blob.type.startsWith('image/')
+      if (isImage) {
+        // For images (GIF/PNG from UPS etc): wrap in HTML for printing
+        iframe.srcdoc = `<html><head><style>@page{margin:0;size:A6 landscape}body{margin:0;display:flex;justify-content:center;align-items:center;height:100vh}img{max-width:100%;max-height:100%}</style></head><body><img src="${blobUrl}" onload="window.focus();window.print()"></body></html>`
+      } else {
+        // PDF: load directly
+        iframe.src = blobUrl
+        iframe.onload = () => {
+          iframe.contentWindow.focus()
+          iframe.contentWindow.print()
+        }
       }
+      setTimeout(() => {
+        document.body.removeChild(iframe)
+        URL.revokeObjectURL(blobUrl)
+      }, 60000)
     } catch {
       window.open(url, '_blank')
     }
