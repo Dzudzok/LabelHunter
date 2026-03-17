@@ -56,12 +56,13 @@ export async function printPdfBlob(printerName, blob) {
   const isImage = blob.type && blob.type.startsWith('image/')
   const config = isImage
     ? q.configs.create(printerName, {
-        size: { width: 150, height: 102 },
+        size: { width: 102, height: 150 },
         units: 'mm',
         scaleContent: true,
         fitToPage: true,
         rasterize: true,
-        orientation: 'landscape',
+        orientation: 'portrait',
+        rotation: 90,
         interpolation: 'bicubic',
         margins: 0,
       })
