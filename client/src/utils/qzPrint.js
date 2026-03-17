@@ -55,8 +55,9 @@ export async function printPdfBlob(printerName, blob) {
   const base64 = await blobToBase64(blob)
   const config = q.configs.create(printerName)
   // Detect format from blob MIME type
-  const mimeMap = { 'image/gif': 'gif', 'image/png': 'png', 'image/jpeg': 'jpeg', 'application/pdf': 'pdf' }
-  const format = mimeMap[blob.type] || 'pdf'
+  // QZ Tray pixel formats: 'pdf', 'image' (for all image types), 'html'
+  const isImage = blob.type && blob.type.startsWith('image/')
+  const format = isImage ? 'image' : 'pdf'
   const data = [{ type: 'pixel', format, flavor: 'base64', data: base64 }]
   await q.print(config, data)
 }
