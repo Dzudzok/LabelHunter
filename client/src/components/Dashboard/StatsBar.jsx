@@ -11,17 +11,17 @@ export default function StatsBar({ packages }) {
     <div className="flex flex-wrap gap-6 bg-navy-900 rounded-xl px-6 py-4">
       <div className="flex items-center gap-2">
         <span className="text-green-400 text-xl">&#10003;</span>
-        <span className="text-theme-secondary text-lg">Odeslano:</span>
+        <span className="text-theme-secondary text-lg">Wysłano:</span>
         <span className="text-green-400 text-2xl font-bold">{sent}</span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-red-400 text-xl">&#9632;</span>
-        <span className="text-theme-secondary text-lg">K vyrizeni:</span>
+        <span className="text-theme-secondary text-lg">Do realizacji:</span>
         <span className="text-red-400 text-2xl font-bold">{pending}</span>
       </div>
       <div className="flex items-center gap-2">
         <span className="text-theme-secondary text-xl">&#8987;</span>
-        <span className="text-theme-secondary text-lg">Celkem:</span>
+        <span className="text-theme-secondary text-lg">Razem:</span>
         <span className="text-theme-primary text-2xl font-bold">{total}</span>
       </div>
     </div>

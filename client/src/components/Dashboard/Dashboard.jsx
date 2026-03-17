@@ -176,7 +176,7 @@ export default function Dashboard() {
             <div>
               <div className="text-base font-semibold text-theme-primary">{worker?.name}</div>
               <button onClick={logout} className="text-xs text-theme-muted hover:text-red-400 min-h-0">
-                Odhlásit
+                Wyloguj
               </button>
             </div>
           </div>
@@ -208,7 +208,7 @@ export default function Dashboard() {
               onClick={() => setShowNewLabel(true)}
               className="bg-orange-600 hover:bg-orange-500 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
             >
-              + Nová etiketa
+              + Nowa etykieta
             </button>
             <button
               onClick={handleRefresh}
@@ -220,7 +220,7 @@ export default function Dashboard() {
               onClick={() => setShowSearch(true)}
               className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
-              Vyhledávání
+              Wyszukiwanie
             </button>
             <button
               onClick={() => setShowHunterManage(true)}
@@ -238,13 +238,13 @@ export default function Dashboard() {
               onClick={() => setShowStats(true)}
               className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
-              Statistiky
+              Statystyki
             </button>
             <button
               onClick={() => setShowTransportMap(true)}
               className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
             >
-              Přepravci
+              Przewoźnicy
             </button>
             <PrinterSelector
               selectedPrinter={selectedPrinter}
@@ -289,7 +289,7 @@ export default function Dashboard() {
               type="text"
               value={scanValue}
               onChange={handleScanChange}
-              placeholder="Naskenuj číslo faktury..."
+              placeholder="Skanuj numer faktury..."
               className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-5 py-4 text-2xl text-theme-primary placeholder-theme-muted outline-none transition-colors"
             />
           </form>
@@ -298,7 +298,7 @@ export default function Dashboard() {
           <div className="flex items-center gap-2 mt-4 mb-2">
             <span className="w-2.5 h-2.5 rounded-full bg-red-500" />
             <h2 className="text-base font-bold text-red-400">
-              K vyřízení ({loading ? '…' : pendingPackages.length})
+              Do realizacji ({loading ? '…' : pendingPackages.length})
             </h2>
           </div>
 
@@ -308,7 +308,7 @@ export default function Dashboard() {
             )}
             {!loading && pendingPackages.length === 0 && (
               <div className="text-center py-12 text-theme-muted text-sm">
-                Žádné balíky k vyřízení
+                Brak paczek do realizacji
               </div>
             )}
             {pendingPackages.map(pkg => (
@@ -325,7 +325,7 @@ export default function Dashboard() {
               type="text"
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Hledat balík (FV, zákazník, číslo...)"
+              placeholder="Szukaj paczkę (FV, klient, numer...)"
               className="flex-1 bg-navy-900 border-2 border-navy-600 focus:border-blue-500 rounded-xl px-5 py-4 text-xl text-theme-primary placeholder-theme-muted outline-none transition-colors"
             />
             <button
@@ -333,7 +333,7 @@ export default function Dashboard() {
               disabled={searchLoading}
               className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 rounded-xl text-sm disabled:opacity-50 transition-colors"
             >
-              {searchLoading ? '...' : 'Hledat'}
+              {searchLoading ? '...' : 'Szukaj'}
             </button>
             {searchResults !== null && (
               <button
@@ -351,8 +351,8 @@ export default function Dashboard() {
             <span className="w-2.5 h-2.5 rounded-full bg-green-500" />
             <h2 className="text-base font-bold text-green-400">
               {searchResults !== null
-                ? `Výsledky hledání (${rightPackages.length})`
-                : `Odesláno dnes (${sentPackagesToday.length})`
+                ? `Wyniki wyszukiwania (${rightPackages.length})`
+                : `Wysłane dzisiaj (${sentPackagesToday.length})`
               }
             </h2>
           </div>
@@ -363,7 +363,7 @@ export default function Dashboard() {
             )}
             {!searchLoading && rightPackages.length === 0 && (
               <div className="text-center py-12 text-theme-muted text-sm">
-                {searchResults !== null ? 'Nic nenalezeno' : 'Žádné odeslané balíky dnes'}
+                {searchResults !== null ? 'Nic nie znaleziono' : 'Brak wysłanych paczek dzisiaj'}
               </div>
             )}
             {!searchLoading && rightPackages.map(pkg => (

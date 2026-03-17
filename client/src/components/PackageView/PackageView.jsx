@@ -7,13 +7,12 @@ import { classifyBarcode } from '../../utils/barcode'
 import { api } from '../../services/api'
 import ItemList from './ItemList'
 import HunterPanel from './HunterPanel'
-import BarcodeAction from '../BarcodeAction/BarcodeAction'
 import { usePrinter } from '../../hooks/usePrinter'
 
 export default function PackageView() {
   const { id } = useParams()
   const navigate = useNavigate()
-  const { updateItemScan, skipAllItems, generateLabel } = usePackageStore()
+  const { updateItemScan, skipAllItems } = usePackageStore()
   const { printLabel } = usePrinter()
   const worker = useAuthStore(s => s.worker)
 
@@ -208,6 +207,8 @@ export default function PackageView() {
       if (res.data.label_url) {
         await printLabel(pkg.id)
       }
+      // Auto-redirect to dashboard after successful print
+      setTimeout(() => navigate('/'), 1000)
     } catch (err) {
       const errData = err.response?.data
       const apiErrors = errData?.details?.errors
@@ -229,7 +230,7 @@ export default function PackageView() {
   if (loading) {
     return (
       <div className="min-h-screen bg-navy-800 flex items-center justify-center">
-        <div className="text-2xl text-theme-secondary">Nacitani baliku...</div>
+        <div className="text-2xl text-theme-secondary">Ładowanie paczki...</div>
       </div>
     )
   }
@@ -237,9 +238,9 @@ export default function PackageView() {
   if (!pkg) {
     return (
       <div className="min-h-screen bg-navy-800 flex flex-col items-center justify-center gap-4">
-        <div className="text-2xl text-theme-secondary">Balik nenalezen</div>
+        <div className="text-2xl text-theme-secondary">Paczka nie znaleziona</div>
         <button onClick={() => navigate('/')} className="bg-brand-orange text-white px-6 py-3 rounded-xl text-lg font-bold">
-          Zpet na Dashboard
+          Wróć na Dashboard
         </button>
       </div>
     )
@@ -262,13 +263,13 @@ export default function PackageView() {
             {/* Customer info / Address edit */}
             <div className="bg-navy-700 rounded-xl p-5 border border-navy-600">
               <div className="flex items-center justify-between mb-3">
-                <h2 className="text-xl font-bold text-theme-primary">Zakaznik</h2>
+                <h2 className="text-xl font-bold text-theme-primary">Klient</h2>
                 {!labelData && !editingAddress && (
                   <button
                     onClick={startEditAddress}
                     className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-4 py-2 rounded-lg text-base transition-colors"
                   >
-                    Upravit adresu
+                    Edytuj adres
                   </button>
                 )}
               </div>
@@ -278,26 +279,26 @@ export default function PackageView() {
                   <input
                     value={addressForm.customer_name}
                     onChange={e => setAddressForm(p => ({ ...p, customer_name: e.target.value }))}
-                    placeholder="Jméno / firma"
+                    placeholder="Nazwa / firma"
                     className="w-full bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                   />
                   <input
                     value={addressForm.delivery_street}
                     onChange={e => setAddressForm(p => ({ ...p, delivery_street: e.target.value }))}
-                    placeholder="Ulice"
+                    placeholder="Ulica"
                     className="w-full bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                   />
                   <div className="grid grid-cols-3 gap-2">
                     <input
                       value={addressForm.delivery_city}
                       onChange={e => setAddressForm(p => ({ ...p, delivery_city: e.target.value }))}
-                      placeholder="Město"
+                      placeholder="Miasto"
                       className="col-span-2 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                     />
                     <input
                       value={addressForm.delivery_postal_code}
                       onChange={e => setAddressForm(p => ({ ...p, delivery_postal_code: e.target.value }))}
-                      placeholder="PSČ"
+                      placeholder="Kod pocztowy"
                       className="bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
                     />
                   </div>
@@ -321,13 +322,13 @@ export default function PackageView() {
                       disabled={savingAddress}
                       className="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg text-base font-bold transition-colors disabled:opacity-50"
                     >
-                      {savingAddress ? 'Ukládám...' : 'Uložit adresu'}
+                      {savingAddress ? 'Zapisuję...' : 'Zapisz adres'}
                     </button>
                     <button
                       onClick={() => setEditingAddress(false)}
                       className="px-5 bg-navy-600 hover:bg-navy-500 text-theme-secondary py-3 rounded-lg text-base transition-colors"
                     >
-                      Zrušit
+                      Anuluj
                     </button>
                   </div>
                 </div>
@@ -363,29 +364,29 @@ export default function PackageView() {
                     <div className="text-theme-primary font-bold text-xl">{pkg.invoice_number}</div>
                   </div>
                   <div>
-                    <span className="text-theme-muted text-sm">Objednavka:</span>
+                    <span className="text-theme-muted text-sm">Zamówienie:</span>
                     <div className="text-theme-primary font-semibold">{pkg.order_number || '-'}</div>
                   </div>
                   <div className="col-span-2">
-                    <span className="text-theme-muted text-sm">Přepravce:</span>
+                    <span className="text-theme-muted text-sm">Przewoźnik:</span>
                     <div className="text-theme-primary font-semibold">
                       {pkg.shipper_code ? `${pkg.shipper_code} | ${pkg.transport_name || pkg.shipper_service || ''}` : pkg.transport_name || '-'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-theme-muted text-sm">Cena zásilky:</span>
+                    <span className="text-theme-muted text-sm">Cena przesyłki:</span>
                     <div className="text-theme-primary font-semibold">
                       {pkg.amount_brutto ? `${pkg.amount_brutto} ${pkg.currency || 'CZK'}` : '-'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-theme-muted text-sm">Váha:</span>
+                    <span className="text-theme-muted text-sm">Waga:</span>
                     <div className="text-theme-primary font-semibold">
                       {pkg.weight ? `${pkg.weight} kg` : '-'}
                     </div>
                   </div>
                   <div>
-                    <span className="text-theme-muted text-sm">Dobírka:</span>
+                    <span className="text-theme-muted text-sm">Pobranie:</span>
                     <div className="flex items-center gap-2 mt-1">
                       <input
                         type="number"
@@ -402,7 +403,7 @@ export default function PackageView() {
                   </div>
                   {pkg.doc_number && (
                     <div>
-                      <span className="text-theme-muted text-sm">Doklad:</span>
+                      <span className="text-theme-muted text-sm">Dokument:</span>
                       <div className="text-theme-primary font-semibold">{pkg.doc_number}</div>
                     </div>
                   )}
@@ -412,7 +413,7 @@ export default function PackageView() {
               {!labelData && (
                 <div className="w-[280px] shrink-0 bg-navy-700 rounded-xl p-5 border border-navy-600 flex flex-col">
                   <div className="text-lg font-bold text-theme-primary mb-2">
-                    Balíky ({parcels.length} ks) — {totalWeight.toFixed(2)} kg
+                    Paczki ({parcels.length} szt.) — {totalWeight.toFixed(2)} kg
                   </div>
                   <div className="flex flex-col gap-2 flex-1">
                     {parcels.map((parcel, idx) => (
@@ -442,7 +443,7 @@ export default function PackageView() {
                     onClick={addParcel}
                     className="bg-brand-orange hover:bg-orange-600 text-white px-4 py-2 rounded-lg text-base font-bold transition-colors mt-2"
                   >
-                    + Pridat balík
+                    + Dodaj paczkę
                   </button>
                 </div>
               )}
@@ -464,7 +465,7 @@ export default function PackageView() {
             <input
               ref={scanInputRef}
               type="text"
-              placeholder="Naskenuj produkt..."
+              placeholder="Skanuj produkt..."
               className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-3 text-xl text-theme-primary placeholder-theme-muted outline-none shrink-0"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.target.value.trim()) {
@@ -478,7 +479,7 @@ export default function PackageView() {
             {!labelData && (
               <div className="bg-navy-700 rounded-xl p-4 border border-navy-600 shrink-0">
                 <div className="text-sm text-theme-secondary mb-2">
-                  Přepravce <span className="text-theme-muted">(LP: {pkg.shipper_code ? `${pkg.shipper_code}${pkg.shipper_service ? '/' + pkg.shipper_service : ''}` : pkg.transport_name || '—'})</span>
+                  Przewoźnik <span className="text-theme-muted">(LP: {pkg.shipper_code ? `${pkg.shipper_code}${pkg.shipper_service ? '/' + pkg.shipper_service : ''}` : pkg.transport_name || '—'})</span>
                 </div>
                 <div className="flex gap-2">
                   <select
@@ -497,7 +498,7 @@ export default function PackageView() {
                       onChange={(e) => setOverrideService(e.target.value)}
                       className="flex-1 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-3 text-base outline-none focus:border-brand-orange"
                     >
-                      <option value="">— Vyberte službu —</option>
+                      <option value="">— Wybierz usługę —</option>
                       {selectedShipperObj.services.map(svc => (
                         <option key={svc.code} value={svc.code}>
                           {svc.name ? `${svc.code} — ${svc.name}` : svc.code}
@@ -507,7 +508,7 @@ export default function PackageView() {
                   )}
                 </div>
                 {overrideShipper && !overrideService && selectedShipperObj?.services?.length > 0 && (
-                  <div className="text-yellow-400 text-sm mt-2">Vyberte službu přepravce</div>
+                  <div className="text-yellow-400 text-sm mt-2">Wybierz usługę przewoźnika</div>
                 )}
               </div>
             )}
@@ -517,13 +518,13 @@ export default function PackageView() {
                 onClick={handleSkipAll}
                 className="w-full bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary py-4 rounded-xl text-lg font-semibold transition-colors shrink-0"
               >
-                Preskocit vse
+                Pomiń wszystko
               </button>
             )}
 
             {labelError && (
               <div className="bg-red-900/40 border border-red-600 rounded-xl p-4 shrink-0">
-                <div className="text-red-400 font-bold text-base mb-1">Chyba generování etikety (LP API):</div>
+                <div className="text-red-400 font-bold text-base mb-1">Błąd generowania etykiety (LP API):</div>
                 <pre className="text-red-300 text-xs whitespace-pre-wrap break-all">{labelError}</pre>
               </div>
             )}
@@ -534,51 +535,46 @@ export default function PackageView() {
                 disabled={generating || (overrideShipper && !overrideService && selectedShipperObj?.services?.length > 0)}
                 className="w-full bg-green-600 hover:bg-green-500 text-white py-5 rounded-xl text-2xl font-black transition-colors disabled:opacity-50 shrink-0"
               >
-                {generating ? 'Generuji...' : overrideShipper
+                {generating ? 'Generuję...' : overrideShipper
                   ? `GENERUJ (${overrideShipper}${overrideService ? '/' + overrideService : ''})`
-                  : `GENERUJ ETIKETU${parcels.length > 1 ? ` (${parcels.length} balíky)` : ''}`}
+                  : `GENERUJ ETYKIETĘ${parcels.length > 1 ? ` (${parcels.length} paczki)` : ''}`}
               </button>
             )}
 
             {labelData && (
-              <div className="mt-4 shrink-0">
-                <BarcodeAction
-                  value={labelData.barcode || labelData.tracking_number || ''}
-                  label="Etiketa vygenerovana"
-                  onConfirm={() => navigate('/')}
-                />
-                {labelData.label_url && (
-                  <div className="flex gap-3 mt-4">
-                    <button
-                      onClick={() => printLabel(pkg.id)}
-                      className="flex-1 bg-brand-orange hover:bg-orange-600 text-white py-4 rounded-xl text-xl font-bold text-center transition-colors"
-                    >
-                      Tisknout znovu
-                    </button>
-                    <a
-                      href={`${import.meta.env.VITE_API_URL || '/api'}/packages/${pkg.id}/download-label`}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-6 bg-navy-600 hover:bg-navy-500 text-theme-secondary py-4 rounded-xl text-xl font-bold text-center transition-colors"
-                    >
-                      PDF
-                    </a>
-                  </div>
-                )}
+              <div className="mt-4 shrink-0 space-y-3">
+                <div className="bg-green-900/40 border border-green-600 rounded-xl p-4 text-center">
+                  <div className="text-green-400 font-bold text-lg">Etykieta wygenerowana</div>
+                  <div className="text-green-300 text-sm mt-1">{labelData.tracking_number || labelData.barcode || ''}</div>
+                </div>
+                <div className="flex gap-3">
+                  <button
+                    onClick={() => printLabel(pkg.id)}
+                    className="flex-1 bg-brand-orange hover:bg-orange-600 text-white py-4 rounded-xl text-xl font-bold text-center transition-colors"
+                  >
+                    Drukuj ponownie
+                  </button>
+                  <a
+                    href={`${import.meta.env.VITE_API_URL || '/api'}/packages/${pkg.id}/download-label`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="px-6 bg-navy-600 hover:bg-navy-500 text-theme-secondary py-4 rounded-xl text-xl font-bold text-center transition-colors"
+                  >
+                    PDF
+                  </a>
+                </div>
+                <button
+                  onClick={() => navigate('/')}
+                  className="w-full bg-navy-700 hover:bg-navy-600 text-theme-secondary py-3 rounded-xl text-base font-semibold transition-colors"
+                >
+                  Wróć na Dashboard
+                </button>
               </div>
-            )}
-
-            {allVerified && !labelData && (
-              <BarcodeAction
-                value="ACTION:GENERATE_LABEL"
-                label="Naskenuj pro generovani etikety"
-                onConfirm={handleGenerateLabel}
-              />
             )}
 
             {/* Products list — at the bottom */}
             <div className="flex items-center justify-between shrink-0">
-              <h2 className="text-xl font-bold text-theme-primary">Produkty k naskenovani</h2>
+              <h2 className="text-xl font-bold text-theme-primary">Produkty do skanowania</h2>
               <span className="text-theme-secondary text-lg font-bold">
                 {goodsItems.filter(i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified).length}
                 /{goodsItems.length}

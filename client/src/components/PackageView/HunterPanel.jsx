@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 
 const ERROR_TYPES = [
-  { value: 'wrong_qty', label: 'Spatne mnozstvi' },
-  { value: 'missing_product', label: 'Chybejici zbozi' },
-  { value: 'wrong_product', label: 'Jiny tovar' },
+  { value: 'wrong_qty', label: 'Zła ilość' },
+  { value: 'missing_product', label: 'Brakujący towar' },
+  { value: 'wrong_product', label: 'Inny towar' },
 ]
 
 export default function HunterPanel({ packageId, workerId, itemsCount }) {
@@ -69,7 +69,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
         errorType,
       })
       setShowErrorPanel(false)
-      setSavedMsg('Chyba!')
+      setSavedMsg('Błąd zgłoszony!')
       setTimeout(() => setSavedMsg(''), 3000)
       const res = await api.get(`/hunters/errors/${packageId}`)
       setErrors(res.data || [])
@@ -97,7 +97,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
     <div className="bg-navy-700 rounded-xl p-4 border border-navy-600 flex-1 flex flex-col">
       {/* Header row */}
       <div className="flex items-center justify-between mb-3 shrink-0">
-        <h3 className="text-lg font-bold text-theme-primary">Szykoval:</h3>
+        <h3 className="text-lg font-bold text-theme-primary">Szykował:</h3>
         <div className="flex items-center gap-2">
           {savedMsg && (
             <span className="text-green-400 text-sm font-bold">{savedMsg}</span>
@@ -107,7 +107,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
               onClick={() => setShowErrorPanel(true)}
               className="bg-red-900/50 hover:bg-red-900/70 border border-red-700 text-red-400 px-4 py-2 rounded-lg text-base font-bold transition-colors"
             >
-              Chyba
+              Błąd
             </button>
           )}
         </div>

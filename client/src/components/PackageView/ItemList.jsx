@@ -4,7 +4,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
   if (goodsItems.length === 0) {
     return (
       <div className="text-center py-6 text-theme-secondary">
-        Zadne produkty k naskenovanim
+        Brak produktów do skanowania
       </div>
     )
   }
@@ -69,7 +69,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
                   onClick={() => onSkipItem(item.id)}
                   className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-4 py-2 rounded-lg text-sm font-medium shrink-0 transition-colors"
                 >
-                  Preskocit
+                  Pomiń
                 </button>
               )}
             </div>

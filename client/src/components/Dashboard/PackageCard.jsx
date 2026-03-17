@@ -12,13 +12,13 @@ const STATUS_COLORS = {
 }
 
 const STATUS_LABELS = {
-  pending: 'K vyrizeni',
-  scanning: 'Skenovani',
-  verified: 'Overeno',
-  label_generated: 'Etiketa',
-  shipped: 'Odeslano',
-  delivered: 'Doruceno',
-  returned: 'Vraceno',
+  pending: 'Do realizacji',
+  scanning: 'Skanowanie',
+  verified: 'Zweryfikowano',
+  label_generated: 'Etykieta',
+  shipped: 'Wysłano',
+  delivered: 'Doręczono',
+  returned: 'Zwrócono',
   problem: 'Problem',
 }
 
@@ -66,7 +66,7 @@ export default function PackageCard({ pkg }) {
 
       {/* Items count */}
       <div className="text-theme-secondary text-lg shrink-0">
-        {itemCount} pozic
+        {itemCount} poz.
       </div>
 
       {/* Status badge */}
