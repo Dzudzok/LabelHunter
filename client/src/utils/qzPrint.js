@@ -61,7 +61,7 @@ export async function printPdfBlob(printerName, blob) {
         scaleContent: true,
         fitToPage: true,
         rasterize: true,
-        orientation: 'portrait',
+        orientation: 'reverse-landscape',
         interpolation: 'bicubic',
         margins: { top: 2, right: 0, bottom: 0, left: 0 },
       })
