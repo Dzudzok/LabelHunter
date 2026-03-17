@@ -709,15 +709,21 @@ router.post('/:id/generate-label', async (req, res, next) => {
     await supabase.from('delivery_note_items').delete().eq('delivery_note_id', id);
 
     // Send shipping confirmation email — fire and forget, don't block response
-    if (process.env.DISABLE_EMAIL !== 'true') {
+    const emailTo = updated.customer_email || updated.delivery_email;
+    console.log(`[Email] DISABLE_EMAIL=${process.env.DISABLE_EMAIL}, to=${emailTo}, has_tracking_token=${!!updated.tracking_token}`);
+    if (process.env.DISABLE_EMAIL !== 'true' && emailTo) {
       const dnWithItems = { ...updated, items };
       emailService.sendShipmentEmail(dnWithItems)
-        .then(() => supabase
-          .from('delivery_notes')
-          .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
-          .eq('id', id)
-        )
-        .catch(emailErr => console.error('Failed to send shipment email:', emailErr.message));
+        .then(() => {
+          console.log(`[Email] Sent shipment email to ${emailTo} for package ${id}`);
+          return supabase
+            .from('delivery_notes')
+            .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
+            .eq('id', id);
+        })
+        .catch(emailErr => console.error(`[Email] FAILED to send to ${emailTo}:`, emailErr.message, emailErr.code));
+    } else if (!emailTo) {
+      console.log(`[Email] Skipped — no email address for package ${id}`);
     } else {
       console.log('[Email] Skipped (DISABLE_EMAIL=true)');
     }
