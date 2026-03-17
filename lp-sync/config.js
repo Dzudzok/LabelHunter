@@ -31,6 +31,10 @@ const SMTP_CONFIG = {
 const APP_URL = 'https://labelhunter-client.onrender.com';
 
 // Set to true to disable sending emails
-const DISABLE_EMAIL = true;
+const DISABLE_EMAIL = false;
 
-module.exports = { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL, DISABLE_EMAIL };
+// Test mode: all emails go to this address instead of the real customer
+// Set to '' or remove to send to real customers
+const EMAIL_OVERRIDE_TO = 'mateuszdurczok01@gmail.com';
+
+module.exports = { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL, DISABLE_EMAIL, EMAIL_OVERRIDE_TO };

@@ -11,12 +11,12 @@
 const sql = require('mssql/msnodesqlv8');
 const { createClient } = require('@supabase/supabase-js');
 const nodemailer = require('nodemailer');
-const { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL, DISABLE_EMAIL } = require('./config');
+const { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL, DISABLE_EMAIL, EMAIL_OVERRIDE_TO } = require('./config');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 
 // Marketplace email filter
-const MARKETPLACE_PATTERN = /marketplace\.(amazon|kaufland|ebay|allegro)|@allegromail\.com|@members\.ebay\.com|@kaufland-marktplatz/i;
+const MARKETPLACE_PATTERN = /@marketplace\.amazon|@kaufland-marktplatz|@kaufland-mark|@allegromail|@members\.ebay/i;
 
 function buildShipmentEmailHtml(dn) {
   const trackingLink = `${APP_URL}/tracking/${dn.tracking_token}`;
@@ -366,9 +366,9 @@ async function main() {
       let emailsSkipped = 0;
 
       for (const dn of pendingEmails) {
-        const emailTo = dn.delivery_email || dn.customer_email;
-        if (!emailTo) { emailsSkipped++; continue; }
-        if (MARKETPLACE_PATTERN.test(emailTo)) {
+        const originalEmail = dn.delivery_email || dn.customer_email;
+        if (!originalEmail) { emailsSkipped++; continue; }
+        if (MARKETPLACE_PATTERN.test(originalEmail)) {
           console.log(`  [Email] Skipped marketplace: ${emailTo}`);
           // Mark as sent so we don't retry
           await supabase.from('delivery_notes')
@@ -377,6 +377,9 @@ async function main() {
           emailsSkipped++;
           continue;
         }
+
+        // Override: send all emails to test address if configured
+        const emailTo = EMAIL_OVERRIDE_TO || originalEmail;
 
         try {
           await transporter.sendMail({
@@ -390,7 +393,7 @@ async function main() {
             .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
             .eq('id', dn.id);
 
-          console.log(`  [Email] Sent to ${emailTo} (${dn.invoice_number || dn.id})`);
+          console.log(`  [Email] Sent to ${emailTo}${EMAIL_OVERRIDE_TO ? ` (override, original: ${originalEmail})` : ''} (${dn.invoice_number || dn.id})`);
           emailsSent++;
 
           // 2s delay between emails (Gmail rate limit)
