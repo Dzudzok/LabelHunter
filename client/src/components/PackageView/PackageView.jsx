@@ -464,6 +464,7 @@ export default function PackageView() {
 
             <input
               ref={scanInputRef}
+              autoFocus
               type="text"
               placeholder="Skanuj produkt..."
               className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-3 text-xl text-theme-primary placeholder-theme-muted outline-none shrink-0"

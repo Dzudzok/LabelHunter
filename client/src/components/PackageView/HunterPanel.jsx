@@ -16,6 +16,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
   const [errors, setErrors] = useState([])
   const [savingError, setSavingError] = useState(false)
   const [savedMsg, setSavedMsg] = useState('')
+  const [manualItemsCount, setManualItemsCount] = useState('')
 
   const fetchData = async () => {
     try {
@@ -29,6 +30,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
       if (assignmentRes.data) {
         setAssignment(assignmentRes.data)
         setSelectedHunter(assignmentRes.data.hunter_id)
+        if (assignmentRes.data.items_count) setManualItemsCount(String(assignmentRes.data.items_count))
       }
       setErrors(errorsRes.data || [])
     } catch (err) {
@@ -48,7 +50,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
         deliveryNoteId: packageId,
         hunterId,
         workerId,
-        itemsCount: itemsCount || 0,
+        itemsCount: parseInt(manualItemsCount) || itemsCount || 0,
       })
       setAssignment(res.data)
       setSavedMsg('OK')
@@ -97,7 +99,20 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
     <div className="bg-navy-700 rounded-xl p-4 border border-navy-600 flex-1 flex flex-col">
       {/* Header row */}
       <div className="flex items-center justify-between mb-3 shrink-0">
-        <h3 className="text-lg font-bold text-theme-primary">Szykował:</h3>
+        <div className="flex items-center gap-3">
+          <h3 className="text-lg font-bold text-theme-primary">Szykował:</h3>
+          <div className="flex items-center gap-1">
+            <span className="text-theme-muted text-sm">Poz:</span>
+            <input
+              type="number"
+              min="0"
+              value={manualItemsCount}
+              onChange={e => setManualItemsCount(e.target.value)}
+              placeholder={String(itemsCount || 0)}
+              className="w-14 bg-navy-900 border border-navy-500 text-theme-primary rounded px-2 py-1 text-sm outline-none focus:border-brand-orange text-center"
+            />
+          </div>
+        </div>
         <div className="flex items-center gap-2">
           {savedMsg && (
             <span className="text-green-400 text-sm font-bold">{savedMsg}</span>
