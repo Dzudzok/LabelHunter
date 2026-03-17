@@ -11,4 +11,19 @@ const MSSQL_CONFIG = {
 const SUPABASE_URL = 'https://wbbqqjsgkgpeatdstyui.supabase.co';
 const SUPABASE_SERVICE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6IndiYnFxanNna2dwZWF0ZHN0eXVpIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc3MjM1OTIzMSwiZXhwIjoyMDg3OTM1MjMxfQ.AFfq-9nTxA_xinMs588n1E72tahy7Bj02TP2UTnkXZk';
 
-module.exports = { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY };
+// SMTP — for sending shipment emails from BOLOPC
+const SMTP_CONFIG = {
+  host: 'smtp.gmail.com',
+  port: 587,
+  secure: false,
+  auth: {
+    user: 'no.reply@mroauto.info',
+    pass: 'xwtb crzs hijt sldg',
+  },
+  from: '"MROAUTO AUTODÍLY" <info@mroauto.cz>',
+};
+
+// App URL for tracking links
+const APP_URL = 'https://labelhunter-client.onrender.com';
+
+module.exports = { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL };

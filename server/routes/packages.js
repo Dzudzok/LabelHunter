@@ -708,28 +708,11 @@ router.post('/:id/generate-label', async (req, res, next) => {
     // Delete items after label generated — not needed anymore, LP desktop is the archive
     await supabase.from('delivery_note_items').delete().eq('delivery_note_id', id);
 
-    // Send shipping confirmation email — fire and forget, don't block response
+    // Email is sent by lp-sync on BOLOPC (SMTP works from there, not from Render)
+    // lp-sync checks for label_pdf_url NOT NULL + email_sent_at IS NULL and sends from BOLOPC
     const emailTo = updated.delivery_email || updated.customer_email;
-    console.log(`[Email] DISABLE_EMAIL=${process.env.DISABLE_EMAIL}, to=${emailTo}, delivery_email=${updated.delivery_email}, customer_email=${updated.customer_email}`);
-    const isMarketplaceEmail = emailTo && /marketplace\.(amazon|kaufland|ebay|allegro)/i.test(emailTo);
-    if (isMarketplaceEmail) {
-      console.log(`[Email] Skipped — marketplace email: ${emailTo}`);
-    } else if (process.env.DISABLE_EMAIL !== 'true' && emailTo) {
-      const dnWithItems = { ...updated, items };
-      emailService.sendShipmentEmail(dnWithItems)
-        .then(() => {
-          console.log(`[Email] Sent shipment email to ${emailTo} for package ${id}`);
-          return supabase
-            .from('delivery_notes')
-            .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
-            .eq('id', id);
-        })
-        .catch(emailErr => console.error(`[Email] FAILED to send to ${emailTo}:`, emailErr.message, emailErr.code));
-    } else if (!emailTo) {
-      console.log(`[Email] Skipped — no email address for package ${id}`);
-    } else {
-      console.log('[Email] Skipped (DISABLE_EMAIL=true)');
-    }
+    console.log(`[Email] Will be sent by lp-sync on BOLOPC (to=${emailTo})`);
+    await supabase.from('delivery_notes').update({ status: 'shipped' }).eq('id', id);
 
     res.json({
       success: true,

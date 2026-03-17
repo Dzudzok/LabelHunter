@@ -10,9 +10,48 @@
 
 const sql = require('mssql/msnodesqlv8');
 const { createClient } = require('@supabase/supabase-js');
-const { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY } = require('./config');
+const nodemailer = require('nodemailer');
+const { MSSQL_CONFIG, SUPABASE_URL, SUPABASE_SERVICE_KEY, SMTP_CONFIG, APP_URL } = require('./config');
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
+
+// Marketplace email filter
+const MARKETPLACE_PATTERN = /marketplace\.(amazon|kaufland|ebay|allegro)|@allegromail\.com|@members\.ebay\.com|@kaufland-marktplatz/i;
+
+function buildShipmentEmailHtml(dn) {
+  const trackingLink = `${APP_URL}/tracking/${dn.tracking_token}`;
+  const carrierName = dn.transport_name || dn.shipper_code || 'Dopravce';
+  return `<!DOCTYPE html>
+<html><head><meta charset="utf-8"></head>
+<body style="margin:0;padding:0;background:#f4f4f7;font-family:Arial,sans-serif;">
+  <div style="max-width:600px;margin:0 auto;background:#fff;">
+    <div style="background:#1a2332;padding:30px;text-align:center;">
+      <h1 style="color:#f97316;margin:0;font-size:24px;">MROAUTO AUTOD&Iacute;LY</h1>
+      <p style="color:#fff;margin:5px 0 0;font-size:14px;">Va&scaron;e z&aacute;silka byla odesl&aacute;na!</p>
+    </div>
+    <div style="padding:30px;color:#333;line-height:1.6;">
+      <p>Dobr&yacute; den${dn.customer_name ? ', <strong>' + dn.customer_name + '</strong>' : ''},</p>
+      <p>s radost&iacute; V&aacute;m oznamujeme, &zcaron;e Va&scaron;e z&aacute;silka byla odesl&aacute;na a je na cest&ecaron;!</p>
+      <div style="background:#f8f9fa;border-left:4px solid #f97316;padding:15px;margin:20px 0;">
+        <strong>Faktura:</strong> ${dn.invoice_number || '-'}<br>
+        <strong>Objedn&aacute;vka:</strong> ${dn.order_number || '-'}<br>
+        <strong>Dopravce:</strong> ${carrierName}<br>
+        <strong>Sledovac&iacute; &ccaron;&iacute;slo:</strong> ${dn.tracking_number || dn.lp_barcode || '-'}
+        ${dn.tracking_url ? '<br><a href="' + dn.tracking_url + '">Sledovat u dopravce</a>' : ''}
+      </div>
+      <p style="text-align:center;margin:30px 0;">
+        <a href="${trackingLink}" style="display:inline-block;padding:14px 30px;background:#f97316;color:#fff;text-decoration:none;border-radius:6px;font-weight:bold;font-size:16px;">Sledovat z&aacute;silku</a>
+      </p>
+      <p style="margin-top:25px;">V p&rcaron;&iacute;pad&ecaron; dotaz&udblac; n&aacute;s nev&aacute;hejte kontaktovat.</p>
+      <p>S pozdravem,<br><strong>T&yacute;m MROAUTO</strong></p>
+    </div>
+    <div style="background:#1a2332;padding:20px;text-align:center;color:#999;font-size:12px;">
+      <p>MROAUTO AUTOD&Iacute;LY s.r.o. | &Ccaron;s. arm&aacute;dy 360, Pudlov, 735 51 Bohum&iacute;n</p>
+      <p>Tel: +420 774 917 859 | <a href="mailto:info@mroauto.cz" style="color:#f97316;">info@mroauto.cz</a></p>
+    </div>
+  </div>
+</body></html>`;
+}
 
 // Parse --limit arg
 const limitArg = process.argv.find(a => a.startsWith('--limit'));
@@ -280,6 +319,76 @@ async function main() {
       }
     } else {
       console.log('[LP Sync] No labeled shipments found.');
+    }
+
+    // 7. Send pending shipment emails from BOLOPC (SMTP works here, not from Render)
+    console.log('[LP Sync] Checking for pending emails...');
+    let pendingEmails = [];
+    let emailPage = 0;
+    while (true) {
+      const { data, error: eErr } = await supabase
+        .from('delivery_notes')
+        .select('id, customer_name, customer_email, delivery_email, invoice_number, order_number, transport_name, shipper_code, tracking_number, lp_barcode, tracking_url, tracking_token')
+        .not('label_pdf_url', 'is', null)
+        .is('email_sent_at', null)
+        .range(emailPage * SB_PAGE, (emailPage + 1) * SB_PAGE - 1);
+      if (eErr) { console.error('[LP Sync] Email query error:', eErr.message); break; }
+      if (!data || data.length === 0) break;
+      pendingEmails = pendingEmails.concat(data);
+      if (data.length < SB_PAGE) break;
+      emailPage++;
+    }
+
+    if (pendingEmails.length > 0) {
+      const transporter = nodemailer.createTransport({
+        host: SMTP_CONFIG.host,
+        port: SMTP_CONFIG.port,
+        secure: SMTP_CONFIG.secure,
+        auth: SMTP_CONFIG.auth,
+      });
+
+      let emailsSent = 0;
+      let emailsSkipped = 0;
+
+      for (const dn of pendingEmails) {
+        const emailTo = dn.delivery_email || dn.customer_email;
+        if (!emailTo) { emailsSkipped++; continue; }
+        if (MARKETPLACE_PATTERN.test(emailTo)) {
+          console.log(`  [Email] Skipped marketplace: ${emailTo}`);
+          // Mark as sent so we don't retry
+          await supabase.from('delivery_notes')
+            .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
+            .eq('id', dn.id);
+          emailsSkipped++;
+          continue;
+        }
+
+        try {
+          await transporter.sendMail({
+            from: SMTP_CONFIG.from,
+            to: emailTo,
+            subject: `Vaše zásilka od MROAUTO byla odeslána! | Objednávka ${dn.order_number || ''}`,
+            html: buildShipmentEmailHtml(dn),
+          });
+
+          await supabase.from('delivery_notes')
+            .update({ email_sent_at: new Date().toISOString(), status: 'shipped' })
+            .eq('id', dn.id);
+
+          console.log(`  [Email] Sent to ${emailTo} (${dn.invoice_number || dn.id})`);
+          emailsSent++;
+
+          // 2s delay between emails (Gmail rate limit)
+          if (emailsSent % 10 === 0) await new Promise(r => setTimeout(r, 2000));
+        } catch (emailErr) {
+          console.error(`  [Email] FAILED ${emailTo}: ${emailErr.message}`);
+        }
+      }
+
+      transporter.close();
+      console.log(`[LP Sync] Emails: sent=${emailsSent}, skipped=${emailsSkipped}, total=${pendingEmails.length}`);
+    } else {
+      console.log('[LP Sync] No pending emails.');
     }
   } catch (err) {
     console.error('[LP Sync] Fatal error:', err.message);
