@@ -180,11 +180,11 @@ async function main() {
         const shipperCode = ship.lp_shipper_code || null;
         const serviceCode = ship.lp_service_code || null;
         const isCod = (ship.codIndex || 0) > 0;
-        const codAmount = isCod ? (ship.price || 0) : 0;
+        const codAmount = isCod ? (ship.price || 0) : 0;  // dobírka = ship.price when COD
         const countryCode = (ship.country_code || 'CZ').trim();
         const currencyCode = (ship.currency_code || 'CZK').trim();
 
-        // Calculate shipment value from goods (cena zásilky — always filled)
+        // Cena zásilky = sum of goods value
         let shipmentValue = 0;
         for (const g of goods) {
           shipmentValue += (g.unitPrice || 0) * (g.quantity || 0);
