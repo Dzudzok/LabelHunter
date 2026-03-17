@@ -53,7 +53,14 @@ export async function getPrinters() {
 export async function printPdfBlob(printerName, blob) {
   const q = await getConnectedQZ()
   const base64 = await blobToBase64(blob)
-  const config = q.configs.create(printerName)
+  const config = q.configs.create(printerName, {
+    size: { width: 4, height: 6 },
+    units: 'in',
+    scaleContent: true,
+    rasterize: true,
+    orientation: 'portrait',
+    margins: { top: 0, right: 0, bottom: 0, left: 0 },
+  })
   // Detect format from blob MIME type
   // QZ Tray pixel formats: 'pdf', 'image' (for all image types), 'html'
   const isImage = blob.type && blob.type.startsWith('image/')
