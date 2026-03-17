@@ -1,11 +1,27 @@
 import { useState } from 'react'
 
+const API = import.meta.env.VITE_API_URL || ''
+
 export default function PrinterSelector({ selectedPrinter, setSelectedPrinter, printers, loadingPrinters, printerError, fetchPrinters }) {
   const [open, setOpen] = useState(false)
 
   const handleOpen = () => {
     setOpen(true)
     fetchPrinters()
+  }
+
+  const downloadCert = async () => {
+    try {
+      const res = await fetch(`${API}/api/qz/certificate`)
+      const text = await res.text()
+      const blob = new Blob([text], { type: 'application/x-pem-file' })
+      const url = URL.createObjectURL(blob)
+      const a = document.createElement('a')
+      a.href = url
+      a.download = 'labelhunter-qz.pem'
+      a.click()
+      URL.revokeObjectURL(url)
+    } catch { /* ignore */ }
   }
 
   return (
@@ -41,17 +57,30 @@ export default function PrinterSelector({ selectedPrinter, setSelectedPrinter, p
               <ol className="list-decimal list-inside space-y-1 text-blue-300">
                 <li>Stáhněte a nainstalujte <strong className="text-blue-100">QZ Tray</strong></li>
                 <li>Spusťte QZ Tray (ikona v systray)</li>
+                <li>
+                  Klikněte <strong className="text-blue-100">Stáhnout certifikát</strong> níže →
+                  pravým na ikonu QZ → <strong className="text-blue-100">Site Manager</strong> →
+                  <strong className="text-blue-100">Browse</strong> → vyberte stažený soubor <code className="bg-gray-800 px-1 rounded">labelhunter-qz.pem</code>
+                </li>
                 <li>Klikněte <strong className="text-blue-100">Načíst tiskárny</strong> — QZ Tray zobrazí dialog → zaškrtněte <strong className="text-blue-100">Remember</strong> → <strong className="text-blue-100">Allow</strong></li>
                 <li>Vyberte tiskárnu ze seznamu</li>
               </ol>
-              <a
-                href="https://github.com/qzind/tray/releases/download/v2.2.5/qz-tray-2.2.5-x86_64.exe"
-                target="_blank"
-                rel="noreferrer"
-                className="inline-block mt-1 bg-blue-600 hover:bg-blue-500 text-white font-semibold px-3 py-1.5 rounded text-xs transition-colors"
-              >
-                ⬇️ Stáhnout QZ Tray (Windows 64-bit)
-              </a>
+              <div className="flex gap-2 mt-2 flex-wrap">
+                <a
+                  href="https://github.com/qzind/tray/releases/download/v2.2.5/qz-tray-2.2.5-x86_64.exe"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="bg-blue-600 hover:bg-blue-500 text-white font-semibold px-3 py-1.5 rounded text-xs transition-colors"
+                >
+                  Stáhnout QZ Tray
+                </a>
+                <button
+                  onClick={downloadCert}
+                  className="bg-yellow-600 hover:bg-yellow-500 text-white font-semibold px-3 py-1.5 rounded text-xs transition-colors"
+                >
+                  Stáhnout certifikát
+                </button>
+              </div>
             </div>
 
             <button

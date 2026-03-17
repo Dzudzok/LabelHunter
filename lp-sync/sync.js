@@ -236,6 +236,51 @@ async function main() {
     }
 
     console.log(`[LP Sync] Done. Imported: ${imported}, Skipped: ${skipped}, Total: ${shipments.length}`);
+
+    // 6. Update MSSQL state for shipments that have labels generated in LabelHunter
+    console.log('[LP Sync] Checking for labeled shipments to update in MSSQL...');
+    const STATE_PRINTED = 2;
+
+    // Fetch LP shipments from Supabase that have labels generated
+    let labeledLpIds = [];
+    let sbPage = 0;
+    const SB_PAGE = 1000;
+    while (true) {
+      const { data, error: sbErr } = await supabase
+        .from('delivery_notes')
+        .select('lp_id')
+        .eq('source', 'lp')
+        .not('lp_id', 'is', null)
+        .not('label_pdf_url', 'is', null)
+        .range(sbPage * SB_PAGE, (sbPage + 1) * SB_PAGE - 1);
+      if (sbErr) { console.error('[LP Sync] Supabase error:', sbErr.message); break; }
+      if (!data || data.length === 0) break;
+      labeledLpIds = labeledLpIds.concat(data.map(d => d.lp_id));
+      if (data.length < SB_PAGE) break;
+      sbPage++;
+    }
+
+    if (labeledLpIds.length > 0) {
+      // Find which of these are still in state 4 in MSSQL
+      const idList = labeledLpIds.join(',');
+      const { recordset: stillState4 } = await pool.request().query(`
+        SELECT pk_shipment FROM dbo.shipment
+        WHERE pk_shipment IN (${idList}) AND fk_shipment_state = 4
+      `);
+
+      if (stillState4.length > 0) {
+        const updateIds = stillState4.map(r => r.pk_shipment).join(',');
+        await pool.request().query(`
+          UPDATE dbo.shipment SET fk_shipment_state = ${STATE_PRINTED}
+          WHERE pk_shipment IN (${updateIds})
+        `);
+        console.log(`[LP Sync] Updated ${stillState4.length} shipments to state ${STATE_PRINTED} (Tištěný)`);
+      } else {
+        console.log('[LP Sync] No shipments to update in MSSQL.');
+      }
+    } else {
+      console.log('[LP Sync] No labeled shipments found.');
+    }
   } catch (err) {
     console.error('[LP Sync] Fatal error:', err.message);
     process.exit(1);
