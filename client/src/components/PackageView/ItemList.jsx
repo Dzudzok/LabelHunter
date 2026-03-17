@@ -48,18 +48,11 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
 
               {/* Product info */}
               <div className="flex-1 min-w-0">
-                <div className="flex items-center gap-2">
-                  {item.brand && (
-                    <span className="text-sm font-bold text-brand-orange bg-brand-orange/20 px-2 py-0.5 rounded">
-                      {item.brand}
-                    </span>
-                  )}
-                  <span className="text-lg font-mono text-theme-primary font-bold truncate">
-                    {item.code}
-                  </span>
-                </div>
-                <div className="text-sm text-theme-secondary truncate mt-0.5">
+                <div className="text-lg text-theme-primary font-bold truncate">
                   {item.name || item.text}
+                </div>
+                <div className="text-sm text-theme-secondary font-mono truncate mt-0.5">
+                  {item.code}
                 </div>
               </div>
 
