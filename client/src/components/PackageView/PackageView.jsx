@@ -407,6 +407,24 @@ export default function PackageView() {
                       <div className="text-theme-primary font-semibold">{pkg.doc_number}</div>
                     </div>
                   )}
+                  {pkg.tracking_number && (
+                    <div className="col-span-2">
+                      <span className="text-theme-muted text-sm">Tracking:</span>
+                      <div className="flex items-center gap-2">
+                        <span className="text-theme-primary font-semibold font-mono">{pkg.tracking_number}</span>
+                        {pkg.tracking_url && (
+                          <a
+                            href={pkg.tracking_url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-400 hover:text-blue-300 text-sm font-semibold underline"
+                          >
+                            Sleduj u przewoźnika
+                          </a>
+                        )}
+                      </div>
+                    </div>
+                  )}
                 </div>
               </div>
 

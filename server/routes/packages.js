@@ -8,6 +8,31 @@ const labelPrinterService = require('../services/LabelPrinterService');
 const emailService = require('../services/EmailService');
 const { getTransportMap } = require('../utils/transportMap');
 
+// Generate tracking URL based on shipper code
+function generateTrackingUrl(shipperCode, trackingNumber) {
+  if (!trackingNumber) return null;
+  const code = (shipperCode || '').toUpperCase();
+  const urls = {
+    'GLS':        `https://gls-group.com/CZ/cs/sledovani-zasilek?match=${trackingNumber}`,
+    'GLSAT':      `https://gls-group.com/AT/de/sendungsverfolgung?match=${trackingNumber}`,
+    'GLSSK':      `https://gls-group.com/SK/sk/sledovanie-zasielok?match=${trackingNumber}`,
+    'GLSPL':      `https://gls-group.com/PL/pl/sledzenie-paczek?match=${trackingNumber}`,
+    'PPL':        `https://www.ppl.cz/vyhledat-zasilku?shipmentId=${trackingNumber}`,
+    'DPD':        `https://tracking.dpd.de/status/cs_CZ/parcel/${trackingNumber}`,
+    'DPDAT':      `https://tracking.dpd.de/status/de_AT/parcel/${trackingNumber}`,
+    'UPS':        `https://www.ups.com/track?tracknum=${trackingNumber}`,
+    'CP':         `https://www.postaonline.cz/trackandtrace/-/zasilka/cislo?parcelNumbers=${trackingNumber}`,
+    'ZASILKOVNA': `https://tracking.packeta.com/cs/?id=${trackingNumber}`,
+    'ZASILKOVNA2':`https://tracking.packeta.com/cs/?id=${trackingNumber}`,
+    'ZASILKOVNA3':`https://tracking.packeta.com/cs/?id=${trackingNumber}`,
+    'DHLFREIGHT': `https://webapp.cz.dhl.com/trace/${trackingNumber}`,
+    'INTIME':     `https://trace.wedo.cz/index.php?action=vSearch&parcelNumber=${trackingNumber}`,
+    'FOFR':       `https://www.fofrcz.cz/sledovani-zasilky?code=${trackingNumber}`,
+    'SP':         `https://tandt.posta.sk/en/items/${trackingNumber}`,
+  };
+  return urls[code] || null;
+}
+
 // Helper: log action to package_history
 async function logHistory(deliveryNoteId, action, workerId, details) {
   try {
@@ -697,7 +722,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
         lp_barcode: firstParcel.barcode,
         lp_parcels: lpParcelsData,
         tracking_number: firstParcel.trackingNumber || firstParcel.barcode,
-        tracking_url: firstParcel.trackingUrl,
+        tracking_url: firstParcel.trackingUrl || generateTrackingUrl(transport.shipperCode, firstParcel.trackingNumber || firstParcel.barcode),
         label_pdf_url: labelPdfUrl,
         shipper_code: transport.shipperCode,
         shipper_service: transport.serviceCode,
