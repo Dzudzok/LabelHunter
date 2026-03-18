@@ -55,14 +55,6 @@ export default function Dashboard() {
     fetchPackages(selectedDate)
   }, [selectedDate, fetchPackages])
 
-  // Auto-refresh every 60 seconds
-  useEffect(() => {
-    const interval = setInterval(() => {
-      fetchPackages(selectedDate)
-    }, 60000)
-    return () => clearInterval(interval)
-  }, [selectedDate, fetchPackages])
-
   // Auto-focus scan input
   useEffect(() => {
     if (scanRef.current) {
