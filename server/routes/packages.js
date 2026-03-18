@@ -795,8 +795,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
       lp_shipment_id: shipmentResult.id,
     });
 
-    // Delete items after label generated — not needed anymore, LP desktop is the archive
-    await supabase.from('delivery_note_items').delete().eq('delivery_note_id', id);
+    // Items are preserved for history and email product list
 
     // Email is sent by lp-sync on BOLOPC (SMTP works from there, not from Render)
     // lp-sync checks for label_pdf_url NOT NULL + email_sent_at IS NULL and sends from BOLOPC

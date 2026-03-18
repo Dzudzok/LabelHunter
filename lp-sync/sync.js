@@ -18,9 +18,27 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_KEY);
 // Marketplace email filter
 const MARKETPLACE_PATTERN = /@marketplace\.amazon|@kaufland-marktplatz|@kaufland-mark|@allegromail|@members\.ebay/i;
 
-function buildShipmentEmailHtml(dn) {
+function buildShipmentEmailHtml(dn, items) {
   const trackingLink = `${APP_URL}/tracking/${dn.tracking_token}`;
   const carrierName = dn.transport_name || dn.shipper_code || 'Dopravce';
+  const goodsItems = (items || []).filter(i => i.item_type === 'goods');
+  const itemsHtml = goodsItems.length > 0 ? `
+      <div style="margin:25px 0;">
+        <p style="font-size:15px;font-weight:bold;margin-bottom:10px;">Obsah z\u00e1silky:</p>
+        <table style="width:100%;border-collapse:collapse;font-size:14px;">
+          <tr style="background:#0047ab;color:#ffffff;">
+            <th style="padding:8px 12px;text-align:left;">K\u00f3d</th>
+            <th style="padding:8px 12px;text-align:left;">N\u00e1zev</th>
+            <th style="padding:8px 12px;text-align:center;">Ks</th>
+          </tr>
+          ${goodsItems.map((i, idx) => `
+          <tr style="background:${idx % 2 === 0 ? '#f8f9fa' : '#ffffff'};">
+            <td style="padding:8px 12px;font-family:monospace;font-weight:bold;">${i.code || '-'}</td>
+            <td style="padding:8px 12px;">${i.name || i.text || '-'}</td>
+            <td style="padding:8px 12px;text-align:center;">${i.qty || 1}</td>
+          </tr>`).join('')}
+        </table>
+      </div>` : '';
   return `<!DOCTYPE html>
 <html><head><meta charset="utf-8"></head>
 <body style="margin:0;padding:0;background:#f0f2f5;font-family:Arial,sans-serif;">
@@ -38,7 +56,7 @@ function buildShipmentEmailHtml(dn) {
         <strong>Dopravce:</strong> ${carrierName}<br>
         <strong>Sledovac\u00ed \u010d\u00edslo:</strong> ${dn.tracking_number || dn.lp_barcode || '-'}
         ${dn.tracking_url ? '<br><a href="' + dn.tracking_url + '" style="color:#0047ab;font-weight:bold;">Sledovat u dopravce</a>' : ''}
-      </div>
+      </div>${itemsHtml}
       <p style="text-align:center;margin:30px 0;">
         <a href="${trackingLink}" style="display:inline-block;padding:16px 36px;background:#e31e24;color:#ffffff;text-decoration:none;border-radius:8px;font-weight:bold;font-size:16px;">Sledovat z\u00e1silku</a>
       </p>
@@ -381,12 +399,19 @@ async function main() {
         // Override: send all emails to test address if configured
         const emailTo = EMAIL_OVERRIDE_TO || originalEmail;
 
+        // Fetch items for this delivery note
+        const { data: items } = await supabase
+          .from('delivery_note_items')
+          .select('*')
+          .eq('delivery_note_id', dn.id)
+          .order('id');
+
         try {
           await transporter.sendMail({
             from: SMTP_CONFIG.from,
             to: emailTo,
             subject: `Vaše zásilka od MROAUTO byla odeslána! | Objednávka ${dn.order_number || ''}`,
-            html: buildShipmentEmailHtml(dn),
+            html: buildShipmentEmailHtml(dn, items),
           });
 
           await supabase.from('delivery_notes')
