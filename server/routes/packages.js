@@ -700,9 +700,12 @@ router.post('/:id/generate-label', async (req, res, next) => {
       variableSymbol: dn.invoice_number || dn.doc_number,
       orderNumber: dn.order_number || '',
       paymentInAdvance: bodyCodAmount != null ? (parseFloat(bodyCodAmount) <= 0) : !(parseFloat(dn.cod_amount || 0) > 0),
-      price: parseFloat(dn.amount_brutto || 0),
+      price: shipperCode === 'CP' ? Math.round(parseFloat(dn.amount_brutto || 0)) : parseFloat(dn.amount_brutto || 0),
       priceCurrency: dn.currency || 'CZK',
-      cod: bodyCodAmount != null ? (parseFloat(bodyCodAmount) || null) : (parseFloat(dn.cod_amount || 0) > 0 ? parseFloat(dn.cod_amount) : null),
+      cod: (() => {
+        let c = bodyCodAmount != null ? (parseFloat(bodyCodAmount) || null) : (parseFloat(dn.cod_amount || 0) > 0 ? parseFloat(dn.cod_amount) : null);
+        return c && shipperCode === 'CP' ? Math.round(c) : c;
+      })(),
       codCurrency: (bodyCodAmount != null ? parseFloat(bodyCodAmount) : parseFloat(dn.cod_amount || 0)) > 0 ? (dn.currency || 'CZK') : null,
       description: 'Autodíly',
       recipient: {
