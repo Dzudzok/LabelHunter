@@ -746,11 +746,15 @@ router.post('/:id/generate-label', async (req, res, next) => {
     const labelsField = lpItem.labels;
 
     // Normalize: accept string or array of strings
-    console.log('[generate-label] labels field type:', typeof labelsField, Array.isArray(labelsField) ? `array[${labelsField.length}]` : '', labelsField ? `first20chars: ${String(labelsField).substring(0, 20)}` : 'null/undefined');
-    const labelBase64 = Array.isArray(labelsField) ? labelsField[0] : labelsField;
+    const labelsList = Array.isArray(labelsField) ? labelsField : (labelsField ? [labelsField] : []);
+    console.log('[generate-label] labels count:', labelsList.length);
 
-    if (labelBase64 && typeof labelBase64 === 'string' && labelBase64.length > 10) {
-      const labelsDir = path.join(__dirname, '..', 'labels');
+    const labelsDir = path.join(__dirname, '..', 'labels');
+    const savedLabelUrls = [];
+
+    for (let li = 0; li < labelsList.length; li++) {
+      const labelBase64 = labelsList[li];
+      if (!labelBase64 || typeof labelBase64 !== 'string' || labelBase64.length <= 10) continue;
 
       // Detect format from base64 header
       let ext = 'pdf';
@@ -758,15 +762,18 @@ router.post('/:id/generate-label', async (req, res, next) => {
       else if (labelBase64.startsWith('iVBOR')) ext = 'png';
       else if (labelBase64.startsWith('/9j/')) ext = 'jpg';
 
-      const filename = `${lpItem.id}.${ext}`;
+      const filename = labelsList.length > 1 ? `${lpItem.id}_${li + 1}.${ext}` : `${lpItem.id}.${ext}`;
       const filePath = path.join(labelsDir, filename);
 
       const labelBuffer = Buffer.from(labelBase64, 'base64');
       console.log('[generate-label] Label saved:', filename, labelBuffer.length, 'bytes', `(${ext})`);
       fs.writeFileSync(filePath, labelBuffer);
-      labelPdfUrl = `/labels/${filename}`;
-    } else {
-      console.warn('[generate-label] No labels in LP response. type:', typeof labelsField, Array.isArray(labelsField) ? 'array len=' + labelsField.length : '');
+      savedLabelUrls.push(`/labels/${filename}`);
+    }
+
+    labelPdfUrl = savedLabelUrls[0] || null;
+    if (labelsList.length === 0) {
+      console.warn('[generate-label] No labels in LP response.');
     }
 
     // Extract shipment details — LP response: data[0].id, data[0].parcels[]
@@ -825,6 +832,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
     res.json({
       success: true,
       label_url: labelPdfUrl,
+      label_urls: savedLabelUrls,
       tracking_number: updated.tracking_number,
       barcode: updated.lp_barcode,
       deliveryNote: updated,
@@ -886,9 +894,13 @@ router.get('/:id/view-label', async (req, res, next) => {
       .single();
 
     if (error) throw error;
-    if (!dn?.label_pdf_url) return res.status(404).json({ error: 'No label found' });
 
-    const labelFile = path.basename(dn.label_pdf_url);
+    // Support ?file= query param for multi-parcel labels
+    const fileParam = req.query.file;
+    const labelUrl = fileParam || dn?.label_pdf_url;
+    if (!labelUrl) return res.status(404).json({ error: 'No label found' });
+
+    const labelFile = path.basename(labelUrl);
     const labelsRoot = path.resolve(__dirname, '..', 'labels');
     const filePath = path.join(labelsRoot, labelFile);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });

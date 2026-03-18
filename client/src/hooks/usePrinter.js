@@ -31,9 +31,9 @@ export function usePrinter() {
   }, [])
 
   // Main print function: QZ Tray if available + printer selected, else iframe
-  const printLabel = useCallback(async (pkgId) => {
+  const printLabel = useCallback(async (pkgId, labelUrl) => {
     const apiBase = import.meta.env.VITE_API_URL || '/api'
-    const url = `${apiBase}/packages/${pkgId}/view-label`
+    const url = labelUrl ? `${apiBase}/packages/${pkgId}/view-label?file=${encodeURIComponent(labelUrl)}` : `${apiBase}/packages/${pkgId}/view-label`
 
     if (isQZAvailable() && selectedPrinter) {
       try {

@@ -231,8 +231,9 @@ export default function PackageView() {
       })
       setLabelData(res.data)
       fetchPackage()
-      if (res.data.label_url) {
-        await printLabel(pkg.id)
+      const urls = res.data.label_urls || (res.data.label_url ? [res.data.label_url] : [])
+      for (const url of urls) {
+        await printLabel(pkg.id, url)
       }
       // Auto-redirect to dashboard after successful print
       setTimeout(() => navigate('/'), 1000)
