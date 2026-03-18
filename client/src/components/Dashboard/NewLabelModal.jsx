@@ -64,11 +64,11 @@ export default function NewLabelModal({ onClose }) {
 
   const handleSubmit = async () => {
     if (!form.shipperCode || !form.serviceCode) {
-      setError('Vyberte přepravce a službu')
+      setError('Wybierz przewoźnika i usługę')
       return
     }
     if (!form.recipientName || !form.recipientCity || !form.recipientPostalCode) {
-      setError('Vyplňte jméno, město a PSČ')
+      setError('Wypełnij imię, miasto i kod pocztowy')
       return
     }
     setGenerating(true)
@@ -155,16 +155,16 @@ export default function NewLabelModal({ onClose }) {
             {/* Recipient */}
             <div>
               <label className="text-theme-muted text-xs mb-1 block">Nazwa / firma *</label>
-              <input value={form.recipientName} onChange={e => set('recipientName', e.target.value)} placeholder="Jan Novák" className={inputCls} />
+              <input value={form.recipientName} onChange={e => set('recipientName', e.target.value)} placeholder="Jan Kowalski" className={inputCls} />
             </div>
             <div>
               <label className="text-theme-muted text-xs mb-1 block">Ulica</label>
-              <input value={form.recipientStreet} onChange={e => set('recipientStreet', e.target.value)} placeholder="Hlavní 1" className={inputCls} />
+              <input value={form.recipientStreet} onChange={e => set('recipientStreet', e.target.value)} placeholder="Główna 1" className={inputCls} />
             </div>
             <div className="grid grid-cols-3 gap-3">
               <div className="col-span-2">
                 <label className="text-theme-muted text-xs mb-1 block">Miasto *</label>
-                <input value={form.recipientCity} onChange={e => set('recipientCity', e.target.value)} placeholder="Praha" className={inputCls} />
+                <input value={form.recipientCity} onChange={e => set('recipientCity', e.target.value)} placeholder="Warszawa" className={inputCls} />
               </div>
               <div>
                 <label className="text-theme-muted text-xs mb-1 block">Kod poczt. *</label>

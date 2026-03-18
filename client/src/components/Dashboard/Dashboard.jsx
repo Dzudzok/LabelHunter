@@ -254,7 +254,7 @@ export default function Dashboard() {
             <button
               onClick={toggleTheme}
               className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-3 py-2 rounded-lg text-sm font-semibold transition-colors"
-              title={theme === 'dark' ? 'Světlý režim' : 'Tmavý režim'}
+              title={theme === 'dark' ? 'Tryb jasny' : 'Tryb ciemny'}
             >
               {theme === 'dark' ? 'Light' : 'Dark'}
             </button>
@@ -339,7 +339,7 @@ export default function Dashboard() {
 
           <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
             {loading && (
-              <div className="text-center py-8 text-theme-muted text-sm">Načítám...</div>
+              <div className="text-center py-8 text-theme-muted text-sm">Ładowanie...</div>
             )}
             {!loading && pendingPackages.length === 0 && (
               <div className="text-center py-12 text-theme-muted text-sm">
@@ -376,7 +376,7 @@ export default function Dashboard() {
                 onClick={clearSearch}
                 className="bg-navy-600 hover:bg-navy-500 text-theme-secondary px-4 rounded-xl text-sm transition-colors"
               >
-                × Zrušit
+                × Anuluj
               </button>
             )}
           </form>
@@ -394,7 +394,7 @@ export default function Dashboard() {
 
           <div className="flex-1 overflow-y-auto flex flex-col gap-2 pr-1">
             {searchLoading && (
-              <div className="text-center py-8 text-theme-muted text-sm">Hledám...</div>
+              <div className="text-center py-8 text-theme-muted text-sm">Szukam...</div>
             )}
             {!searchLoading && rightPackages.length === 0 && (
               <div className="text-center py-12 text-theme-muted text-sm">

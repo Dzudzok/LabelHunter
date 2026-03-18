@@ -53,7 +53,7 @@ export default function PackageCard({ pkg }) {
           {pkg.invoice_number}
         </div>
         <div className="text-lg text-theme-secondary truncate">
-          {pkg.customer_name || 'Neznamy zakaznik'}
+          {pkg.customer_name || 'Nieznany klient'}
         </div>
       </div>
 
@@ -66,7 +66,7 @@ export default function PackageCard({ pkg }) {
 
       {/* Items count */}
       <div className="text-theme-secondary text-lg shrink-0">
-        {itemCount} poz.
+        {itemCount} szt.
       </div>
 
       {/* Status badge */}

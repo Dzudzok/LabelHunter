@@ -36,7 +36,7 @@ export default function HunterManageModal({ onClose }) {
   }
 
   const handleDelete = async (id) => {
-    if (!confirm('Opravdu smazat tohoto szykowacza?')) return
+    if (!confirm('Na pewno usunąć tego szykowacza?')) return
     try {
       await api.delete(`/hunters/${id}`)
       fetchHunters()
