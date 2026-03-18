@@ -329,7 +329,7 @@ async function main() {
 
     // 6. Update MSSQL state for shipments that have labels generated in LabelHunter
     console.log('[LP Sync] Checking for labeled shipments to update in MSSQL...');
-    const STATE_PRINTED = 2;
+    const STATE_UNPRINTED = 1; // Netištěný — original shipment reset, new one created by LP API
 
     // Fetch LP shipments from Supabase that have labels generated
     let labeledLpIds = [];
@@ -361,10 +361,10 @@ async function main() {
       if (stillState4.length > 0) {
         const updateIds = stillState4.map(r => r.pk_shipment).join(',');
         await pool.request().query(`
-          UPDATE dbo.shipment SET fk_shipment_state = ${STATE_PRINTED}
+          UPDATE dbo.shipment SET fk_shipment_state = ${STATE_UNPRINTED}
           WHERE pk_shipment IN (${updateIds})
         `);
-        console.log(`[LP Sync] Updated ${stillState4.length} shipments to state ${STATE_PRINTED} (Tištěný)`);
+        console.log(`[LP Sync] Reset ${stillState4.length} original shipments to state ${STATE_UNPRINTED} (Netištěný)`);
       } else {
         console.log('[LP Sync] No shipments to update in MSSQL.');
       }
