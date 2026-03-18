@@ -554,15 +554,32 @@ export default function PackageView() {
             )}
 
             {allVerified && !labelData && (
-              <button
-                onClick={handleGenerateLabel}
-                disabled={generating || (overrideShipper && !overrideService && selectedShipperObj?.services?.length > 0)}
-                className="w-full bg-green-600 hover:bg-green-500 text-white py-5 rounded-xl text-2xl font-black transition-colors disabled:opacity-50 shrink-0"
-              >
-                {generating ? 'Generuję...' : overrideShipper
-                  ? `GENERUJ (${overrideShipper}${overrideService ? '/' + overrideService : ''})`
-                  : `GENERUJ ETYKIETĘ${parcels.length > 1 ? ` (${parcels.length} paczki)` : ''}`}
-              </button>
+              <div className="flex gap-3 shrink-0">
+                <button
+                  onClick={handleGenerateLabel}
+                  disabled={generating || (overrideShipper && !overrideService && selectedShipperObj?.services?.length > 0)}
+                  className="flex-1 bg-green-600 hover:bg-green-500 text-white py-5 rounded-xl text-2xl font-black transition-colors disabled:opacity-50"
+                >
+                  {generating ? 'Generuję...' : overrideShipper
+                    ? `GENERUJ (${overrideShipper}${overrideService ? '/' + overrideService : ''})`
+                    : `GENERUJ ETYKIETĘ${parcels.length > 1 ? ` (${parcels.length} paczki)` : ''}`}
+                </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm('Oznaczyć jako wysłaną bez generowania etykiety?')) return
+                    try {
+                      await api.put(`/packages/${pkg.id}/status`, { status: 'shipped', workerId: worker?.id })
+                      navigate('/')
+                    } catch (err) {
+                      console.error('Mark shipped error:', err)
+                    }
+                  }}
+                  className="bg-navy-600 hover:bg-navy-500 text-theme-secondary hover:text-theme-primary px-4 py-5 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
+                  title="Oznacz jako wysłaną bez generowania etykiety"
+                >
+                  Wysłana
+                </button>
+              </div>
             )}
 
             {labelData && (
