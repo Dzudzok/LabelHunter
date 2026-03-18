@@ -456,6 +456,56 @@ router.put('/:id/skip-all', async (req, res, next) => {
   }
 });
 
+// POST /:id/add-item - add unknown scanned product to package
+router.post('/:id/add-item', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { code, workerId } = req.body;
+
+    const { error: insertError } = await supabase
+      .from('delivery_note_items')
+      .insert({
+        delivery_note_id: parseInt(id),
+        item_type: 'goods',
+        code: code,
+        name: `Ręcznie dodany: ${code}`,
+        qty: 1,
+        scanned_qty: 1,
+        scan_verified: true,
+        unit_weight_netto: 0,
+      });
+
+    if (insertError) throw insertError;
+
+    await logHistory(parseInt(id), 'scan_item', workerId || null, {
+      item_code: code,
+      scanned_qty: 1,
+      manual_add: true,
+    });
+
+    // Return full package
+    const { data: dn, error: dnError } = await supabase
+      .from('delivery_notes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (dnError) throw dnError;
+
+    const { data: items, error: itemsError } = await supabase
+      .from('delivery_note_items')
+      .select('*')
+      .eq('delivery_note_id', id)
+      .order('id');
+
+    if (itemsError) throw itemsError;
+
+    res.json({ ...dn, items: items || [] });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /manual-label - create a new manual shipment + generate LP label immediately
 router.post('/manual-label', async (req, res, next) => {
   try {

@@ -41,6 +41,9 @@ export default function PackageView() {
   const parcelsInitialized = useRef(false)
   const scanInputRef = useRef(null)
 
+  // Unknown product scan state
+  const [unknownScan, setUnknownScan] = useState(null)
+
   function calcAutoWeight(items) {
     let w = 0
     for (const item of (items || [])) {
@@ -120,6 +123,8 @@ export default function PackageView() {
         } catch (err) {
           console.error('Scan error:', err)
         }
+      } else {
+        setUnknownScan(classified.value)
       }
     }
   }, [pkg, goodsItems, updateItemScan])
@@ -630,6 +635,46 @@ export default function PackageView() {
           </div>
         )}
       </div>
+
+      {/* Unknown product dialog */}
+      {unknownScan && (
+        <div className="fixed inset-0 bg-black/60 flex items-center justify-center z-50">
+          <div className="bg-navy-800 border border-navy-600 rounded-xl p-6 max-w-md w-full mx-4 shadow-2xl">
+            <h3 className="text-xl font-bold text-yellow-400 mb-3">Nieznany produkt</h3>
+            <p className="text-theme-primary mb-2">
+              Zeskanowany kod: <span className="font-mono font-bold text-white">{unknownScan}</span>
+            </p>
+            <p className="text-theme-secondary mb-6">
+              Ten produkt nie znajduje się na liście tej przesyłki. Czy na pewno chcesz go dodać?
+            </p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setUnknownScan(null)}
+                className="flex-1 py-3 rounded-lg bg-navy-700 hover:bg-navy-600 text-theme-primary font-semibold transition"
+              >
+                Anuluj
+              </button>
+              <button
+                onClick={async () => {
+                  try {
+                    await api.post(`/packages/${pkg.id}/add-item`, {
+                      code: unknownScan,
+                      workerId: worker?.id,
+                    })
+                    fetchPackage()
+                  } catch (err) {
+                    console.error('Add item error:', err)
+                  }
+                  setUnknownScan(null)
+                }}
+                className="flex-1 py-3 rounded-lg bg-yellow-500 hover:bg-yellow-400 text-navy-900 font-bold transition"
+              >
+                Dodaj
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
