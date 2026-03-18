@@ -113,12 +113,25 @@ export default function PackageView() {
     }
 
     if (classified.type === 'product') {
-      const item = goodsItems.find(
+      const matchingItems = goodsItems.filter(
         i => i.code === classified.value || (i.ean && i.ean.split(',').includes(classified.value))
       )
-      if (item) {
+      if (matchingItems.length > 0) {
+        // Find first incomplete item (scanned_qty < qty)
+        const incomplete = matchingItems.find(
+          i => (parseFloat(i.scanned_qty) || 0) < (parseFloat(i.qty) || 1)
+        )
+        const item = incomplete || matchingItems[0]
+        const currentQty = parseFloat(item.scanned_qty) || 0
+        const totalQty = parseFloat(item.qty) || 1
+
+        if (!incomplete && currentQty >= totalQty) {
+          // All items with this code are complete — warn about overscan
+          if (!confirm(`Wszystkie pozycje "${classified.value}" są już zeskanowane. Dodać kolejną sztukę?`)) return
+        }
+
         try {
-          await updateItemScan(pkg.id, item.id, (parseFloat(item.scanned_qty) || 0) + 1, worker?.id)
+          await updateItemScan(pkg.id, item.id, currentQty + 1, worker?.id)
           fetchPackage()
         } catch (err) {
           console.error('Scan error:', err)
