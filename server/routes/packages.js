@@ -843,12 +843,12 @@ router.get('/:id/download-label', async (req, res, next) => {
     if (error) throw error;
     if (!dn?.label_pdf_url) return res.status(404).json({ error: 'No label found' });
 
+    const labelFile = path.basename(dn.label_pdf_url);
     const labelsRoot = path.resolve(__dirname, '..', 'labels');
-    const filePath = path.resolve(__dirname, '..', dn.label_pdf_url);
-    if (!filePath.startsWith(labelsRoot)) return res.status(403).json({ error: 'Forbidden' });
+    const filePath = path.join(labelsRoot, labelFile);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });
 
-    const ext = path.extname(dn.label_pdf_url).toLowerCase();
+    const ext = path.extname(labelFile).toLowerCase();
     const mimeTypes = { '.pdf': 'application/pdf', '.gif': 'image/gif', '.png': 'image/png', '.jpg': 'image/jpeg' };
     const contentType = mimeTypes[ext] || 'application/pdf';
     const filename = `label-${dn.invoice_number || id}${ext}`;
@@ -876,12 +876,12 @@ router.get('/:id/view-label', async (req, res, next) => {
     if (error) throw error;
     if (!dn?.label_pdf_url) return res.status(404).json({ error: 'No label found' });
 
+    const labelFile = path.basename(dn.label_pdf_url);
     const labelsRoot = path.resolve(__dirname, '..', 'labels');
-    const filePath = path.resolve(__dirname, '..', dn.label_pdf_url);
-    if (!filePath.startsWith(labelsRoot)) return res.status(403).json({ error: 'Forbidden' });
+    const filePath = path.join(labelsRoot, labelFile);
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });
 
-    const ext = path.extname(dn.label_pdf_url).toLowerCase();
+    const ext = path.extname(labelFile).toLowerCase();
     const mimeTypes = { '.pdf': 'application/pdf', '.gif': 'image/gif', '.png': 'image/png', '.jpg': 'image/jpeg' };
     const contentType = mimeTypes[ext] || 'application/pdf';
     const stat = fs.statSync(filePath);
