@@ -393,9 +393,11 @@ async function main() {
 
     if (pendingLpIds.length > 0) {
       const lpIdList = pendingLpIds.map(d => d.lp_id).join(',');
+      // Only mark as shipped if state is 2 (printed) or 3 (cancelled)
+      // State 1 (unprinted) = still needs processing, keep as pending
       const { recordset: notState4 } = await pool.request().query(`
         SELECT pk_shipment FROM dbo.shipment
-        WHERE pk_shipment IN (${lpIdList}) AND fk_shipment_state != 4
+        WHERE pk_shipment IN (${lpIdList}) AND fk_shipment_state IN (2, 3)
       `);
 
       if (notState4.length > 0) {
