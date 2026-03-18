@@ -11,7 +11,7 @@ const app = express();
 // Middleware
 const allowedOrigins = process.env.ALLOWED_ORIGINS
   ? process.env.ALLOWED_ORIGINS.split(',')
-  : ['http://localhost:5173', 'http://localhost:4173'];
+  : ['http://localhost:5173', 'http://localhost:4173', 'https://labelhunter-client.onrender.com'];
 app.use(cors({
   origin: (origin, cb) => {
     // Allow requests with no origin (mobile apps, server-to-server, curl)
