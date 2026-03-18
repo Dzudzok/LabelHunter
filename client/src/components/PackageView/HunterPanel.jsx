@@ -102,7 +102,7 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
         <div className="flex items-center gap-3">
           <h3 className="text-lg font-bold text-theme-primary">Szykował:</h3>
           <div className="flex items-center gap-1">
-            <span className="text-theme-muted text-sm">Poz:</span>
+            <span className="text-theme-muted text-sm">Szt:</span>
             <input
               type="number"
               min="0"

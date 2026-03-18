@@ -14,7 +14,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
       {goodsItems.map(item => {
         const scanned = parseFloat(item.scanned_qty) || 0
         const total = parseFloat(item.qty) || 1
-        const isSkipped = item.scan_skipped || item.scan_verified
+        const isSkipped = item.scan_skipped
         const isComplete = scanned >= total || isSkipped
         const isPartial = scanned > 0 && scanned < total && !isSkipped
 

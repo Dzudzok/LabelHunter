@@ -100,7 +100,7 @@ export default function PackageView() {
 
   const goodsItems = pkg?.items?.filter(i => i.item_type === 'goods') || []
   const allVerified = goodsItems.length === 0 || goodsItems.every(
-    i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified
+    i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped
   )
 
   const handleScan = useCallback(async (code) => {
@@ -486,7 +486,7 @@ export default function PackageView() {
               <HunterPanel
                 packageId={parseInt(id)}
                 workerId={worker?.id}
-                itemsCount={goodsItems.length}
+                itemsCount={goodsItems.reduce((sum, i) => sum + (parseFloat(i.qty) || 1), 0)}
               />
             </div>
           </div>
@@ -626,8 +626,8 @@ export default function PackageView() {
             <div className="flex items-center justify-between shrink-0">
               <h2 className="text-xl font-bold text-theme-primary">Produkty do skanowania</h2>
               <span className="text-theme-secondary text-lg font-bold">
-                {goodsItems.filter(i => (parseFloat(i.scanned_qty) || 0) >= (parseFloat(i.qty) || 1) || i.scan_skipped || i.scan_verified).length}
-                /{goodsItems.length}
+                {goodsItems.reduce((sum, i) => sum + Math.min(parseFloat(i.scanned_qty) || 0, parseFloat(i.qty) || 1), 0)}
+                /{goodsItems.reduce((sum, i) => sum + (parseFloat(i.qty) || 1), 0)}
               </span>
             </div>
 

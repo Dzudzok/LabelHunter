@@ -372,11 +372,20 @@ router.put('/:id/scan-item', async (req, res, next) => {
     const { id } = req.params;
     const { itemId, qty, workerId } = req.body;
 
+    // First get the item to check qty
+    const { data: existing } = await supabase
+      .from('delivery_note_items')
+      .select('qty')
+      .eq('id', itemId)
+      .single();
+
+    const isComplete = qty >= (parseFloat(existing?.qty) || 1);
+
     const { data, error } = await supabase
       .from('delivery_note_items')
       .update({
         scanned_qty: qty,
-        scan_verified: true,
+        scan_verified: isComplete,
       })
       .eq('id', itemId)
       .select()
