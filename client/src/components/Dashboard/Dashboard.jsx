@@ -14,6 +14,7 @@ import { useThemeStore } from '../../store/themeStore'
 import HunterManageModal from './HunterManageModal'
 import HunterStatsModal from './HunterStatsModal'
 import NewLabelModal from './NewLabelModal'
+import ExpandoModal from './ExpandoModal'
 import PrinterSelector from './PrinterSelector'
 import { usePrinter } from '../../hooks/usePrinter'
 
@@ -40,6 +41,7 @@ export default function Dashboard() {
   const [showHunterManage, setShowHunterManage] = useState(false)
   const [showHunterStats, setShowHunterStats] = useState(false)
   const [showNewLabel, setShowNewLabel] = useState(false)
+  const [showExpando, setShowExpando] = useState(false)
   const { selectedPrinter, setSelectedPrinter, printers, loadingPrinters, printerError, fetchPrinters, printLabel } = usePrinter()
 
   // Right panel search
@@ -208,6 +210,12 @@ export default function Dashboard() {
               + Nowa etykieta
             </button>
             <button
+              onClick={() => setShowExpando(true)}
+              className="bg-purple-700 hover:bg-purple-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
+            >
+              Expando
+            </button>
+            <button
               onClick={handleRefresh}
               className="bg-green-700 hover:bg-green-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
             >
@@ -263,6 +271,7 @@ export default function Dashboard() {
       </div>
 
       {showNewLabel && <NewLabelModal onClose={() => setShowNewLabel(false)} />}
+      {showExpando && <ExpandoModal date={selectedDate} onClose={() => setShowExpando(false)} />}
       {showSearch && <SearchPanel isOpen={showSearch} onClose={() => setShowSearch(false)} />}
       {showStats && <StatsModal date={selectedDate} onClose={() => setShowStats(false)} />}
       {showTransportMap && <TransportMapModal onClose={() => setShowTransportMap(false)} />}

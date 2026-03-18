@@ -1069,4 +1069,122 @@ router.get('/:id/history', async (req, res, next) => {
   }
 });
 
+// POST /expando-fetch-invoices - fetch invoices from Nextis API for a date
+router.post('/expando-fetch-invoices', async (req, res, next) => {
+  try {
+    const { date } = req.body;
+    const d = date || new Date().toISOString().split('T')[0];
+
+    const NEXTIS_TOKEN = process.env.NEXTIS_TOKEN_ADMIN;
+    const NEXTIS_URL = process.env.NEXTIS_API_URL || 'https://api.mroauto.nextis.cz';
+    if (!NEXTIS_TOKEN) return res.status(500).json({ error: 'NEXTIS_TOKEN_ADMIN not configured' });
+
+    const axios = require('axios');
+    const resp = await axios.post(`${NEXTIS_URL}/documents/invoices`, {
+      token: NEXTIS_TOKEN,
+      tokenIsMaster: true,
+      language: 'cs',
+      dateFrom: `${d}T00:00:00.000Z`,
+      dateTo: `${d}T23:59:59.999Z`,
+      loadAll: false,
+    }, { timeout: 120000 });
+
+    const invoices = resp.data || [];
+    // Filter only those with marketplace info in note field (format: marketplace|orderId)
+    const withMarketplace = invoices
+      .filter(inv => inv.note && inv.note.includes('|'))
+      .map(inv => {
+        const [marketplace, marketplaceOrderId] = inv.note.split('|', 2);
+        return {
+          invoiceNumber: inv.variableSymbol || '',
+          no: inv.no || '',
+          marketplace: (marketplace || '').trim(),
+          marketplaceOrderId: (marketplaceOrderId || '').trim(),
+        };
+      })
+      .filter(r => r.marketplace && r.marketplaceOrderId);
+
+    res.json({ total: invoices.length, withMarketplace });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /expando-fulfillment - send tracking numbers to Expando API
+router.post('/expando-fulfillment', async (req, res, next) => {
+  try {
+    const { rows, carrier, date } = req.body;
+    if (!rows || !Array.isArray(rows) || rows.length === 0) {
+      return res.status(400).json({ error: 'No data provided' });
+    }
+    if (!carrier) {
+      return res.status(400).json({ error: 'Carrier is required' });
+    }
+
+    const EXPANDO_TOKEN = process.env.EXPANDO_API_TOKEN;
+    if (!EXPANDO_TOKEN) {
+      return res.status(500).json({ error: 'EXPANDO_API_TOKEN not configured' });
+    }
+
+    // Fetch tracking numbers from Supabase for matching invoices + shipper
+    const invoiceNumbers = [...new Set(rows.map(r => r.invoiceNumber))];
+    const packageMap = {};
+    for (let i = 0; i < invoiceNumbers.length; i += 100) {
+      const chunk = invoiceNumbers.slice(i, i + 100);
+      const { data } = await supabase
+        .from('delivery_notes')
+        .select('invoice_number, tracking_number, tracking_url, shipper_code')
+        .in('invoice_number', chunk)
+        .not('tracking_number', 'is', null);
+      for (const dn of (data || [])) {
+        // If multiple, keep the one with matching shipper or last one
+        if (!packageMap[dn.invoice_number] || dn.shipper_code === carrier) {
+          packageMap[dn.invoice_number] = dn;
+        }
+      }
+    }
+
+    const results = [];
+    const shipDate = date ? new Date(date + 'T12:00:00.000Z').toISOString() : new Date().toISOString();
+    const axios = require('axios');
+
+    for (const row of rows) {
+      const pkg = packageMap[row.invoiceNumber];
+      if (!pkg || !pkg.tracking_number) {
+        results.push({ invoiceNumber: row.invoiceNumber, status: 'skip', reason: 'Brak tracking number' });
+        continue;
+      }
+
+      try {
+        await axios.post('https://app.expan.do/api/v2/fulfillment', {
+          marketplaceOrderId: row.marketplaceOrderId,
+          marketplace: row.marketplace,
+          status: 'Shipped',
+          trackingNumber: pkg.tracking_number,
+          carrier: carrier,
+          shipDate: shipDate,
+        }, {
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${EXPANDO_TOKEN}`,
+          },
+          timeout: 15000,
+        });
+        results.push({ invoiceNumber: row.invoiceNumber, status: 'ok', marketplaceOrderId: row.marketplaceOrderId, trackingNumber: pkg.tracking_number });
+      } catch (err) {
+        const errMsg = err.response?.data?.message || err.message;
+        results.push({ invoiceNumber: row.invoiceNumber, status: 'error', reason: errMsg, marketplaceOrderId: row.marketplaceOrderId });
+      }
+    }
+
+    const ok = results.filter(r => r.status === 'ok').length;
+    const errors = results.filter(r => r.status === 'error').length;
+    const skipped = results.filter(r => r.status === 'skip').length;
+
+    res.json({ results, summary: { total: rows.length, ok, errors, skipped } });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
