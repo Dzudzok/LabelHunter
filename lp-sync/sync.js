@@ -372,6 +372,49 @@ async function main() {
       console.log('[LP Sync] No labeled shipments found.');
     }
 
+    // 6b. Mark pending packages as shipped if they were printed in desktop LP (state ≠ 4)
+    console.log('[LP Sync] Checking for packages printed in desktop LP...');
+    let pendingLpIds = [];
+    let pendingPage = 0;
+    while (true) {
+      const { data, error: pErr } = await supabase
+        .from('delivery_notes')
+        .select('id, lp_id')
+        .eq('source', 'lp')
+        .eq('status', 'pending')
+        .not('lp_id', 'is', null)
+        .range(pendingPage * SB_PAGE, (pendingPage + 1) * SB_PAGE - 1);
+      if (pErr) { console.error('[LP Sync] Pending query error:', pErr.message); break; }
+      if (!data || data.length === 0) break;
+      pendingLpIds = pendingLpIds.concat(data);
+      if (data.length < SB_PAGE) break;
+      pendingPage++;
+    }
+
+    if (pendingLpIds.length > 0) {
+      const lpIdList = pendingLpIds.map(d => d.lp_id).join(',');
+      const { recordset: notState4 } = await pool.request().query(`
+        SELECT pk_shipment FROM dbo.shipment
+        WHERE pk_shipment IN (${lpIdList}) AND fk_shipment_state != 4
+      `);
+
+      if (notState4.length > 0) {
+        const notState4Set = new Set(notState4.map(r => r.pk_shipment));
+        const toUpdate = pendingLpIds.filter(d => notState4Set.has(d.lp_id)).map(d => d.id);
+
+        for (let i = 0; i < toUpdate.length; i += 100) {
+          const chunk = toUpdate.slice(i, i + 100);
+          await supabase
+            .from('delivery_notes')
+            .update({ status: 'shipped', updated_at: new Date().toISOString() })
+            .in('id', chunk);
+        }
+        console.log(`[LP Sync] Marked ${notState4.length} packages as shipped (printed in desktop LP)`);
+      } else {
+        console.log('[LP Sync] No desktop-printed packages to update.');
+      }
+    }
+
     // 7. Send pending shipment emails from BOLOPC (SMTP works here, not from Render)
     if (DISABLE_EMAIL) {
       console.log('[LP Sync] Email sending disabled (DISABLE_EMAIL=true in config.js)');
