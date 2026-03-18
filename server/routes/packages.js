@@ -226,19 +226,30 @@ router.get('/stats', async (req, res, next) => {
     const done = (notes || []).filter(n => ['label_generated', 'shipped', 'delivered'].includes(n.status)).length;
     const pending = (notes || []).filter(n => ['pending', 'scanning', 'verified'].includes(n.status)).length;
 
-    // Calculate labels per minute (overall and per worker)
-    const labeledNotes = (notes || []).filter(n => n.label_generated_at);
-    let labelsPerMinute = null;
-    if (labeledNotes.length >= 2) {
-      const times = labeledNotes.map(n => new Date(n.label_generated_at).getTime()).sort((a, b) => a - b);
-      const spanMinutes = (times[times.length - 1] - times[0]) / 60000;
-      if (spanMinutes > 0) labelsPerMinute = Math.round((labeledNotes.length / spanMinutes) * 10) / 10;
+    // Calculate active work time (ignore gaps > 5 min)
+    const BREAK_THRESHOLD = 5 * 60000; // 5 minutes
+    function calcActiveMinutes(times) {
+      if (times.length < 2) return 0;
+      const sorted = [...times].sort((a, b) => a - b);
+      let active = 0;
+      for (let i = 1; i < sorted.length; i++) {
+        const gap = sorted[i] - sorted[i - 1];
+        if (gap <= BREAK_THRESHOLD) active += gap;
+      }
+      return active / 60000;
     }
+
+    const labeledNotes = (notes || []).filter(n => n.label_generated_at);
+    const allTimes = labeledNotes.map(n => new Date(n.label_generated_at).getTime());
+    const activeMin = calcActiveMinutes(allTimes);
+    const labelsPerMinute = activeMin > 0 ? Math.round((labeledNotes.length / activeMin) * 10) / 10 : null;
 
     // Current tempo: labels in last 30 minutes
     const now = Date.now();
     const last30 = labeledNotes.filter(n => (now - new Date(n.label_generated_at).getTime()) <= 30 * 60000);
-    const currentTempo = last30.length > 0 ? Math.round((last30.length / 30) * 10) / 10 : null;
+    const last30Times = last30.map(n => new Date(n.label_generated_at).getTime());
+    const last30Active = calcActiveMinutes(last30Times);
+    const currentTempo = last30Active > 0 ? Math.round((last30.length / last30Active) * 10) / 10 : null;
 
     // Per-worker labels per minute
     const workerLabelTimes = {};
@@ -250,13 +261,9 @@ router.get('/stats', async (req, res, next) => {
     const workersArr = Object.values(workerStats);
     for (const w of workersArr) {
       const wId = Object.keys(workerStats).find(k => workerStats[k] === w);
-      const times = (workerLabelTimes[wId] || []).sort((a, b) => a - b);
-      if (times.length >= 2) {
-        const span = (times[times.length - 1] - times[0]) / 60000;
-        w.labelsPerMinute = span > 0 ? Math.round((times.length / span) * 10) / 10 : null;
-      } else {
-        w.labelsPerMinute = null;
-      }
+      const times = workerLabelTimes[wId] || [];
+      const wActive = calcActiveMinutes(times);
+      w.labelsPerMinute = wActive > 0 ? Math.round((times.length / wActive) * 10) / 10 : null;
     }
 
     res.json({ total, done, pending, byStatus, byShipper, workers: workersArr, history, labelsPerMinute, currentTempo });
