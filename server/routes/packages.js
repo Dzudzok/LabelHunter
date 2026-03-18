@@ -1089,12 +1089,27 @@ router.post('/expando-fetch-invoices', async (req, res, next) => {
       loadAll: false,
     }, { timeout: 120000 });
 
-    const invoices = resp.data || [];
-    // Filter only those with marketplace info in note field (format: marketplace|orderId)
-    const withMarketplace = invoices
-      .filter(inv => inv.note && inv.note.includes('|'))
+    const raw = resp.data;
+    const invoices = Array.isArray(raw) ? raw : (raw?.data || raw?.documents || raw?.items || []);
+    // Filter only Invoices (not CorrectionNotes etc.) with note containing marketplace order info
+    const onlyInvoices = invoices.filter(inv => inv.type === 'Invoice' && inv.note && inv.note.trim());
+    const withMarketplace = onlyInvoices
       .map(inv => {
-        const [marketplace, marketplaceOrderId] = inv.note.split('|', 2);
+        const note = inv.note.trim();
+        let marketplace, marketplaceOrderId;
+        if (note.includes('|')) {
+          // Format: amazon_de|028-2666649-3479536
+          [marketplace, marketplaceOrderId] = note.split('|', 2);
+        } else if (/^\d{3}-\d{7}-\d{7}$/.test(note)) {
+          // Format: 405-2699104-7749106 (Amazon order ID without marketplace)
+          // Try to detect marketplace from email domain
+          const email = inv.headAddress?.email || inv.deliveryAddress?.email || '';
+          const emailMatch = email.match(/marketplace\.amazon\.(\w+)/);
+          marketplace = emailMatch ? `amazon_${emailMatch[1].trim()}` : 'amazon_de';
+          marketplaceOrderId = note;
+        } else {
+          return null;
+        }
         return {
           invoiceNumber: inv.variableSymbol || '',
           no: inv.no || '',
@@ -1102,9 +1117,9 @@ router.post('/expando-fetch-invoices', async (req, res, next) => {
           marketplaceOrderId: (marketplaceOrderId || '').trim(),
         };
       })
-      .filter(r => r.marketplace && r.marketplaceOrderId);
+      .filter(r => r && r.marketplace && r.marketplaceOrderId);
 
-    res.json({ total: invoices.length, withMarketplace });
+    res.json({ total: invoices.length, invoiceCount: onlyInvoices.length, withMarketplace });
   } catch (err) {
     next(err);
   }
