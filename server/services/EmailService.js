@@ -155,7 +155,10 @@ class EmailService {
         <strong>Z&aacute;kazn&iacute;k:</strong> ${deliveryNote.customer_name || '-'}<br>
         <strong>E-mail:</strong> ${customerEmail}<br>
         <strong>Faktura:</strong> ${deliveryNote.invoice_number || '-'}<br>
-        <strong>Dodac&iacute; list:</strong> ${deliveryNote.doc_number || '-'}
+        <strong>Objedn&aacute;vka:</strong> ${deliveryNote.order_number || '-'}<br>
+        <strong>Dodac&iacute; list:</strong> ${deliveryNote.doc_number || '-'}<br>
+        <strong>Dopravce:</strong> ${deliveryNote.transport_name || deliveryNote.shipper_code || '-'}<br>
+        <strong>Sledovac&iacute; &ccaron;&iacute;slo:</strong> ${deliveryNote.tracking_number || '-'}
       </div>
       <h3>Zpr&aacute;va:</h3>
       <p style="background: #f8f9fa; padding: 15px; border-radius: 6px;">${message}</p>
