@@ -12,8 +12,8 @@ export default {
           500: 'var(--navy-500)',
         },
         brand: {
-          orange: '#f97316',
-          'orange-dark': '#ea6c0a',
+          orange: '#00569d',
+          'orange-dark': '#00569d',
         },
         theme: {
           primary: 'var(--text-primary)',

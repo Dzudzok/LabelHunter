@@ -83,5 +83,5 @@ button {
 :root[data-theme="light"] .text-blue-300 { color: #1d4ed8 !important; }
 :root[data-theme="light"] .text-blue-400 { color: #2563eb !important; }
 
-:root[data-theme="light"] .bg-orange-500 { background-color: #ea580c !important; }
-:root[data-theme="light"] .text-orange-400 { color: #c2410c !important; }
+:root[data-theme="light"] .bg-orange-500 { background-color: #00569d !important; }
+:root[data-theme="light"] .text-orange-400 { color: #e30613 !important; }
