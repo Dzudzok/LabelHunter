@@ -59,7 +59,7 @@ export default function HunterManageModal({ onClose }) {
       <div className="bg-navy-800 border border-navy-600 rounded-2xl w-full max-w-lg">
         {/* Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-navy-700">
-          <h2 className="text-xl font-bold text-theme-primary">Szykowaczi (Hunters)</h2>
+          <h2 className="text-xl font-bold text-theme-primary">Szykowacze (Hunters)</h2>
           <button onClick={onClose} className="text-theme-secondary hover:text-theme-primary text-2xl min-h-0 leading-none">&times;</button>
         </div>
 
@@ -70,7 +70,7 @@ export default function HunterManageModal({ onClose }) {
               type="text"
               value={newName}
               onChange={e => setNewName(e.target.value)}
-              placeholder="Jmeno a prijmeni..."
+              placeholder="Imię i Nazwisko..."
               className="flex-1 bg-navy-900 border border-navy-600 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
             />
             <button
@@ -78,15 +78,15 @@ export default function HunterManageModal({ onClose }) {
               disabled={adding || !newName.trim()}
               className="bg-brand-orange hover:bg-brand-orange-dark text-white font-bold px-4 py-2 rounded-lg text-sm disabled:opacity-50 transition-colors"
             >
-              {adding ? '...' : 'Pridat'}
+              {adding ? '...' : 'Dodaj'}
             </button>
           </form>
 
           {/* List */}
           {loading ? (
-            <div className="text-center py-8 text-theme-muted">Nacitam...</div>
+            <div className="text-center py-8 text-theme-muted">Ładowanie...</div>
           ) : hunters.length === 0 ? (
-            <div className="text-center py-8 text-theme-muted">Zadni szykowaczi</div>
+            <div className="text-center py-8 text-theme-muted">Brak szykowaczy</div>
           ) : (
             <div className="flex flex-col gap-2 max-h-80 overflow-y-auto">
               {hunters.map(h => (
@@ -102,7 +102,7 @@ export default function HunterManageModal({ onClose }) {
                       onClick={() => handleToggleActive(h)}
                       className="text-theme-muted hover:text-theme-primary text-xs px-2 py-1 rounded transition-colors"
                     >
-                      {h.active ? 'Deaktivovat' : 'Aktivovat'}
+                      {h.active ? 'Dezaktywuj' : 'Aktywuj'}
                     </button>
                     <button
                       onClick={() => handleDelete(h.id)}

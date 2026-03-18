@@ -2,9 +2,9 @@ import { useState, useEffect } from 'react'
 import { api } from '../../services/api'
 
 const ERROR_LABELS = {
-  wrong_qty: 'Spatne mnozstvi',
-  missing_product: 'Chybejici zbozi',
-  wrong_product: 'Jiny tovar',
+  wrong_qty: 'Zła ilość',
+  missing_product: 'Brakujący towar',
+  wrong_product: 'Inny towar',
 }
 
 function Bar({ value, max, color = 'bg-brand-orange' }) {
@@ -65,10 +65,10 @@ export default function HunterStatsModal({ onClose }) {
     <div className="fixed inset-0 overlay-bg z-50 flex items-start justify-center pt-4 px-4 overflow-y-auto">
       <div className="bg-navy-800 border border-navy-600 rounded-2xl w-full max-w-5xl mb-8">
 
-        {/* Header */}
+        {/* Nagłówek */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-navy-700">
           <div className="flex items-center gap-4 flex-wrap">
-            <h2 className="text-xl font-bold text-theme-primary">Statistiky szykowaczu</h2>
+            <h2 className="text-xl font-bold text-theme-primary">Statystyki szykowaczów</h2>
             <div className="flex gap-1">
               {['week', 'month', 'custom'].map(r => (
                 <button
@@ -80,7 +80,7 @@ export default function HunterStatsModal({ onClose }) {
                       : 'bg-navy-700 text-theme-secondary hover:text-theme-primary'
                   }`}
                 >
-                  {r === 'week' ? 'Tyden' : r === 'month' ? 'Mesic' : 'Vlastni'}
+                  {r === 'week' ? 'Tydzień' : r === 'month' ? 'Miesiąc' : 'Własny'}
                 </button>
               ))}
             </div>
@@ -106,31 +106,31 @@ export default function HunterStatsModal({ onClose }) {
         </div>
 
         {loading ? (
-          <div className="flex items-center justify-center py-20 text-theme-secondary text-lg">Nacitam...</div>
+          <div className="flex items-center justify-center py-20 text-theme-secondary text-lg">Ładowanie...</div>
         ) : !stats ? (
-          <div className="flex items-center justify-center py-20 text-red-400">Chyba nacitani</div>
+          <div className="flex items-center justify-center py-20 text-red-400">Błąd ładowania</div>
         ) : (
           <div className="px-6 py-6 flex flex-col gap-6">
 
-            {/* Summary cards */}
+            {/* Karty podsumowania */}
             <div className="grid grid-cols-3 gap-4">
               <div className="bg-navy-700 rounded-xl p-5 border border-navy-600 text-center">
                 <div className="text-4xl font-black text-theme-primary">{stats.totals.packages}</div>
-                <div className="text-theme-secondary mt-1 text-sm font-semibold uppercase tracking-wide">Baliku celkem</div>
+                <div className="text-theme-secondary mt-1 text-sm font-semibold uppercase tracking-wide">Paczek razem</div>
               </div>
               <div className="bg-red-900/30 rounded-xl p-5 border border-red-800 text-center">
                 <div className="text-4xl font-black text-red-400">{stats.totals.errors}</div>
-                <div className="text-theme-secondary mt-1 text-sm font-semibold uppercase tracking-wide">Chyb celkem</div>
+                <div className="text-theme-secondary mt-1 text-sm font-semibold uppercase tracking-wide">Błędów razem</div>
               </div>
               <div className="bg-navy-700 rounded-xl p-5 border border-navy-600 text-center">
                 <div className="text-4xl font-black text-brand-orange">{stats.totals.hunters}</div>
-                <div className="text-theme-secondary mt-1 text-sm font-semibold uppercase tracking-wide">Szykowaczu</div>
+                <div className="text-theme-secondary mt-1 text-sm font-semibold uppercase tracking-wide">Szykowaczów</div>
               </div>
             </div>
 
-            {/* Per-hunter cards */}
+            {/* Karty szykowaczów */}
             {(stats.hunters || []).length === 0 ? (
-              <div className="text-center py-8 text-theme-muted">Zadna data za toto obdobi</div>
+              <div className="text-center py-8 text-theme-muted">Brak danych za ten okres</div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 {stats.hunters.map(h => (
@@ -143,24 +143,24 @@ export default function HunterStatsModal({ onClose }) {
                         <span className={`text-xs font-bold px-2 py-0.5 rounded ${
                           h.errorRate > 10 ? 'bg-red-900/50 text-red-400' : 'bg-yellow-900/50 text-yellow-400'
                         }`}>
-                          {h.errorRate}% chybovost
+                          {h.errorRate}% błędów
                         </span>
                       )}
                     </div>
 
                     <div className="flex flex-col gap-3">
                       <div>
-                        <div className="text-theme-secondary text-xs mb-1">Naszykovanych baliku</div>
+                        <div className="text-theme-secondary text-xs mb-1">Przygotowanych paczek</div>
                         <Bar value={h.totalPackages} max={maxPackages} color="bg-blue-500" />
                       </div>
                       <div>
-                        <div className="text-theme-secondary text-xs mb-1">Celkem polozek</div>
+                        <div className="text-theme-secondary text-xs mb-1">Pozycji razem</div>
                         <div className="text-theme-primary font-bold text-lg">{h.totalItems}</div>
                       </div>
 
                       {h.totalErrors > 0 && (
                         <div className="border-t border-navy-600 pt-3 mt-1">
-                          <div className="text-red-400 text-xs font-semibold mb-2">Chyby ({h.totalErrors})</div>
+                          <div className="text-red-400 text-xs font-semibold mb-2">Błędy ({h.totalErrors})</div>
                           <div className="grid grid-cols-3 gap-2">
                             {Object.entries(h.errorsByType).map(([type, count]) => (
                               count > 0 && (
@@ -179,17 +179,17 @@ export default function HunterStatsModal({ onClose }) {
               </div>
             )}
 
-            {/* Recent errors */}
+            {/* Ostatnie błędy */}
             {(stats.recentErrors || []).length > 0 && (
               <div className="bg-navy-700 rounded-xl border border-navy-600 overflow-hidden">
                 <div className="px-5 py-3 border-b border-navy-600">
-                  <h3 className="text-base font-bold text-red-400 uppercase tracking-wide">Posledni chyby</h3>
+                  <h3 className="text-base font-bold text-red-400 uppercase tracking-wide">Ostatnie błędy</h3>
                 </div>
                 <div className="divide-y divide-navy-600">
                   {stats.recentErrors.map(e => (
                     <div key={e.id} className="flex items-center gap-4 px-5 py-3 text-sm">
                       <div className="text-theme-muted shrink-0 w-24">
-                        {new Date(e.created_at).toLocaleDateString('cs-CZ')}
+                        {new Date(e.created_at).toLocaleDateString('pl-PL')}
                       </div>
                       <div className="text-theme-primary font-semibold shrink-0 w-32">{e.hunter_name}</div>
                       <div className="text-red-400 font-semibold shrink-0 w-36">{ERROR_LABELS[e.error_type]}</div>
