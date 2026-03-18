@@ -215,39 +215,7 @@ export default function TrackingPage() {
           </div>
         </div>
 
-        {/* Contact form */}
-        <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6 shadow-sm">
-          <h2 className="text-xl font-bold text-gray-800 mb-4">Napište nám</h2>
-          {sent ? (
-            <div className="text-center py-4 text-green-600 text-lg font-semibold">
-              Zpráva odeslána. Děkujeme!
-            </div>
-          ) : (
-            <form onSubmit={handleSendMessage} className="flex flex-col gap-3">
-              <input
-                type="email"
-                value={contactEmail}
-                onChange={(e) => setContactEmail(e.target.value)}
-                placeholder="Váš email"
-                className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none focus:border-[#0047ab] focus:ring-1 focus:ring-[#0047ab]"
-              />
-              <textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Vaše zpráva..."
-                rows={4}
-                className="bg-gray-50 border border-gray-300 rounded-lg px-4 py-3 text-gray-800 placeholder-gray-400 outline-none resize-none focus:border-[#0047ab] focus:ring-1 focus:ring-[#0047ab]"
-              />
-              <button
-                type="submit"
-                disabled={sending || !message.trim()}
-                className="bg-[#e31e24] hover:bg-[#c41a1f] text-white py-3 rounded-xl text-lg font-bold transition-colors disabled:opacity-50"
-              >
-                {sending ? 'Odesílám...' : 'Odeslat zprávu'}
-              </button>
-            </form>
-          )}
-        </div>
+        {/* Contact form - temporarily disabled */}
 
         {/* Footer */}
         <div className="text-center text-gray-400 text-sm pb-8">
