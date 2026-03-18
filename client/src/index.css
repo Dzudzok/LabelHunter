@@ -58,3 +58,30 @@ button {
 .overlay-bg {
   background-color: var(--overlay-bg);
 }
+
+/* ===== LIGHT THEME: fix green/status colors ===== */
+:root[data-theme="light"] .bg-green-900\/30 { background-color: rgba(22, 101, 52, 0.15) !important; }
+:root[data-theme="light"] .bg-green-600 { background-color: #16a34a !important; }
+:root[data-theme="light"] .hover\:bg-green-500:hover { background-color: #22c55e !important; }
+:root[data-theme="light"] .border-green-600 { border-color: #16a34a !important; }
+:root[data-theme="light"] .text-green-400 { color: #15803d !important; }
+:root[data-theme="light"] .text-green-300 { color: #166534 !important; }
+:root[data-theme="light"] .bg-green-900\/40 { background-color: rgba(22, 101, 52, 0.12) !important; }
+
+:root[data-theme="light"] .bg-yellow-900\/30 { background-color: rgba(161, 98, 7, 0.12) !important; }
+:root[data-theme="light"] .border-yellow-600 { border-color: #ca8a04 !important; }
+:root[data-theme="light"] .text-yellow-400 { color: #a16207 !important; }
+
+:root[data-theme="light"] .bg-red-900\/30 { background-color: rgba(153, 27, 27, 0.12) !important; }
+:root[data-theme="light"] .border-red-600 { border-color: #dc2626 !important; }
+:root[data-theme="light"] .text-red-400 { color: #b91c1c !important; }
+
+:root[data-theme="light"] .bg-blue-600 { background-color: #2563eb !important; }
+:root[data-theme="light"] .hover\:bg-blue-500:hover { background-color: #3b82f6 !important; }
+:root[data-theme="light"] .bg-blue-900 { background-color: #dbeafe !important; }
+:root[data-theme="light"] .hover\:bg-blue-800:hover { background-color: #bfdbfe !important; }
+:root[data-theme="light"] .text-blue-300 { color: #1d4ed8 !important; }
+:root[data-theme="light"] .text-blue-400 { color: #2563eb !important; }
+
+:root[data-theme="light"] .bg-orange-500 { background-color: #ea580c !important; }
+:root[data-theme="light"] .text-orange-400 { color: #c2410c !important; }

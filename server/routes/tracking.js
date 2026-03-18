@@ -79,12 +79,9 @@ router.post('/public/:token/message', async (req, res, next) => {
 
     if (msgError) throw msgError;
 
-    // Send email to info@mroauto.cz
-    try {
-      await emailService.sendContactFormEmail(dn, email, message);
-    } catch (emailErr) {
-      console.error('Failed to send contact form email:', emailErr.message);
-    }
+    // Send email in background (don't block response)
+    emailService.sendContactFormEmail(dn, email, message)
+      .catch(emailErr => console.error('Failed to send contact form email:', emailErr.message));
 
     res.json({ success: true });
   } catch (err) {
