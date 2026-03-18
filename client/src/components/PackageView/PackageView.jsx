@@ -131,6 +131,15 @@ export default function PackageView() {
 
   useScanner(handleScan)
 
+  const handleManualScan = async (itemId, newQty) => {
+    try {
+      await updateItemScan(pkg.id, itemId, newQty, worker?.id)
+      fetchPackage()
+    } catch (err) {
+      console.error('Manual scan error:', err)
+    }
+  }
+
   const handleSkipItem = async (itemId) => {
     try {
       const res = await api.put(`/packages/${pkg.id}/skip-item`, { itemId })
@@ -622,7 +631,7 @@ export default function PackageView() {
               </span>
             </div>
 
-            <ItemList items={pkg.items || []} onSkipItem={handleSkipItem} onScanItem={handleScan} />
+            <ItemList items={pkg.items || []} onSkipItem={handleSkipItem} onScanItem={handleManualScan} />
           </div>
       </div>
 
