@@ -62,7 +62,7 @@ function ItemRow({ item, onSkipItem, onScanItem }) {
         <div className={`text-xl font-bold shrink-0 min-w-[60px] text-center ${
           isComplete ? 'text-green-400' : isPartial ? 'text-yellow-400' : 'text-theme-secondary'
         }`}>
-          {scanned}z{total}
+          {scanned} / {total}
         </div>
 
         {/* Product info */}
