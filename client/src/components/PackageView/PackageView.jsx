@@ -13,7 +13,7 @@ export default function PackageView() {
   const { id } = useParams()
   const navigate = useNavigate()
   const { updateItemScan, skipAllItems } = usePackageStore()
-  const { printLabel } = usePrinter()
+  const { printLabel, printLabelBlob } = usePrinter()
   const worker = useAuthStore(s => s.worker)
 
   const [pkg, setPkg] = useState(null)
@@ -230,10 +230,16 @@ export default function PackageView() {
         codAmount: parseFloat(codAmount) || 0,
       })
       setLabelData(res.data)
-      fetchPackage()
-      const urls = res.data.label_urls || (res.data.label_url ? [res.data.label_url] : [])
-      for (const url of urls) {
-        await printLabel(pkg.id, url)
+      // Print directly from inline base64 (no second fetch)
+      if (res.data.labels && res.data.labels.length > 0) {
+        for (const label of res.data.labels) {
+          await printLabelBlob(label.base64, label.mimeType)
+        }
+      } else {
+        const urls = res.data.label_urls || (res.data.label_url ? [res.data.label_url] : [])
+        for (const url of urls) {
+          await printLabel(pkg.id, url)
+        }
       }
       // Auto-redirect to dashboard after successful print
       setTimeout(() => navigate('/'), 1000)

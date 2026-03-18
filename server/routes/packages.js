@@ -862,10 +862,20 @@ router.post('/:id/generate-label', async (req, res, next) => {
     console.log(`[Email] Will be sent by lp-sync on BOLOPC (to=${emailTo})`);
     await supabase.from('delivery_notes').update({ status: 'shipped' }).eq('id', id);
 
+    // Build inline label data for immediate printing (no second fetch needed)
+    const inlineLabels = labelsList.map(b64 => {
+      let mime = 'application/pdf';
+      if (b64.startsWith('R0lGOD')) mime = 'image/gif';
+      else if (b64.startsWith('iVBOR')) mime = 'image/png';
+      else if (b64.startsWith('/9j/')) mime = 'image/jpeg';
+      return { base64: b64, mimeType: mime };
+    });
+
     res.json({
       success: true,
       label_url: labelPdfUrl,
       label_urls: savedLabelUrls,
+      labels: inlineLabels,
       tracking_number: updated.tracking_number,
       barcode: updated.lp_barcode,
       deliveryNote: updated,

@@ -78,5 +78,43 @@ export function usePrinter() {
     }
   }, [selectedPrinter])
 
-  return { selectedPrinter, setSelectedPrinter, printers, loadingPrinters, printerError, fetchPrinters, printLabel }
+  // Print directly from base64 (no fetch needed — faster)
+  const printLabelBlob = useCallback(async (base64, mimeType) => {
+    const binary = atob(base64)
+    const bytes = new Uint8Array(binary.length)
+    for (let i = 0; i < binary.length; i++) bytes[i] = binary.charCodeAt(i)
+    const blob = new Blob([bytes], { type: mimeType })
+
+    if (isQZAvailable() && selectedPrinter) {
+      try {
+        await printPdfBlob(selectedPrinter, blob)
+        return
+      } catch (e) {
+        console.warn('[QZ Print] failed, fallback to iframe:', e.message)
+      }
+    }
+
+    // Fallback: iframe
+    const blobUrl = URL.createObjectURL(blob)
+    const iframe = document.createElement('iframe')
+    iframe.style.cssText = 'position:fixed;top:-9999px;left:-9999px;width:1px;height:1px;'
+    document.body.appendChild(iframe)
+
+    const isImage = mimeType && mimeType.startsWith('image/')
+    if (isImage) {
+      iframe.srcdoc = `<html><head><style>@page{margin:0;size:A6 landscape}body{margin:0;display:flex;justify-content:center;align-items:center;height:100vh}img{max-width:100%;max-height:100%}</style></head><body><img src="${blobUrl}" onload="window.focus();window.print()"></body></html>`
+    } else {
+      iframe.src = blobUrl
+      iframe.onload = () => {
+        iframe.contentWindow.focus()
+        iframe.contentWindow.print()
+      }
+    }
+    setTimeout(() => {
+      document.body.removeChild(iframe)
+      URL.revokeObjectURL(blobUrl)
+    }, 60000)
+  }, [selectedPrinter])
+
+  return { selectedPrinter, setSelectedPrinter, printers, loadingPrinters, printerError, fetchPrinters, printLabel, printLabelBlob }
 }
