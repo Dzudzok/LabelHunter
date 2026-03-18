@@ -1117,7 +1117,7 @@ router.post('/expando-fetch-invoices', async (req, res, next) => {
           marketplaceOrderId: (marketplaceOrderId || '').trim(),
         };
       })
-      .filter(r => r && r.marketplace && r.marketplaceOrderId);
+      .filter(r => r && r.marketplace && r.marketplaceOrderId && r.marketplace.startsWith('amazon'));
 
     res.json({ total: invoices.length, invoiceCount: onlyInvoices.length, withMarketplace });
   } catch (err) {
