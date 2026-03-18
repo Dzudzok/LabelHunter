@@ -79,7 +79,8 @@ router.get('/', async (req, res, next) => {
         query = query.eq('status', status);
       }
       if (search) {
-        query = query.or(`invoice_number.ilike.%${search}%,doc_number.ilike.%${search}%,customer_name.ilike.%${search}%`);
+        const s = search.replace(/[%_\\'"]/g, '').substring(0, 50);
+        if (s) query = query.or(`invoice_number.ilike.%${s}%,doc_number.ilike.%${s}%,customer_name.ilike.%${s}%`);
       }
 
       const { data, error } = await query;
@@ -100,7 +101,13 @@ router.get('/', async (req, res, next) => {
 // MUST be before /:id to avoid Express matching "search" as an id
 router.get('/search', async (req, res, next) => {
   try {
-    const { invoice_number, order_number, customer_name, doc_number, date_from, date_to, status } = req.query;
+    const raw = req.query;
+    const sanitize = (v) => v ? v.replace(/[%_\\'"]/g, '').substring(0, 50) : null;
+    const invoice_number = sanitize(raw.invoice_number);
+    const order_number = sanitize(raw.order_number);
+    const customer_name = sanitize(raw.customer_name);
+    const doc_number = sanitize(raw.doc_number);
+    const { date_from, date_to, status } = raw;
 
     let query = supabase
       .from('delivery_notes')
@@ -836,7 +843,9 @@ router.get('/:id/download-label', async (req, res, next) => {
     if (error) throw error;
     if (!dn?.label_pdf_url) return res.status(404).json({ error: 'No label found' });
 
-    const filePath = path.join(__dirname, '..', dn.label_pdf_url);
+    const labelsRoot = path.resolve(__dirname, '..', 'labels');
+    const filePath = path.resolve(__dirname, '..', dn.label_pdf_url);
+    if (!filePath.startsWith(labelsRoot)) return res.status(403).json({ error: 'Forbidden' });
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });
 
     const ext = path.extname(dn.label_pdf_url).toLowerCase();
@@ -867,7 +876,9 @@ router.get('/:id/view-label', async (req, res, next) => {
     if (error) throw error;
     if (!dn?.label_pdf_url) return res.status(404).json({ error: 'No label found' });
 
-    const filePath = path.join(__dirname, '..', dn.label_pdf_url);
+    const labelsRoot = path.resolve(__dirname, '..', 'labels');
+    const filePath = path.resolve(__dirname, '..', dn.label_pdf_url);
+    if (!filePath.startsWith(labelsRoot)) return res.status(403).json({ error: 'Forbidden' });
     if (!fs.existsSync(filePath)) return res.status(404).json({ error: 'Label file not found' });
 
     const ext = path.extname(dn.label_pdf_url).toLowerCase();

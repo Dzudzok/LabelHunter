@@ -9,7 +9,17 @@ const errorHandler = require('./middleware/errorHandler');
 const app = express();
 
 // Middleware
-app.use(cors());
+const allowedOrigins = process.env.ALLOWED_ORIGINS
+  ? process.env.ALLOWED_ORIGINS.split(',')
+  : ['http://localhost:5173', 'http://localhost:4173'];
+app.use(cors({
+  origin: (origin, cb) => {
+    // Allow requests with no origin (mobile apps, server-to-server, curl)
+    if (!origin || allowedOrigins.includes(origin)) return cb(null, true);
+    cb(null, false);
+  },
+  credentials: true,
+}));
 app.use(express.json());
 
 // Serve label PDFs statically
