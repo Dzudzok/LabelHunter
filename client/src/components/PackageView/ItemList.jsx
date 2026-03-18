@@ -52,7 +52,7 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
                   {item.name || item.text}
                 </div>
                 <div className="text-sm text-theme-secondary font-mono truncate mt-0.5">
-                  {item.code}
+                  {item.ean || item.code}
                 </div>
               </div>
 
