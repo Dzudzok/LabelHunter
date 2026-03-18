@@ -93,6 +93,27 @@ export default function StatsModal({ date, onClose }) {
               </div>
             </div>
 
+            {/* Labels per minute */}
+            {(stats.labelsPerMinute || stats.currentTempo) && (
+              <div className="bg-navy-700 rounded-xl p-5 border border-navy-600">
+                <h3 className="text-base font-bold text-theme-secondary mb-3 uppercase tracking-wide">Tempo pracy</h3>
+                <div className="flex gap-8">
+                  {stats.currentTempo && (
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl font-black text-green-400">{stats.currentTempo}</div>
+                      <div className="text-theme-secondary text-sm">/ min<br/><span className="text-xs text-theme-muted">ostatnie 30 min</span></div>
+                    </div>
+                  )}
+                  {stats.labelsPerMinute && (
+                    <div className="flex items-center gap-3">
+                      <div className="text-3xl font-black text-brand-orange">{stats.labelsPerMinute}</div>
+                      <div className="text-theme-secondary text-sm">/ min<br/><span className="text-xs text-theme-muted">średnia dnia</span></div>
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
 
               {/* By status */}
@@ -153,6 +174,11 @@ export default function StatsModal({ date, onClose }) {
                             <div className="text-theme-secondary text-xs mb-1">Tiskl etikety</div>
                             <Bar value={w.labeled} max={maxWorkerLabeled} color="bg-green-500" />
                           </div>
+                          {w.labelsPerMinute && (
+                            <div className="text-xs text-theme-muted mt-1">
+                              Tempo: <span className="text-brand-orange font-bold">{w.labelsPerMinute}</span> etykiet/min
+                            </div>
+                          )}
                         </div>
                       </div>
                     ))}

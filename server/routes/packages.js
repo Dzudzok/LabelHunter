@@ -226,7 +226,40 @@ router.get('/stats', async (req, res, next) => {
     const done = (notes || []).filter(n => ['label_generated', 'shipped', 'delivered'].includes(n.status)).length;
     const pending = (notes || []).filter(n => ['pending', 'scanning', 'verified'].includes(n.status)).length;
 
-    res.json({ total, done, pending, byStatus, byShipper, workers: Object.values(workerStats), history });
+    // Calculate labels per minute (overall and per worker)
+    const labeledNotes = (notes || []).filter(n => n.label_generated_at);
+    let labelsPerMinute = null;
+    if (labeledNotes.length >= 2) {
+      const times = labeledNotes.map(n => new Date(n.label_generated_at).getTime()).sort((a, b) => a - b);
+      const spanMinutes = (times[times.length - 1] - times[0]) / 60000;
+      if (spanMinutes > 0) labelsPerMinute = Math.round((labeledNotes.length / spanMinutes) * 10) / 10;
+    }
+
+    // Current tempo: labels in last 30 minutes
+    const now = Date.now();
+    const last30 = labeledNotes.filter(n => (now - new Date(n.label_generated_at).getTime()) <= 30 * 60000);
+    const currentTempo = last30.length > 0 ? Math.round((last30.length / 30) * 10) / 10 : null;
+
+    // Per-worker labels per minute
+    const workerLabelTimes = {};
+    for (const n of labeledNotes) {
+      if (!n.label_generated_by) continue;
+      if (!workerLabelTimes[n.label_generated_by]) workerLabelTimes[n.label_generated_by] = [];
+      workerLabelTimes[n.label_generated_by].push(new Date(n.label_generated_at).getTime());
+    }
+    const workersArr = Object.values(workerStats);
+    for (const w of workersArr) {
+      const wId = Object.keys(workerStats).find(k => workerStats[k] === w);
+      const times = (workerLabelTimes[wId] || []).sort((a, b) => a - b);
+      if (times.length >= 2) {
+        const span = (times[times.length - 1] - times[0]) / 60000;
+        w.labelsPerMinute = span > 0 ? Math.round((times.length / span) * 10) / 10 : null;
+      } else {
+        w.labelsPerMinute = null;
+      }
+    }
+
+    res.json({ total, done, pending, byStatus, byShipper, workers: workersArr, history, labelsPerMinute, currentTempo });
   } catch (err) {
     next(err);
   }
