@@ -62,6 +62,8 @@ export default function Dashboard() {
     }
   }, [])
 
+  const [duplicateChoices, setDuplicateChoices] = useState(null)
+
   // Navigate by invoice/barcode value
   const navigateByCode = useCallback(async (code) => {
     const val = code.trim()
@@ -69,10 +71,13 @@ export default function Dashboard() {
     const classified = classifyBarcode(val)
     const lookupVal = classified.type === 'invoice' ? classified.value : val
     try {
-      const pkg = await getPackageByInvoice(lookupVal)
-      if (pkg) {
+      const result = await getPackageByInvoice(lookupVal)
+      if (result?.multiple) {
         setScanValue('')
-        navigate(`/package/${pkg.id}`)
+        setDuplicateChoices(result.packages)
+      } else if (result) {
+        setScanValue('')
+        navigate(`/package/${result.id}`)
       }
     } catch {}
   }, [getPackageByInvoice, navigate])
@@ -263,6 +268,44 @@ export default function Dashboard() {
       {showTransportMap && <TransportMapModal onClose={() => setShowTransportMap(false)} />}
       {showHunterManage && <HunterManageModal onClose={() => setShowHunterManage(false)} />}
       {showHunterStats && <HunterStatsModal onClose={() => setShowHunterStats(false)} />}
+
+      {/* Duplicate invoice choice dialog */}
+      {duplicateChoices && (
+        <div className="fixed inset-0 overlay-bg z-50 flex items-center justify-center">
+          <div className="bg-navy-800 border border-navy-600 rounded-xl p-6 max-w-lg w-full mx-4 shadow-2xl">
+            <h3 className="text-xl font-bold text-theme-primary mb-4">Wybierz przesyłkę</h3>
+            <p className="text-theme-secondary mb-4 text-sm">Znaleziono {duplicateChoices.length} przesyłek z tym numerem:</p>
+            <div className="flex flex-col gap-3 mb-4">
+              {duplicateChoices.map(pkg => (
+                <button
+                  key={pkg.id}
+                  onClick={() => { setDuplicateChoices(null); navigate(`/package/${pkg.id}`) }}
+                  className="bg-navy-700 hover:bg-navy-600 border border-navy-500 rounded-xl p-4 text-left transition-colors"
+                >
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <div className="text-theme-primary font-bold">{pkg.invoice_number}</div>
+                      <div className="text-theme-secondary text-sm">{pkg.customer_name}</div>
+                    </div>
+                    <div className="text-right">
+                      <span className="bg-navy-600 text-theme-secondary px-2 py-1 rounded text-xs font-bold">
+                        {pkg.transport_name || pkg.shipper_code || '-'}
+                      </span>
+                      <div className="text-theme-muted text-xs mt-1">{pkg.status}</div>
+                    </div>
+                  </div>
+                </button>
+              ))}
+            </div>
+            <button
+              onClick={() => setDuplicateChoices(null)}
+              className="w-full bg-navy-700 hover:bg-navy-600 text-theme-secondary py-3 rounded-lg font-semibold transition-colors"
+            >
+              Anuluj
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Stats bar */}
       <div className="px-6 pt-4">

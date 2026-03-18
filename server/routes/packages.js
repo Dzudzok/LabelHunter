@@ -286,20 +286,43 @@ router.get('/by-invoice/:invoice', async (req, res, next) => {
       }
     }
 
-    let dn = null;
+    let matches = [];
     for (const candidate of candidates) {
       const { data } = await supabase
         .from('delivery_notes')
         .select('*')
         .eq('invoice_number', candidate)
-        .maybeSingle();
-      if (data) { dn = data; break; }
+        .eq('status', 'pending');
+      if (data && data.length > 0) {
+        matches = data;
+        break;
+      }
     }
 
-    if (!dn) {
+    // If no pending, try all statuses
+    if (matches.length === 0) {
+      for (const candidate of candidates) {
+        const { data } = await supabase
+          .from('delivery_notes')
+          .select('*')
+          .eq('invoice_number', candidate);
+        if (data && data.length > 0) {
+          matches = data;
+          break;
+        }
+      }
+    }
+
+    if (matches.length === 0) {
       return res.status(404).json({ error: 'Package not found for this invoice' });
     }
 
+    // If multiple matches, return list for user to choose
+    if (matches.length > 1) {
+      return res.json({ multiple: true, packages: matches });
+    }
+
+    const dn = matches[0];
     const { data: items, error: itemsError } = await supabase
       .from('delivery_note_items')
       .select('*')
