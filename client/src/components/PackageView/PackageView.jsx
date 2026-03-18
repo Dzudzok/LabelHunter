@@ -114,7 +114,7 @@ export default function PackageView() {
 
     if (classified.type === 'product') {
       const item = goodsItems.find(
-        i => i.code === classified.value || i.ean === classified.value
+        i => i.code === classified.value || (i.ean && i.ean.split(',').includes(classified.value))
       )
       if (item) {
         try {

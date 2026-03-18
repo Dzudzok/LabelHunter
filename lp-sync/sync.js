@@ -164,6 +164,23 @@ async function main() {
       goodsByShipment[g.fk_shipment].push(g);
     }
 
+    // 3b. Batch-fetch goods_alternative (EAN barcodes) for all goods
+    const allGoodsPks = allGoods.map(g => g.pk_goods);
+    const altByGoods = {};
+    if (allGoodsPks.length > 0) {
+      for (let i = 0; i < allGoodsPks.length; i += 500) {
+        const chunk = allGoodsPks.slice(i, i + 500);
+        const { recordset: alts } = await pool.request().query(`
+          SELECT fk_goods, barcode FROM dbo.goods_alternative
+          WHERE fk_goods IN (${chunk.join(',')})
+        `);
+        for (const a of alts) {
+          if (!altByGoods[a.fk_goods]) altByGoods[a.fk_goods] = [];
+          altByGoods[a.fk_goods].push(a.barcode);
+        }
+      }
+    }
+
     // 4. Batch-fetch barcodes (parcel barcodes)
     const { recordset: allBarcodes } = await pool.request().query(`
       SELECT
@@ -271,22 +288,26 @@ async function main() {
 
         // Insert goods as delivery_note_items
         if (goods.length > 0) {
-          const itemRecords = goods.map(g => ({
-            delivery_note_id: inserted.id,
-            nextis_item_id: null,
-            item_type: 'goods',
-            code: (g.barcode || '').trim(),
-            brand: '',
-            text: (g.name || '').trim(),
-            note: '',
-            qty: g.quantity || 0,
-            price_unit: g.unitPrice || 0,
-            price_total: (g.unitPrice || 0) * (g.quantity || 0),
-            price_unit_inc_vat: 0,
-            price_total_inc_vat: 0,
-            vat_rate: 0,
-            unit_weight_netto: 0,
-          }));
+          const itemRecords = goods.map(g => {
+            const eans = altByGoods[g.pk_goods] || [];
+            return {
+              delivery_note_id: inserted.id,
+              nextis_item_id: null,
+              item_type: 'goods',
+              code: (g.barcode || '').trim(),
+              ean: eans.join(',') || null,
+              brand: '',
+              text: (g.name || '').trim(),
+              note: '',
+              qty: g.quantity || 0,
+              price_unit: g.unitPrice || 0,
+              price_total: (g.unitPrice || 0) * (g.quantity || 0),
+              price_unit_inc_vat: 0,
+              price_total_inc_vat: 0,
+              vat_rate: 0,
+              unit_weight_netto: 0,
+            };
+          });
 
           const { error: itemsError } = await supabase
             .from('delivery_note_items')
