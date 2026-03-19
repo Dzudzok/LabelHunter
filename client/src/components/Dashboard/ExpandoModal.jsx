@@ -3,6 +3,7 @@ import { api } from '../../services/api'
 
 export default function ExpandoModal({ date, onClose }) {
   const [carrier, setCarrier] = useState('GLS')
+  const [shipperFilter, setShipperFilter] = useState('')
   const [selectedDate, setSelectedDate] = useState(date)
   const [invoices, setInvoices] = useState(null)
   const [loading, setLoading] = useState(false)
@@ -27,13 +28,15 @@ export default function ExpandoModal({ date, onClose }) {
     }
   }
 
+  const filtered = invoices?.withMarketplace?.filter(r => !shipperFilter || r.shipper === shipperFilter) || []
+
   const handleSend = async () => {
-    if (!invoices?.withMarketplace?.length) return
+    if (!filtered.length) return
     setSending(true)
     setError('')
     try {
       const res = await api.post('/packages/expando-fulfillment', {
-        rows: invoices.withMarketplace,
+        rows: filtered,
         carrier,
         date: selectedDate,
       }, { timeout: 300000 })
@@ -87,6 +90,27 @@ export default function ExpandoModal({ date, onClose }) {
             </button>
           </div>
 
+          {/* Shipper filter */}
+          {invoices?.shippers?.length > 0 && !results && (
+            <div className="flex gap-2 flex-wrap items-center">
+              <span className="text-theme-muted text-xs">Przewoźnik:</span>
+              <button
+                onClick={() => setShipperFilter('')}
+                className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${!shipperFilter ? 'bg-blue-600 text-white' : 'bg-navy-700 text-theme-secondary hover:bg-navy-600'}`}
+              >Wszystkie</button>
+              {invoices.shippers.map(s => (
+                <button
+                  key={s}
+                  onClick={() => { setShipperFilter(s); setCarrier(s) }}
+                  className={`px-3 py-1 rounded-lg text-xs font-bold transition-colors ${shipperFilter === s ? 'bg-blue-600 text-white' : 'bg-navy-700 text-theme-secondary hover:bg-navy-600'}`}
+                >{s} ({invoices.withMarketplace.filter(r => r.shipper === s).length})</button>
+              ))}
+              <span className="text-theme-muted text-xs ml-2">
+                Bez tracking: {invoices.withMarketplace.filter(r => !r.shipper).length}
+              </span>
+            </div>
+          )}
+
           {error && (
             <div className="bg-red-900/40 border border-red-600 rounded-lg p-3 text-red-300 text-sm">{error}</div>
           )}
@@ -103,11 +127,12 @@ export default function ExpandoModal({ date, onClose }) {
             <>
               <div className="flex gap-4 text-sm">
                 <span className="text-theme-secondary">Faktur razem: <strong className="text-theme-primary">{invoices.total}</strong></span>
-                <span className="text-theme-secondary">Z marketplace: <strong className="text-green-400">{invoices.withMarketplace.length}</strong></span>
+                <span className="text-theme-secondary">Amazon: <strong className="text-green-400">{invoices.withMarketplace.length}</strong></span>
+                {shipperFilter && <span className="text-theme-secondary">Filtr ({shipperFilter}): <strong className="text-blue-400">{filtered.length}</strong></span>}
               </div>
 
-              {invoices.withMarketplace.length === 0 ? (
-                <div className="text-center py-4 text-theme-muted">Brak faktur z danymi marketplace na ten dzień</div>
+              {filtered.length === 0 ? (
+                <div className="text-center py-4 text-theme-muted">Brak faktur do wysłania{shipperFilter ? ` dla ${shipperFilter}` : ''}</div>
               ) : (
                 <>
                   <div className="max-h-60 overflow-y-auto border border-navy-600 rounded-lg">
@@ -115,20 +140,22 @@ export default function ExpandoModal({ date, onClose }) {
                       <thead>
                         <tr className="text-theme-muted text-left border-b border-navy-600 text-xs uppercase bg-navy-700 sticky top-0">
                           <th className="px-3 py-2">FV</th>
+                          <th className="px-3 py-2">Przewoźnik</th>
                           <th className="px-3 py-2">Marketplace</th>
                           <th className="px-3 py-2">Order ID</th>
                         </tr>
                       </thead>
                       <tbody>
-                        {invoices.withMarketplace.slice(0, 100).map((r, i) => (
+                        {filtered.slice(0, 100).map((r, i) => (
                           <tr key={i} className="border-b border-navy-700/50">
                             <td className="px-3 py-1.5 text-theme-primary font-mono text-xs">{r.invoiceNumber}</td>
+                            <td className="px-3 py-1.5 text-theme-secondary text-xs">{r.shipper || '—'}</td>
                             <td className="px-3 py-1.5 text-theme-secondary text-xs">{r.marketplace}</td>
                             <td className="px-3 py-1.5 text-theme-secondary font-mono text-xs">{r.marketplaceOrderId}</td>
                           </tr>
                         ))}
-                        {invoices.withMarketplace.length > 100 && (
-                          <tr><td colSpan={3} className="px-3 py-2 text-theme-muted text-center text-xs">...i {invoices.withMarketplace.length - 100} więcej</td></tr>
+                        {filtered.length > 100 && (
+                          <tr><td colSpan={4} className="px-3 py-2 text-theme-muted text-center text-xs">...i {filtered.length - 100} więcej</td></tr>
                         )}
                       </tbody>
                     </table>
@@ -136,12 +163,15 @@ export default function ExpandoModal({ date, onClose }) {
 
                   <button
                     onClick={handleSend}
-                    disabled={sending}
+                    disabled={sending || !shipperFilter}
                     className="bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl text-lg font-bold transition-colors disabled:opacity-50"
                   >
                     {sending
-                      ? `Wysyłam... (${invoices.withMarketplace.length} pozycji)`
-                      : `Wyślij do Expando — ${carrier} (${invoices.withMarketplace.length})`}
+                      ? `Wysyłam... (${filtered.length} pozycji)`
+                      : shipperFilter
+                        ? `Wyślij do Expando — ${carrier} (${filtered.length})`
+                        : 'Wybierz przewoźnika powyżej'
+                    }
                   </button>
                 </>
               )}

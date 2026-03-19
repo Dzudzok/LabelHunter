@@ -1119,7 +1119,29 @@ router.post('/expando-fetch-invoices', async (req, res, next) => {
       })
       .filter(r => r && r.marketplace && r.marketplaceOrderId && r.marketplace.startsWith('amazon'));
 
-    res.json({ total: invoices.length, invoiceCount: onlyInvoices.length, withMarketplace });
+    // Enrich with shipper_code from Supabase
+    const invoiceNums = [...new Set(withMarketplace.map(r => r.invoiceNumber))];
+    const shipperMap = {};
+    for (let i = 0; i < invoiceNums.length; i += 100) {
+      const chunk = invoiceNums.slice(i, i + 100);
+      const { data: dns } = await supabase
+        .from('delivery_notes')
+        .select('invoice_number, shipper_code, tracking_number')
+        .in('invoice_number', chunk)
+        .not('tracking_number', 'is', null);
+      for (const dn of (dns || [])) {
+        shipperMap[dn.invoice_number] = dn.shipper_code;
+      }
+    }
+    const enriched = withMarketplace.map(r => ({
+      ...r,
+      shipper: shipperMap[r.invoiceNumber] || null,
+    }));
+
+    // Get unique shippers for filter
+    const shippers = [...new Set(enriched.filter(r => r.shipper).map(r => r.shipper))].sort();
+
+    res.json({ total: invoices.length, invoiceCount: onlyInvoices.length, withMarketplace: enriched, shippers });
   } catch (err) {
     next(err);
   }
