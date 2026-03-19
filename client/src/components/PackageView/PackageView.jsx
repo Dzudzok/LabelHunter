@@ -592,9 +592,9 @@ export default function PackageView() {
             )}
 
             {labelError && (
-              <div className="bg-red-900/40 border border-red-600 rounded-xl p-4 shrink-0">
-                <div className="text-red-400 font-bold text-base mb-1">Błąd generowania etykiety (LP API):</div>
-                <pre className="text-red-300 text-xs whitespace-pre-wrap break-all">{labelError}</pre>
+              <div className="bg-red-100 dark:bg-red-900/40 border border-red-400 dark:border-red-600 rounded-xl p-4 shrink-0">
+                <div className="text-red-800 dark:text-red-400 font-bold text-base mb-1">Błąd generowania etykiety (LP API):</div>
+                <pre className="text-red-700 dark:text-red-300 text-sm whitespace-pre-wrap break-all">{labelError}</pre>
               </div>
             )}
 
