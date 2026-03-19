@@ -167,9 +167,8 @@ router.get('/stats', async (req, res, next) => {
     while (true) {
       const { data, error } = await supabase
         .from('delivery_notes')
-        .select('id, status, shipper_code, transport_name, invoice_number, doc_number, customer_name, scanned_by, scanned_at, label_generated_by, label_generated_at')
-        .gte('date_issued', from)
-        .lte('date_issued', to)
+        .select('id, status, shipper_code, transport_name, invoice_number, doc_number, customer_name, scanned_by, scanned_at, label_generated_by, label_generated_at, date_issued')
+        .or(`and(date_issued.gte.${from},date_issued.lte.${to}),and(label_generated_at.gte.${from},label_generated_at.lte.${to})`)
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
       if (error) throw error;
       if (!data || data.length === 0) break;
