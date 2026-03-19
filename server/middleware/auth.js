@@ -29,6 +29,9 @@ function requireAuth(req, res, next) {
     '/labels',
   ];
 
+  // Also allow view-label endpoints (used for printing via QZ Tray/iframe)
+  if (req.path.match(/^\/api\/packages\/\d+\/view-label/)) return next();
+
   const isPublic = publicPrefixes.some(prefix => req.path.startsWith(prefix));
   if (isPublic) return next();
 
