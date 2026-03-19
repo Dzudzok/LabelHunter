@@ -206,9 +206,9 @@ export default function PackageView() {
 
   // --- Multi-parcel ---
   const addParcel = () => {
-    const autoW = calcAutoWeight(pkg?.items || [])
+    const totalW = pkg?.weight ? parseFloat(pkg.weight) : calcAutoWeight(pkg?.items || [])
     const count = parcels.length + 1
-    const splitW = Math.round((autoW / count) * 100) / 100
+    const splitW = Math.round((totalW / count) * 100) / 100
     setParcels(Array(count).fill(null).map(() => ({ weight: splitW })))
   }
 
@@ -473,23 +473,23 @@ export default function PackageView() {
                   <div className="text-lg font-bold text-theme-primary mb-2">
                     Paczki ({parcels.length} szt.) — {totalWeight.toFixed(2)} kg
                   </div>
-                  <div className="flex flex-col gap-2 flex-1">
+                  <div className="flex flex-col gap-2 flex-1 overflow-y-auto max-h-60">
                     {parcels.map((parcel, idx) => (
-                      <div key={idx} className="flex items-center gap-2">
-                        <span className="text-theme-secondary text-base">#{idx + 1}</span>
+                      <div key={idx} className="flex items-center gap-2 shrink-0">
+                        <span className="text-theme-secondary text-sm">#{idx + 1}</span>
                         <input
                           type="number"
                           min="0.1"
                           step="0.1"
                           value={parcel.weight}
                           onChange={e => updateParcelWeight(idx, e.target.value)}
-                          className="w-24 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-3 py-2 text-base outline-none focus:border-brand-orange"
+                          className="w-20 bg-navy-900 border border-navy-500 text-theme-primary rounded-lg px-2 py-1.5 text-sm outline-none focus:border-brand-orange"
                         />
-                        <span className="text-theme-secondary text-sm">kg</span>
+                        <span className="text-theme-secondary text-xs">kg</span>
                         {parcels.length > 1 && (
                           <button
                             onClick={() => removeParcel(idx)}
-                            className="text-red-400 hover:text-red-300 text-xl leading-none px-1"
+                            className="text-red-400 hover:text-red-300 text-lg leading-none px-1"
                           >
                             ×
                           </button>
