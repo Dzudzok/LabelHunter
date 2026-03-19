@@ -5,6 +5,7 @@ const cors = require('cors');
 const path = require('path');
 const fs = require('fs');
 const errorHandler = require('./middleware/errorHandler');
+const { requireAuth } = require('./middleware/auth');
 
 const app = express();
 
@@ -29,7 +30,11 @@ if (!fs.existsSync(labelsDir)) {
 }
 app.use('/labels', express.static(labelsDir));
 
+// Auth middleware — must be before protected routes, after static files
+app.use(requireAuth);
+
 // Routes
+app.use('/api/auth', require('./routes/auth'));
 app.use('/api/workers', require('./routes/workers'));
 app.use('/api/packages', require('./routes/packages'));
 app.use('/api/nextis', require('./routes/nextis'));
