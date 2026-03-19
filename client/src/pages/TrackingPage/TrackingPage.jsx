@@ -73,9 +73,14 @@ export default function TrackingPage() {
 
   const pkg = data?.package
   const items = data?.items || []
-  const trackingItems = data?.tracking?.data?.[0]?.trackingItems
+  const rawTrackingItems = data?.tracking?.data?.[0]?.trackingItems
     || data?.tracking?.trackingItems
     || []
+  const trackingItems = [...rawTrackingItems].sort((a, b) => {
+    const da = a.date ? new Date(a.date).getTime() : 0
+    const db = b.date ? new Date(b.date).getTime() : 0
+    return db - da // newest first
+  })
   const carrierTrackingUrl = data?.tracking?.data?.[0]?.trackingUrl || pkg?.tracking_url
   const statusInfo = STATUS_CONFIG[pkg?.status] || STATUS_CONFIG.pending
 
