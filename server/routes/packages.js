@@ -66,14 +66,15 @@ router.get('/', async (req, res, next) => {
     while (true) {
       let query = supabase
         .from('delivery_notes')
-        .select('id, invoice_number, order_number, doc_number, date_issued, status, customer_name, customer_city, customer_country, shipper_code, shipper_service, transport_name, tracking_number, lp_shipment_id, label_pdf_url, scanned_by, scanned_at, delivery_note_items(id, item_type)')
+        .select('id, invoice_number, order_number, doc_number, date_issued, status, customer_name, customer_city, customer_country, shipper_code, shipper_service, transport_name, tracking_number, lp_shipment_id, label_pdf_url, scanned_by, scanned_at, label_generated_at, imported_at, delivery_note_items(id, item_type)')
         .order('date_issued', { ascending: false })
         .range(page * PAGE_SIZE, (page + 1) * PAGE_SIZE - 1);
 
       if (date) {
         const dayStart = `${date}T00:00:00.000Z`;
         const dayEnd = `${date}T23:59:59.999Z`;
-        query = query.gte('date_issued', dayStart).lte('date_issued', dayEnd);
+        // Fetch packages issued on this date OR with label generated on this date
+        query = query.or(`and(date_issued.gte.${dayStart},date_issued.lte.${dayEnd}),and(label_generated_at.gte.${dayStart},label_generated_at.lte.${dayEnd})`);
       }
       if (status) {
         query = query.eq('status', status);

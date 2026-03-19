@@ -152,10 +152,13 @@ export default function Dashboard() {
     ['pending', 'scanning', 'verified'].includes(p.status)
   )
 
-  // Right column: today's sent packages OR search results
-  const sentPackagesToday = packages.filter(p =>
-    ['label_generated', 'shipped', 'delivered'].includes(p.status)
-  )
+  // Right column: packages with label generated on selected date
+  const sentPackagesToday = packages.filter(p => {
+    if (!['label_generated', 'shipped', 'delivered'].includes(p.status)) return false
+    if (!p.label_generated_at) return false
+    const labelDate = p.label_generated_at.split('T')[0]
+    return labelDate === selectedDate
+  })
   const rightPackages = searchResults !== null ? searchResults : sentPackagesToday
 
   const initials = worker?.name
@@ -318,7 +321,7 @@ export default function Dashboard() {
 
       {/* Stats bar */}
       <div className="px-6 pt-4">
-        <StatsBar packages={packages} />
+        <StatsBar packages={packages} selectedDate={selectedDate} />
       </div>
 
       {/* 2-column layout */}

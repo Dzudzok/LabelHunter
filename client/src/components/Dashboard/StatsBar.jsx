@@ -1,7 +1,9 @@
-export default function StatsBar({ packages }) {
-  const sent = packages.filter(p =>
-    ['shipped', 'delivered'].includes(p.status)
-  ).length
+export default function StatsBar({ packages, selectedDate }) {
+  const sent = packages.filter(p => {
+    if (!['label_generated', 'shipped', 'delivered'].includes(p.status)) return false
+    if (!p.label_generated_at) return false
+    return p.label_generated_at.split('T')[0] === selectedDate
+  }).length
   const pending = packages.filter(p =>
     ['pending', 'scanning'].includes(p.status)
   ).length
