@@ -140,10 +140,10 @@ export default function HunterPanel({ packageId, workerId, itemsCount }) {
           <button
             key={h.id}
             onClick={() => handleAssign(h.id)}
-            className={`rounded-lg text-base font-semibold transition-colors flex items-center justify-center px-1 ${
+            className={`rounded-xl text-xl font-black tracking-wide transition-colors flex items-center justify-center py-3 ${
               selectedHunter === h.id
-                ? 'bg-brand-orange text-white'
-                : 'bg-navy-800 border border-navy-600 text-theme-secondary hover:text-theme-primary hover:border-brand-orange'
+                ? 'bg-brand-orange text-white shadow-lg shadow-orange-900/50'
+                : 'bg-navy-800 text-theme-primary hover:bg-navy-600 hover:text-white'
             }`}
           >
             {h.name}
