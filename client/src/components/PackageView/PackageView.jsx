@@ -608,6 +608,21 @@ export default function PackageView() {
                 >
                   Wysłana
                 </button>
+                <button
+                  onClick={async () => {
+                    if (!confirm('Stornovat tuto zásilku? Bude označena jako zrušená.')) return
+                    try {
+                      await api.put(`/packages/${pkg.id}/status`, { status: 'cancelled', workerId: worker?.id })
+                      navigate('/')
+                    } catch (err) {
+                      console.error('Storno error:', err)
+                    }
+                  }}
+                  className="bg-red-800 hover:bg-red-700 text-red-200 hover:text-white px-4 py-5 rounded-xl text-sm font-semibold transition-colors whitespace-nowrap"
+                  title="Stornovat zásilku"
+                >
+                  Storno
+                </button>
               </div>
             )}
 

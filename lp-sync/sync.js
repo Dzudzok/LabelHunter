@@ -417,6 +417,40 @@ async function main() {
       }
     }
 
+    // 6c. Storno cancelled packages in MSSQL (set state 3 = Stornovaný)
+    console.log('[LP Sync] Checking for cancelled packages to storno in MSSQL...');
+    let cancelledLpIds = [];
+    let cancelPage = 0;
+    while (true) {
+      const { data, error: cErr } = await supabase
+        .from('delivery_notes')
+        .select('id, lp_id')
+        .eq('source', 'lp')
+        .eq('status', 'cancelled')
+        .not('lp_id', 'is', null)
+        .range(cancelPage * SB_PAGE, (cancelPage + 1) * SB_PAGE - 1);
+      if (cErr) { console.error('[LP Sync] Cancelled query error:', cErr.message); break; }
+      if (!data || data.length === 0) break;
+      cancelledLpIds = cancelledLpIds.concat(data);
+      if (data.length < SB_PAGE) break;
+      cancelPage++;
+    }
+
+    if (cancelledLpIds.length > 0) {
+      const cancelLpList = cancelledLpIds.map(d => d.lp_id).join(',');
+      // Only update if still in state 4 (not already stornoed)
+      const result = await pool.request().query(`
+        UPDATE dbo.shipment SET fk_shipment_state = 3
+        WHERE pk_shipment IN (${cancelLpList}) AND fk_shipment_state = 4
+      `);
+      const updated = result.rowsAffected[0] || 0;
+      if (updated > 0) {
+        console.log(`[LP Sync] Stornoed ${updated} cancelled shipments in MSSQL (state → 3)`);
+      } else {
+        console.log('[LP Sync] No cancelled packages to storno.');
+      }
+    }
+
     // 7. Send pending shipment emails from BOLOPC (SMTP works here, not from Render)
     if (DISABLE_EMAIL) {
       console.log('[LP Sync] Email sending disabled (DISABLE_EMAIL=true in config.js)');
