@@ -43,6 +43,9 @@ export default function PackageView() {
 
   // Unknown product scan state
   const [unknownScan, setUnknownScan] = useState(null)
+  // Last scanned item + scan quantity
+  const [lastScannedId, setLastScannedId] = useState(null)
+  const [scanQty, setScanQty] = useState(1)
 
   function calcAutoWeight(items) {
     let w = 0
@@ -131,7 +134,10 @@ export default function PackageView() {
         }
 
         try {
-          await updateItemScan(pkg.id, item.id, currentQty + 1, worker?.id)
+          const addQty = scanQty || 1
+          await updateItemScan(pkg.id, item.id, currentQty + addQty, worker?.id)
+          setLastScannedId(item.id)
+          if (scanQty > 1) setScanQty(1) // reset to 1 after bulk scan
           fetchPackage()
         } catch (err) {
           console.error('Scan error:', err)
@@ -514,12 +520,21 @@ export default function PackageView() {
           {/* RIGHT SIDE - 50% */}
           <div className="flex-1 flex flex-col gap-3 overflow-y-auto pl-1">
 
-            <input
-              ref={scanInputRef}
-              autoFocus
-              type="text"
-              placeholder="Skanuj produkt..."
-              className="w-full bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-3 text-xl text-theme-primary placeholder-theme-muted outline-none shrink-0"
+            <div className="flex gap-2 shrink-0">
+              <input
+                type="number"
+                min="1"
+                value={scanQty}
+                onChange={e => setScanQty(Math.max(1, parseInt(e.target.value) || 1))}
+                className={`w-16 bg-navy-900 border-2 rounded-xl px-2 py-3 text-xl text-center font-bold outline-none ${scanQty > 1 ? 'border-yellow-500 text-yellow-400' : 'border-navy-600 text-theme-secondary'}`}
+                title="Ilość przy następnym skanie"
+              />
+              <input
+                ref={scanInputRef}
+                autoFocus
+                type="text"
+                placeholder="Skanuj produkt..."
+                className="flex-1 bg-navy-900 border-2 border-navy-600 focus:border-brand-orange rounded-xl px-4 py-3 text-xl text-theme-primary placeholder-theme-muted outline-none"
               onKeyDown={(e) => {
                 if (e.key === 'Enter' && e.target.value.trim()) {
                   handleScan(e.target.value.trim())
@@ -527,6 +542,7 @@ export default function PackageView() {
                 }
               }}
             />
+            </div>
 
             {/* Shipper override */}
             {!labelData && (
@@ -666,7 +682,7 @@ export default function PackageView() {
               </span>
             </div>
 
-            <ItemList items={pkg.items || []} onSkipItem={handleSkipItem} onScanItem={handleManualScan} />
+            <ItemList items={pkg.items || []} onSkipItem={handleSkipItem} onScanItem={handleManualScan} lastScannedId={lastScannedId} />
           </div>
       </div>
 

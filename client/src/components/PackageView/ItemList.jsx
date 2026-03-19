@@ -1,6 +1,6 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 
-export default function ItemList({ items, onSkipItem, onScanItem }) {
+export default function ItemList({ items, onSkipItem, onScanItem, lastScannedId }) {
   const goodsItems = items.filter(i => i.item_type === 'goods')
 
   if (goodsItems.length === 0) {
@@ -11,16 +11,32 @@ export default function ItemList({ items, onSkipItem, onScanItem }) {
     )
   }
 
+  // Sort: last scanned on top, then incomplete first, then by original order
+  const sorted = [...goodsItems].sort((a, b) => {
+    if (a.id === lastScannedId) return -1
+    if (b.id === lastScannedId) return 1
+    const aComplete = (parseFloat(a.scanned_qty) || 0) >= (parseFloat(a.qty) || 1) || a.scan_skipped
+    const bComplete = (parseFloat(b.scanned_qty) || 0) >= (parseFloat(b.qty) || 1) || b.scan_skipped
+    if (aComplete !== bComplete) return aComplete ? 1 : -1
+    return 0
+  })
+
   return (
     <div className="flex flex-col gap-2">
-      {goodsItems.map(item => (
-        <ItemRow key={item.id} item={item} onSkipItem={onSkipItem} onScanItem={onScanItem} />
+      {sorted.map(item => (
+        <ItemRow
+          key={item.id}
+          item={item}
+          onSkipItem={onSkipItem}
+          onScanItem={onScanItem}
+          isLastScanned={item.id === lastScannedId}
+        />
       ))}
     </div>
   )
 }
 
-function ItemRow({ item, onSkipItem, onScanItem }) {
+function ItemRow({ item, onSkipItem, onScanItem, isLastScanned }) {
   const scanned = parseFloat(item.scanned_qty) || 0
   const total = parseFloat(item.qty) || 1
   const isSkipped = item.scan_skipped
@@ -28,6 +44,14 @@ function ItemRow({ item, onSkipItem, onScanItem }) {
   const isPartial = scanned > 0 && scanned < total && !isSkipped
   const [showInput, setShowInput] = useState(false)
   const [inputVal, setInputVal] = useState('')
+  const rowRef = useRef(null)
+
+  // Scroll into view when this item is just scanned
+  useEffect(() => {
+    if (isLastScanned && rowRef.current) {
+      rowRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+    }
+  }, [isLastScanned])
 
   const handleSetQty = () => {
     const val = parseInt(inputVal)
@@ -40,8 +64,11 @@ function ItemRow({ item, onSkipItem, onScanItem }) {
 
   return (
     <div
-      className={`rounded-xl px-4 py-3 border-2 transition-colors ${
-        isComplete
+      ref={rowRef}
+      className={`rounded-xl px-4 py-3 border-2 transition-all ${
+        isLastScanned && !isComplete
+          ? 'bg-blue-900/40 border-blue-500 ring-2 ring-blue-400/50'
+          : isComplete
           ? 'bg-green-900/30 border-green-600'
           : isPartial
           ? 'bg-yellow-900/30 border-yellow-600'
