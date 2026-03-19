@@ -356,7 +356,7 @@ export default function Dashboard() {
               </div>
             )}
             {pendingPackages.map(pkg => (
-              <PackageCard key={pkg.id} pkg={pkg} />
+              <PackageCard key={pkg.id} pkg={pkg} onRefresh={() => fetchPackages(selectedDate)} />
             ))}
           </div>
         </div>
@@ -411,7 +411,7 @@ export default function Dashboard() {
               </div>
             )}
             {!searchLoading && rightPackages.map(pkg => (
-              <PackageCard key={pkg.id} pkg={pkg} />
+              <PackageCard key={pkg.id} pkg={pkg} onRefresh={() => fetchPackages(selectedDate)} />
             ))}
           </div>
         </div>

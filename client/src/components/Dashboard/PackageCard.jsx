@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom'
+import { api } from '../../services/api'
 
 const STATUS_COLORS = {
   pending: 'border-red-500',
@@ -33,8 +34,19 @@ const STATUS_BG = {
   problem: 'bg-red-700/20 text-red-500',
 }
 
-export default function PackageCard({ pkg }) {
+export default function PackageCard({ pkg, onRefresh }) {
   const navigate = useNavigate()
+
+  const handleStorno = async (e) => {
+    e.stopPropagation()
+    if (!confirm(`Stornovat zásilku ${pkg.invoice_number}?`)) return
+    try {
+      await api.put(`/packages/${pkg.id}/status`, { status: 'cancelled' })
+      if (onRefresh) onRefresh()
+    } catch (err) {
+      console.error('Storno error:', err)
+    }
+  }
 
   const itemCount = pkg.delivery_note_items
     ? pkg.delivery_note_items.filter(i => i.item_type === 'goods').length
@@ -82,6 +94,15 @@ export default function PackageCard({ pkg }) {
           ? new Date(pkg.imported_at).toLocaleTimeString('cs-CZ', { hour: '2-digit', minute: '2-digit' })
           : ''}
       </div>
+
+      {/* Storno button - only for pending */}
+      {pkg.status === 'pending' && (
+        <button
+          onClick={handleStorno}
+          className="text-red-500/50 hover:text-red-400 hover:bg-red-900/30 rounded-lg p-1 text-xs shrink-0 transition-colors"
+          title="Stornovat"
+        >✕</button>
+      )}
     </button>
   )
 }
