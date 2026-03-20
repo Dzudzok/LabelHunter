@@ -81,7 +81,7 @@ router.get('/', async (req, res, next) => {
       }
       if (search) {
         const s = search.replace(/[%_\\'"]/g, '').substring(0, 50);
-        if (s) query = query.or(`invoice_number.ilike.%${s}%,doc_number.ilike.%${s}%,customer_name.ilike.%${s}%`);
+        if (s) query = query.or(`invoice_number.ilike.%${s}%,doc_number.ilike.%${s}%,customer_name.ilike.%${s}%,tracking_number.ilike.%${s}%`);
       }
 
       const { data, error } = await query;
