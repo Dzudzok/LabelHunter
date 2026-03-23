@@ -6,10 +6,16 @@ export default function ExpandoModal({ date, onClose }) {
   const [shipperFilter, setShipperFilter] = useState('')
   const [selectedDate, setSelectedDate] = useState(date)
   const [invoices, setInvoices] = useState(null)
+  const [fromCache, setFromCache] = useState(false)
   const [loading, setLoading] = useState(false)
   const [sending, setSending] = useState(false)
   const [results, setResults] = useState(null)
   const [error, setError] = useState('')
+
+  const clearResults = () => {
+    setResults(null)
+    setShipperFilter('')
+  }
 
   const fetchInvoices = async () => {
     setLoading(true)
@@ -21,6 +27,7 @@ export default function ExpandoModal({ date, onClose }) {
         date: selectedDate,
       }, { timeout: 180000 })
       setInvoices(res.data)
+      setFromCache(!!res.data.fromCache)
     } catch (err) {
       setError(err.response?.data?.error || err.message)
     } finally {
@@ -128,6 +135,7 @@ export default function ExpandoModal({ date, onClose }) {
               <div className="flex gap-4 text-sm">
                 <span className="text-theme-secondary">Faktur razem: <strong className="text-theme-primary">{invoices.total}</strong></span>
                 <span className="text-theme-secondary">Amazon: <strong className="text-green-400">{invoices.withMarketplace.length}</strong></span>
+                {fromCache && <span className="text-yellow-400 text-xs">(z cache - 5 min)</span>}
                 {shipperFilter && <span className="text-theme-secondary">Filtr ({shipperFilter}): <strong className="text-blue-400">{filtered.length}</strong></span>}
               </div>
 
@@ -181,6 +189,12 @@ export default function ExpandoModal({ date, onClose }) {
           {/* Results */}
           {results && (
             <>
+              <button
+                onClick={clearResults}
+                className="bg-blue-600 hover:bg-blue-500 text-white font-bold px-5 py-2 rounded-lg text-sm transition-colors self-start"
+              >
+                &larr; Wróć do listy (wybierz innego przewoźnika)
+              </button>
               <div className="grid grid-cols-3 gap-3">
                 <div className="bg-green-900/40 border border-green-700 rounded-lg p-3 text-center">
                   <div className="text-2xl font-black text-green-400">{results.summary.ok}</div>

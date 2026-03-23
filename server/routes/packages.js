@@ -1069,11 +1069,21 @@ router.get('/:id/history', async (req, res, next) => {
   }
 });
 
+// Cache for Nextis invoice responses (5 min TTL)
+const expandoNextisCache = new Map();
+const EXPANDO_CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
 // POST /expando-fetch-invoices - fetch invoices from Nextis API for a date
 router.post('/expando-fetch-invoices', async (req, res, next) => {
   try {
     const { date } = req.body;
     const d = date || new Date().toISOString().split('T')[0];
+
+    // Check cache
+    const cached = expandoNextisCache.get(d);
+    if (cached && (Date.now() - cached.timestamp < EXPANDO_CACHE_TTL)) {
+      return res.json({ ...cached.data, fromCache: true });
+    }
 
     const NEXTIS_TOKEN = process.env.NEXTIS_TOKEN_ADMIN;
     const NEXTIS_URL = process.env.NEXTIS_API_URL || 'https://api.mroauto.nextis.cz';
@@ -1141,7 +1151,12 @@ router.post('/expando-fetch-invoices', async (req, res, next) => {
     // Get unique shippers for filter
     const shippers = [...new Set(enriched.filter(r => r.shipper).map(r => r.shipper))].sort();
 
-    res.json({ total: invoices.length, invoiceCount: onlyInvoices.length, withMarketplace: enriched, shippers });
+    const result = { total: invoices.length, invoiceCount: onlyInvoices.length, withMarketplace: enriched, shippers };
+
+    // Store in cache
+    expandoNextisCache.set(d, { data: result, timestamp: Date.now() });
+
+    res.json(result);
   } catch (err) {
     next(err);
   }
