@@ -37,21 +37,34 @@ export default function ExpandoModal({ date, onClose }) {
 
   const filtered = invoices?.withMarketplace?.filter(r => !shipperFilter || r.shipper === shipperFilter) || []
 
+  const [sendProgress, setSendProgress] = useState('')
+
   const handleSend = async () => {
     if (!filtered.length) return
     setSending(true)
     setError('')
+    const BATCH_SIZE = 200
+    const allResults = []
     try {
-      const res = await api.post('/packages/expando-fulfillment', {
-        rows: filtered,
-        carrier,
-        date: selectedDate,
-      }, { timeout: 300000 })
-      setResults(res.data)
+      for (let i = 0; i < filtered.length; i += BATCH_SIZE) {
+        const batch = filtered.slice(i, i + BATCH_SIZE)
+        setSendProgress(`Batch ${Math.floor(i / BATCH_SIZE) + 1}/${Math.ceil(filtered.length / BATCH_SIZE)} (${i + batch.length}/${filtered.length})`)
+        const res = await api.post('/packages/expando-fulfillment', {
+          rows: batch,
+          carrier,
+          date: selectedDate,
+        }, { timeout: 300000 })
+        allResults.push(...res.data.results)
+      }
+      const ok = allResults.filter(r => r.status === 'ok').length
+      const errors = allResults.filter(r => r.status === 'error').length
+      const skipped = allResults.filter(r => r.status === 'skip').length
+      setResults({ results: allResults, summary: { total: filtered.length, ok, errors, skipped } })
     } catch (err) {
       setError(err.response?.data?.error || err.message)
     } finally {
       setSending(false)
+      setSendProgress('')
     }
   }
 
@@ -175,7 +188,7 @@ export default function ExpandoModal({ date, onClose }) {
                     className="bg-green-600 hover:bg-green-500 text-white py-3 rounded-xl text-lg font-bold transition-colors disabled:opacity-50"
                   >
                     {sending
-                      ? `Wysyłam... (${filtered.length} pozycji)`
+                      ? `Wysyłam... ${sendProgress || `(${filtered.length} pozycji)`}`
                       : shipperFilter
                         ? `Wyślij do Expando — ${carrier} (${filtered.length})`
                         : 'Wybierz przewoźnika powyżej'
