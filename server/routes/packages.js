@@ -1197,7 +1197,20 @@ router.post('/expando-fulfillment', async (req, res, next) => {
     }
 
     const results = [];
-    const shipDate = date ? new Date(date + 'T12:00:00.000Z').toISOString() : new Date().toISOString();
+    // Use current time if selected date is today (to avoid future shipDate rejection by Amazon),
+    // otherwise use end-of-day for past dates
+    let shipDate;
+    if (!date) {
+      shipDate = new Date().toISOString();
+    } else {
+      const now = new Date();
+      const today = now.toISOString().slice(0, 10);
+      if (date === today) {
+        shipDate = now.toISOString();
+      } else {
+        shipDate = new Date(date + 'T12:00:00.000Z').toISOString();
+      }
+    }
     const axios = require('axios');
 
     for (const row of rows) {
