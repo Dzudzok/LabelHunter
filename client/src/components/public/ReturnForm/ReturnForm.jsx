@@ -1,0 +1,97 @@
+import { useState } from 'react'
+import Step1Verify from './Step1Verify'
+import Step2Products from './Step2Products'
+import Step3Details from './Step3Details'
+import Step4Confirm from './Step4Confirm'
+
+const STEPS = ['Ověření', 'Produkty', 'Detaily', 'Potvrzení']
+
+export default function ReturnForm() {
+  const [step, setStep] = useState(1)
+  const [formData, setFormData] = useState({
+    deliveryNote: null,
+    items: [],
+    selectedItems: [],
+    type: 'return',
+    reasonCode: '',
+    reasonDetail: '',
+    vehicleInfo: '',
+    wasMounted: false,
+    customerName: '',
+    customerEmail: '',
+    customerPhone: '',
+    uploadedImages: [],
+  })
+  const [result, setResult] = useState(null)
+
+  const updateForm = (updates) => {
+    setFormData(prev => ({ ...prev, ...updates }))
+  }
+
+  if (result) {
+    return (
+      <PageWrapper>
+        <div className="text-center py-12">
+          <div className="text-5xl mb-4">✅</div>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">Žádost byla odeslána</h2>
+          <p className="text-gray-600 mb-4">Číslo žádosti: <strong>{result.returnNumber}</strong></p>
+          <a
+            href={`/vraceni/stav/${result.accessToken}`}
+            className="inline-block bg-[#1046A0] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
+          >
+            Sledovat stav žádosti
+          </a>
+        </div>
+      </PageWrapper>
+    )
+  }
+
+  return (
+    <PageWrapper>
+      {/* Stepper */}
+      <div className="flex items-center justify-center mb-8">
+        {STEPS.map((label, i) => (
+          <div key={i} className="flex items-center">
+            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
+              step > i + 1 ? 'bg-green-500 text-white' :
+              step === i + 1 ? 'bg-[#1046A0] text-white' :
+              'bg-gray-200 text-gray-400'
+            }`}>
+              {step > i + 1 ? '✓' : i + 1}
+            </div>
+            <span className={`ml-1.5 text-sm ${step === i + 1 ? 'text-gray-800 font-semibold' : 'text-gray-400'} hidden sm:inline`}>
+              {label}
+            </span>
+            {i < STEPS.length - 1 && <div className="w-8 sm:w-12 h-0.5 mx-2 bg-gray-200" />}
+          </div>
+        ))}
+      </div>
+
+      {step === 1 && <Step1Verify formData={formData} updateForm={updateForm} onNext={() => setStep(2)} />}
+      {step === 2 && <Step2Products formData={formData} updateForm={updateForm} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+      {step === 3 && <Step3Details formData={formData} updateForm={updateForm} onNext={() => setStep(4)} onBack={() => setStep(2)} />}
+      {step === 4 && <Step4Confirm formData={formData} onBack={() => setStep(3)} onResult={setResult} />}
+    </PageWrapper>
+  )
+}
+
+function PageWrapper({ children }) {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <div className="bg-[#1046A0] text-white">
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
+          <img src="/Mroauto_1994.png" alt="MROAUTO" className="h-10 object-contain" onError={(e) => { e.target.style.display = 'none' }} />
+          <div>
+            <div className="font-bold text-lg">MROAUTO</div>
+            <div className="text-xs opacity-80">Vrácení a reklamace zboží</div>
+          </div>
+        </div>
+        <div className="h-1 bg-[#D8112A]" />
+      </div>
+      <div className="max-w-2xl mx-auto px-4 py-6">{children}</div>
+      <div className="bg-gray-100 border-t mt-8 py-4 text-center text-xs text-gray-400">
+        MROAUTO AUTODÍLY s.r.o. | www.mroauto.cz
+      </div>
+    </div>
+  )
+}

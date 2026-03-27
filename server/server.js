@@ -47,6 +47,13 @@ app.use('/api/hunters', require('./routes/hunters'));
 app.use('/api/lp-import', require('./routes/lpImport'));
 app.use('/api/qz', require('./routes/qz'));
 
+// Retino module
+app.use('/api/retino/tracking', require('./routes/retino/tracking'));
+app.use('/api/retino/analytics', require('./routes/retino/analytics'));
+app.use('/api/retino/returns', require('./routes/retino/returnsAdmin'));
+app.use('/api/retino/public/returns', require('./routes/retino/returnsPublic'));
+app.use('/api/retino/public', require('./routes/retino/returnsPublic'));
+
 // Health check
 app.get('/api/health', (req, res) => {
   res.json({ status: 'ok', timestamp: new Date().toISOString() });

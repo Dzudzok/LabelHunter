@@ -26,6 +26,7 @@ function requireAuth(req, res, next) {
     '/api/auth',
     '/api/tracking',
     '/api/health',
+    '/api/retino/public',
     '/labels',
   ];
 
