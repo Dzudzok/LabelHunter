@@ -27,6 +27,9 @@ function PrivateRoute({ children }) {
   return worker ? children : <Navigate to="/login" replace />
 }
 
+// Detect if running on retino subdomain
+const isRetinoDomain = window.location.hostname.startsWith('retino.');
+
 export default function App() {
   return (
     <BrowserRouter>
@@ -45,7 +48,11 @@ export default function App() {
           <LoginGate>
             <Routes>
               <Route path="/login" element={<AuthPage />} />
-              <Route path="/" element={<PrivateRoute><Dashboard /></PrivateRoute>} />
+              <Route path="/" element={
+                isRetinoDomain
+                  ? <Navigate to="/retino/tracking" replace />
+                  : <PrivateRoute><Dashboard /></PrivateRoute>
+              } />
               <Route path="/package/:id" element={<PrivateRoute><PackageView /></PrivateRoute>} />
 
               {/* Retino admin routes — wrapped in sidebar layout */}
@@ -62,7 +69,11 @@ export default function App() {
                 <Route index element={<Navigate to="tracking" replace />} />
               </Route>
 
-              <Route path="*" element={<Navigate to="/" replace />} />
+              <Route path="*" element={
+                isRetinoDomain
+                  ? <Navigate to="/retino/tracking" replace />
+                  : <Navigate to="/" replace />
+              } />
             </Routes>
           </LoginGate>
         } />

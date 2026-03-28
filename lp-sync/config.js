@@ -28,7 +28,7 @@ const SMTP_CONFIG = {
 };
 
 // App URL for tracking links
-const APP_URL = 'https://labelhunter-client.onrender.com';
+const APP_URL = process.env.APP_URL || 'https://labelhunter.mroautoapp.cz';
 
 // Set to true to disable sending emails
 const DISABLE_EMAIL = false;
