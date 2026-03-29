@@ -11,6 +11,10 @@ const STATUS_COLORS = {
   resolved: '#6B7280', cancelled: '#9CA3AF',
 }
 
+const CARRIER_LABELS = { zasilkovna: 'Zásilkovna', ppl: 'PPL', gls: 'GLS', cp: 'Česká pošta', self: 'Vlastní doprava' }
+const METHOD_LABELS = { drop_off: 'Výdejní místo', courier_pickup: 'Svoz kurýrem', self_ship: 'Vlastní odeslání' }
+const SHIPMENT_STATUS_LABELS = { pending: 'Připraveno', label_generated: 'Štítek vygenerován', shipped: 'Odesláno', in_transit: 'V přepravě', delivered: 'Doručeno' }
+
 export default function ReturnStatus() {
   const { accessToken } = useParams()
   const [data, setData] = useState(null)
@@ -83,6 +87,38 @@ export default function ReturnStatus() {
             <div key={i} className="flex justify-between py-1.5 text-sm border-b border-gray-100 last:border-0">
               <span>{item.delivery_note_items?.text || 'Produkt'}</span>
               <span className="text-gray-500">{item.qty_returned}x</span>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Shipping */}
+      {data.shipments?.length > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
+          <h3 className="text-sm font-semibold text-blue-700 uppercase mb-2">Zpětná doprava</h3>
+          {data.shipments.map((s) => (
+            <div key={s.id}>
+              <InfoRow label="Dopravce" value={CARRIER_LABELS[s.carrier] || s.carrier} />
+              <InfoRow label="Způsob" value={METHOD_LABELS[s.shipping_method] || s.shipping_method} />
+              <InfoRow label="Stav" value={SHIPMENT_STATUS_LABELS[s.status] || s.status} />
+              {s.pickup_point_name && <InfoRow label="Výdejní místo" value={`${s.pickup_point_name} — ${s.pickup_point_address || ''}`} />}
+              {s.tracking_number && <InfoRow label="Tracking" value={s.tracking_number} />}
+              {s.cost > 0 && <InfoRow label="Cena" value={`${s.cost} ${s.currency || 'CZK'}`} />}
+              {s.label_url && (
+                <div className="mt-2">
+                  <a href={s.label_url} target="_blank" rel="noopener noreferrer"
+                    className="inline-block bg-[#1046A0] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90">
+                    Stáhnout štítek (PDF)
+                  </a>
+                </div>
+              )}
+              {s.shipping_method === 'self_ship' && s.status === 'pending' && (
+                <div className="mt-2 bg-white rounded-lg p-3 text-sm text-gray-700">
+                  <strong>Adresa pro zaslání:</strong><br />
+                  MROAUTO AUTODÍLY s.r.o.<br />
+                  Reklamační oddělení, Průmyslová 1472, 280 02 Kolín
+                </div>
+              )}
             </div>
           ))}
         </div>

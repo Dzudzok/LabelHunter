@@ -268,6 +268,13 @@ router.get('/:accessToken', async (req, res, next) => {
       .eq('is_internal', false)
       .order('created_at', { ascending: true });
 
+    // Fetch return shipments
+    const { data: shipments } = await supabase
+      .from('return_shipments')
+      .select('id, carrier, shipping_method, tracking_number, label_url, status, cost, currency, pickup_point_name, pickup_point_address, customer_address')
+      .eq('return_id', ret.id)
+      .order('created_at', { ascending: false });
+
     // Get reason label
     const { data: reason } = await supabase
       .from('return_reasons')
@@ -285,6 +292,7 @@ router.get('/:accessToken', async (req, res, next) => {
         statusLabel: getReturnStatusLabel(t.new_status),
       })),
       messages: messages || [],
+      shipments: shipments || [],
     });
   } catch (err) {
     next(err);
