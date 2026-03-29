@@ -28,6 +28,12 @@ import CostAnalysis from './components/retino/analytics/CostAnalysis'
 import TrackAndTrace from './components/public/TrackAndTrace'
 import ReturnForm from './components/public/ReturnForm/ReturnForm'
 import ReturnStatus from './components/public/ReturnStatus'
+import RefundQueue from './components/retino/returns/RefundQueue'
+import RefundAccounts from './components/retino/settings/RefundAccounts'
+import CaseTypes from './components/retino/settings/CaseTypes'
+import ReturnsAnalytics from './components/retino/analytics/ReturnsAnalytics'
+import CustomFields from './components/retino/settings/CustomFields'
+import Webhooks from './components/retino/settings/Webhooks'
 
 function PrivateRoute({ children }) {
   const worker = useAuthStore(s => s.worker)
@@ -74,12 +80,18 @@ export default function App() {
                 <Route path="analytics/timeliness" element={<AnalyticsTimeliness />} />
                 <Route path="analytics/tt" element={<AnalyticsTT />} />
                 <Route path="analytics/costs" element={<CostAnalysis />} />
+                <Route path="analytics/returns" element={<ReturnsAnalytics />} />
                 <Route path="settings/tags" element={<TagsManagement />} />
                 <Route path="settings/automation" element={<AutomationRules />} />
                 <Route path="settings/email-designer" element={<EmailDesigner />} />
                 <Route path="returns" element={<ReturnsDashboard />} />
                 <Route path="returns/new" element={<ReturnAdminCreate />} />
                 <Route path="returns/:id" element={<ReturnDetail />} />
+                <Route path="returns/refunds" element={<RefundQueue />} />
+                <Route path="settings/refund-accounts" element={<RefundAccounts />} />
+                <Route path="settings/case-types" element={<CaseTypes />} />
+                <Route path="settings/custom-fields" element={<CustomFields />} />
+                <Route path="settings/webhooks" element={<Webhooks />} />
                 <Route index element={<Navigate to="tracking" replace />} />
               </Route>
 

@@ -56,6 +56,13 @@ app.use('/api/retino/automation', require('./routes/retino/automation'));
 app.use('/api/retino/ratings', require('./routes/retino/ratings'));
 app.use('/api/retino/costs', require('./routes/retino/costs'));
 app.use('/api/retino/email-settings', require('./routes/retino/emailSettings'));
+app.use('/api/retino/return-shipments', require('./routes/retino/returnShipments'));
+app.use('/api/retino/refunds', require('./routes/retino/refunds'));
+app.use('/api/retino/case-types', require('./routes/retino/caseTypes'));
+app.use('/api/retino/credit-notes', require('./routes/retino/creditNotes'));
+app.use('/api/retino/returns-analytics', require('./routes/retino/returnsAnalytics'));
+app.use('/api/retino/custom-fields', require('./routes/retino/customFields'));
+app.use('/api/retino/webhooks', require('./routes/retino/webhooks'));
 app.use('/api/retino/public/returns', require('./routes/retino/returnsPublic'));
 app.use('/api/retino/public', require('./routes/retino/returnsPublic'));
 
@@ -77,6 +84,7 @@ app.listen(PORT, () => {
   // require('./cron/importDeliveryNotes').start();
   require('./cron/syncTrackingStatus').start();
   require('./cron/runAutomation').start();
+  require('./cron/processReturnEmails').start();
 
   console.log('Cron jobs started');
 });

@@ -2,9 +2,10 @@ import { useState } from 'react'
 import Step1Verify from './Step1Verify'
 import Step2Products from './Step2Products'
 import Step3Details from './Step3Details'
+import StepTransport from './StepTransport'
 import Step4Confirm from './Step4Confirm'
 
-const STEPS = ['Ověření', 'Produkty', 'Detaily', 'Potvrzení']
+const STEPS = ['Ověření', 'Produkty', 'Detaily', 'Doprava', 'Potvrzení']
 
 export default function ReturnForm() {
   const [step, setStep] = useState(1)
@@ -21,6 +22,9 @@ export default function ReturnForm() {
     customerEmail: '',
     customerPhone: '',
     uploadedImages: [],
+    shippingOption: null,
+    shippingMethod: null,
+    shippingData: null,
   })
   const [result, setResult] = useState(null)
 
@@ -70,7 +74,8 @@ export default function ReturnForm() {
       {step === 1 && <Step1Verify formData={formData} updateForm={updateForm} onNext={() => setStep(2)} />}
       {step === 2 && <Step2Products formData={formData} updateForm={updateForm} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
       {step === 3 && <Step3Details formData={formData} updateForm={updateForm} onNext={() => setStep(4)} onBack={() => setStep(2)} />}
-      {step === 4 && <Step4Confirm formData={formData} onBack={() => setStep(3)} onResult={setResult} />}
+      {step === 4 && <StepTransport formData={formData} updateForm={updateForm} onNext={() => setStep(5)} onBack={() => setStep(3)} />}
+      {step === 5 && <Step4Confirm formData={formData} onBack={() => setStep(4)} onResult={setResult} />}
     </PageWrapper>
   )
 }

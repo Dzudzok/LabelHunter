@@ -31,6 +31,8 @@ export default function Step4Confirm({ formData, onBack, onResult }) {
           itemNote: item.itemNote || null,
           images: [],
         })),
+        shippingMethod: formData.shippingData?.shippingMethod || null,
+        shippingData: formData.shippingData || null,
       })
 
       // Upload images if we have them and got an accessToken
@@ -116,6 +118,29 @@ export default function Step4Confirm({ formData, onBack, onResult }) {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Shipping */}
+      {formData.shippingOption && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-4">
+          <div className="text-sm text-gray-500">Doprava zpět</div>
+          <div className="font-medium text-gray-800">
+            {formData.shippingOption.icon} {formData.shippingOption.label}
+            <span className={`ml-2 text-sm font-bold ${formData.shippingOption.cost > 0 ? 'text-orange-600' : 'text-green-600'}`}>
+              {formData.shippingOption.cost > 0 ? `${formData.shippingOption.cost} Kč` : 'Zdarma'}
+            </span>
+          </div>
+          {formData.shippingData?.pickupPoint && (
+            <div className="text-sm text-gray-600 mt-1">
+              {formData.shippingData.pickupPoint.name} — {formData.shippingData.pickupPoint.address}
+            </div>
+          )}
+          {formData.shippingData?.customerAddress?.street && (
+            <div className="text-sm text-gray-600 mt-1">
+              {formData.shippingData.customerAddress.street}, {formData.shippingData.customerAddress.city} {formData.shippingData.customerAddress.zip}
+            </div>
+          )}
         </div>
       )}
 

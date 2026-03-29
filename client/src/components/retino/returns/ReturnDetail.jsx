@@ -4,6 +4,11 @@ import { api } from '../../../services/api'
 import { useAuthStore } from '../../../store/authStore'
 import StatusBadge from '../shared/StatusBadge'
 
+const CARRIER_LABELS = { zasilkovna: 'Zásilkovna', ppl: 'PPL', gls: 'GLS', cp: 'Česká pošta', self: 'Vlastní doprava' }
+const METHOD_LABELS = { drop_off: 'Výdejní místo', courier_pickup: 'Svoz kurýrem', self_ship: 'Vlastní odeslání' }
+const SHIPMENT_STATUS_LABELS = { pending: 'Čeká', label_generated: 'Štítek vygenerován', shipped: 'Odesláno', in_transit: 'V přepravě', delivered: 'Doručeno' }
+const SHIPMENT_STATUS_COLORS = { pending: '#9CA3AF', label_generated: '#3B82F6', shipped: '#8B5CF6', in_transit: '#F59E0B', delivered: '#10B981' }
+
 export default function ReturnDetail() {
   const { id } = useParams()
   const navigate = useNavigate()
@@ -14,6 +19,7 @@ export default function ReturnDetail() {
   const [isInternal, setIsInternal] = useState(false)
   const [sending, setSending] = useState(false)
   const [showResolve, setShowResolve] = useState(false)
+  const [shipments, setShipments] = useState([])
 
   const fetchReturn = async () => {
     try {
@@ -26,7 +32,14 @@ export default function ReturnDetail() {
     }
   }
 
-  useEffect(() => { fetchReturn() }, [id])
+  const fetchShipments = async () => {
+    try {
+      const res = await api.get(`/retino/return-shipments/${id}`)
+      setShipments(res.data || [])
+    } catch { /* no shipments */ }
+  }
+
+  useEffect(() => { fetchReturn(); fetchShipments() }, [id])
 
   const changeStatus = async (newStatus, note = '') => {
     try {
@@ -112,6 +125,37 @@ export default function ReturnDetail() {
             </div>
           )}
 
+          {/* Shipping */}
+          {shipments.length > 0 && (
+            <div className="bg-navy-800 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-theme-muted mb-3 uppercase tracking-wider">Doprava zpět</h3>
+              {shipments.map((s) => (
+                <div key={s.id} className="space-y-1">
+                  <InfoRow label="Dopravce" value={CARRIER_LABELS[s.carrier] || s.carrier} />
+                  <InfoRow label="Metoda" value={METHOD_LABELS[s.shipping_method] || s.shipping_method} />
+                  <div className="flex justify-between text-sm py-1">
+                    <span className="text-theme-muted">Status</span>
+                    <span className="px-2 py-0.5 rounded text-xs font-semibold" style={{
+                      backgroundColor: (SHIPMENT_STATUS_COLORS[s.status] || '#6B7280') + '22',
+                      color: SHIPMENT_STATUS_COLORS[s.status] || '#6B7280',
+                    }}>
+                      {SHIPMENT_STATUS_LABELS[s.status] || s.status}
+                    </span>
+                  </div>
+                  {s.tracking_number && <InfoRow label="Tracking" value={s.tracking_number} />}
+                  {s.cost > 0 && <InfoRow label="Cena" value={`${s.cost} ${s.currency || 'CZK'}`} />}
+                  {s.pickup_point_name && <InfoRow label="Výdejní místo" value={s.pickup_point_name} />}
+                  {s.label_url && (
+                    <a href={s.label_url} target="_blank" rel="noopener noreferrer"
+                      className="inline-block mt-2 text-xs text-blue-400 hover:text-blue-300 underline">
+                      Stáhnout štítek (PDF)
+                    </a>
+                  )}
+                </div>
+              ))}
+            </div>
+          )}
+
           {/* Actions */}
           <div className="bg-navy-800 rounded-xl p-4">
             <h3 className="text-sm font-semibold text-theme-muted mb-3 uppercase tracking-wider">Akce</h3>
@@ -143,6 +187,15 @@ export default function ReturnDetail() {
               {ret.resolution_amount && <InfoRow label="Částka" value={`${ret.resolution_amount} CZK`} />}
               {ret.resolution_note && <InfoRow label="Poznámka" value={ret.resolution_note} />}
               {ret.refund_method && <InfoRow label="Způsob vrácení" value={ret.refund_method} />}
+              <button
+                onClick={() => {
+                  const apiBase = import.meta.env.VITE_API_URL || '/api'
+                  window.open(`${apiBase}/retino/credit-notes/${id}/generate`, '_blank')
+                }}
+                className="mt-3 bg-green-700 hover:bg-green-600 text-white px-3 py-1.5 rounded-lg text-xs font-semibold"
+              >
+                Stáhnout dobropis (PDF)
+              </button>
             </div>
           )}
         </div>

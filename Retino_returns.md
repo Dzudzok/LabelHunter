@@ -1,375 +1,339 @@
-Retino Returns: Komplexní průvodce
-Tato příručka vás provede procesem základního nastavení služby Returns.
+RETINO RETURNS — Kompletna Specyfikacja Systemu
+1. CZYM JEST RETINO RETURNS
+System do automatyzacji zwrotów, reklamacji i opieki posprzedażowej dla e-commerce. Używany przez 2000+ e-shopów, przetwarza ponad milion przypadków rocznie. Łączy portal klienta (formularz na stronie sklepu), zarządzanie przypadkami, refundacje, korekty faktur i logistykę zwrotną w jeden workflow, który może być w dużej mierze zautomatyzowany.
+
+2. ARCHITEKTURA — TYPY PRZYPADKÓW, PROCESY, STANY
+2.1 Hierarchia workflow (3 poziomy)
+Typ przypadku (Case Type) → Procesní krok (Process Step) → Stav przypadku (Case State)
+2.2 Typy przypadków
+Dwa domyślne (nie można usunąć, można edytować): Vratka (zwrot) i Reklamace (reklamacja).
+Można tworzyć własne, np.: Wymiana, Serwis gwarancyjny, Serwis pogwarancyjny, Niedostarczone, Uszkodzona przesyłka, Reklamacja dostawcy.
+Każdy typ ma: nazwę (wielojęzyczną), kolor, własny zestaw procesnych kroków i stanów.
+2.3 Procesní kroky (5 domyślnych)
+
+Nový případ (Nowy przypadek)
+Čekáme na přijetí (Czekamy na odbiór)
+Řešíme (Rozwiązujemy)
+Rozhodnutí (Decyzja)
+Vyřešeno (Rozwiązano)
+
+Każdy krok może mieć wiele stanów. Kroki wyświetlane w UI jak kolumny Kanban. Drag & drop do zmiany kolejności.
+2.4 Stany przypadku (przykłady)
+KrokPrzykładowe stanyNový případNový případČekáme na přijetíČekáme na přijetí zbožíŘešímeZboží dorazilo k námRozhodnutíUznáno - Doposíláme zboží, Uznáno - Refundace, Neuznáno - Vracíme zbožíVyřešenoZboží zasláno zákazníkovi, Refundováno, Zboží připraveno k vyzvednutí
+Stany mają własne kolory. Zmiana stanu logowana w historii. Zmiana stanu na stan z innego typu → automatyczna zmiana typu.
+2.5 Weryfikacja przypadku
+Pola: verification_state — np. VERIFIED_AUTOMATICALLY
+
+3. PORTAL KLIENTA (Zákaznický portál)
+3.1 Co to jest
+Interaktywny formularz embeddowany na stronie e-shopu (JavaScript widget) lub dostępny przez bezpośredni link. Klient sam tworzy przypadek (zwrot/reklamację) bez opuszczania strony sklepu.
+3.2 Kroki formularza portalu (konfigurowalne)
+Krok 1: Typy případů — klient wybiera typ (Vratka, Reklamace, własne). Konfigurowalne: nazwy, opisy, kolejność, przycisk akcji.
+Krok 2: Vyhledání objednávky — klient podaje numer zamówienia + e-mail. Opcjonalnie: wyszukiwanie po numerze faktury, ręczne wypełnienie bez numeru zamówienia.
+Krok 3: Položky objednávky — klient wybiera konkretne produkty do zwrotu/reklamacji, ilość, powód. Można dodać własne pola (custom fields) produktowe.
+Krok 4: Zpětná doprava — wybór sposobu zwrotu:
+
+Svoz kurýrem (odbiór kurierem na adresie klienta)
+Doručení na pobočku (klient zanosi na punkt)
+Vlastní způsob přepravy (niestandardowy)
+Doprava placená zákazníkem (klient płaci kartą w portalu)
+
+Krok 5: Možnosti vrácení peněz — metody refundacji:
+
+Slevový kupón (voucher)
+Bankovní účet (klient podaje numer konta, IBAN, etc.)
+
+Krok 6: Informace o zákazníkovi — dane: imię, e-mail, adres odbioru, adres fakturowy. Każde pole: wymagane/opcjonalne. Można dodać własne pola.
+Krok 7: Potvrzení — ekran potwierdzenia: wiadomość, instrukcje, link do śledzenia statusu, możliwość feedbacku, remarketing.
+3.3 Personalizacja portalu
+
+Kolory, font, zaokrąglenie rogów
+Wszystkie teksty edytowalne per język
+Integracja: JavaScript widget na stronie lub bezpośredni link
+
+
+4. ZARZĄDZANIE PRZYPADKAMI (Správa případu)
+4.1 Lista przypadków (Seznam případů)
+
+Wyszukiwanie: po numerze zamówienia, imieniu, e-mailu, numerze przypadku
+Filtrowanie: status, typ, tag, przypisany agent, etc.
+Akcje masowe (zmiana statusu, etc.)
+Export do CSV (przypadki lub produkty)
+Tworzenie nowych przypadków przez agenta
+Własne widoki (zapisane filtry) do szybkiego dostępu
+
+4.2 Detail przypadku
+Zawiera:
+
+Nagłówek — przypisany agent, status, tagi, informacje o kliencie
+Komunikacja z klientem — wiadomości e-mail
+Interní poznámky — wewnętrzne notatki (niewidoczne dla klienta)
+Doprava — zamówienie transportu zwrotnego
+Aktivity — zadania/TODO
+Refundace a dobropisy — refundacje i korekty
+Produkty — lista produktów z zamówienia z detalami
+Własne pola — dodatkowe informacje
+
+4.3 Komunikacja z klientem (Zprávy)
+
+Wiadomości e-mail wysyłane bezpośrednio z Retina
+Formatowanie (bold, italic, nagłówki, listy, linki)
+Załączniki (drag & drop, clipboard)
+CC / BCC
+Uložené odpovědi (zapisane szablony odpowiedzi)
+AI Odpověď — AI generuje odpowiedź na podstawie kontekstu przypadku, historii komunikacji, produktów i kwot. Działa w języku przypadku. Umie liczyć kwoty (np. % refundacji)
+Odpowiedzi klienta automatycznie trafiają do historii przypadku
+Podpis użytkownika konfigurowalny w ustawieniach
+Ctrl+Enter = wyślij
+
+4.4 Interní poznámky
+
+Widoczne tylko dla agentów
+API: POST /internal-note
+
+4.5 Tagi/Etykiety (Štítky)
+
+Flexibilny system kategoryzacji
+Kolorowe
+Automatyczne dodawanie/usuwanie przez automatyzację
+Filtrowanie po tagach
+Przykład: "VIP reklamace" automatycznie dodany przy wysokiej wartości zamówienia
+
+4.6 Własne pola (Vlastní pole)
+Pola przypadku:
+TypOpisČíslo bankovního účtuWalidowane pole kontaČeské číslo účtuWalidowane czeskie kontoIBANWalidowane IBANTextové poleJednowierszoweDatumWybór datyVíceřádkové textové poleWielowierszoweČíselné poleNumeryczneZaškrtávací poleCheckbox (Tak/Nie)Výběr z možnostíDropdown (jednokrotny)Vícenásobný výběrDropdown (wielokrotny)URL adresaWalidowane URLSouborUpload pliku
+Pola produktowe:
+Textové pole, Víceřádkové, Datum, Výběr z možností, Soubor, Odkaz
+Ważne: typ pola nie może być zmieniony po utworzeniu. Pola mogą mieć różne nazwy w portalu i administracji.
+
+5. TRANSPORT ZWROTNY (Zpětná doprava)
+5.1 Cztery rodzaje transportu
+A) Doprava placená zákazníkem
 
-M
-Autor: Marek z Retino
-Aktualizováno před více než měsícem
-Retino Returns je nejpoužívanější český nástroj pro automatizaci vratek, reklamací a ponákupní péče.  Používá jej více než 2 000 e-shopů a zpracovává přes milion případů ročně.
+Klient płaci kartą w portalu
+Generowany etykieta przewozowa lub zamawiany odbiór kurierem
+Faktura od Retino
+E-shop nie ponosi kosztów, ale widzi status przesyłki
+Idealna dla zwrotów
 
-Služba spojuje portál (formulář) na vašem webu, správu případů, refundace, dobropisy i zpětnou logistiku do jednoho workflow, které může být z velké části automatizované.
+B) Doprava placená e-shopem
 
- 
+Wykorzystuje umowy Retina z przewoźnikami (nie potrzeba własnej umowy)
+Klient lub agent może zamówić
+Można ustawić cenę widoczną dla klienta (ale klient realnie nie płaci — potrącane np. z refundacji)
+Fakturowane e-shopowi na koniec okresu rozliczeniowego
+Idealna dla reklamacji
 
-Tato příručka vás v několika krocích provede procesem základního nastavení služby Returns. Všechny odkazy vedou přímo na příslušné články dokumentace, ve kterých najdete podrobné informace ke každému kroku nebo tématu.
+C) Własna umowa z przewoźnikiem
 
- 
+Integracja API z własną umową
+Fakturowanie przez przewoźnika wg warunków umowy
+Opłata: 299 CZK/mies. za jedną umowę
 
- 
+D) Własní způsob dopravy (Custom)
 
-Krok 1: Nastavení účtu a uživatelů
-Nastavení účtu
-Začněte se základním nastavením Retino účtu pro váš obchod. Zde si kromě jiného nastavíte zejména:
+Np. osobisty odbiór na sklepie
+Tylko ewidencja — brak etykiet, śledzenia, automatycznego zamawiania
+Statusy aktualizowane ręcznie
 
-název vašeho obchodu a jeho logo;
+5.2 Typy podania (sposób nadania)
+TypOpisDrop-off (na pobočku)Klient zanosi na punkt, drukuje etykietęPickup (svoz kurýrem)Kurier odbiera pod adresem, klient wybiera terminPaletová přepravaDuże/ciężkie, tylko z administracjiWłasný způsobCustom, bez automatyzacji
+5.3 Obsługiwani przewoźnicy (Returns)
+PrzewoźnikTypy transportuGłówne krajePacketa (Zásilkovna)Drop-offCZ, SK, PL, HU, EUDHLDrop-off, Pickup, Freight, InternationalWiększość EUPPLPickupCZGLSDrop-off, PickupCZ, SK, HU, SI, HR, PLDPDDrop-off, PickupCZ, SK, EUInPostDrop-off, PickupPLUPSPickupWiększość EUGeis——DHL FreightPaletowa—
+5.4 Konfiguracja tras
+Każdy transport ma możliwości dopravy (shipping options) z trasami:
 
-Jazyky, země a měny dle působnosti vašeho e-shopu;
+Kraj nadania → Kraj odbioru
+Cena dla klienta
+Adres dostawy
+Limit wagi
+Własne teksty per język
+E-mail z instrukcjami dla klienta
 
-číslování případů.
+5.5 Zamawianie transportu
 
- 
+Ręcznie: z detalu przypadku (zakładka Doprava) lub masowo z listy
+Automatycznie: przez automatyzację (trigger + akcja "Objednat vyžádanou dopravu")
+Dane odbioru/nadania automatycznie wypełniane z danych przypadku
 
-Nastavení uživatele a týmu
-V sekci tým přidejte vaše kolegy nebo externí partnery a udělte jim roli agenta nebo správce. Přidání uživatelů je bezplatné a jejich počet není omezen.
+5.6 Lista transportów (Seznam doprav)
 
- 
+Przegląd wszystkich zamówionych transportów
+Statusy w real-time
+Oczekujące na zatwierdzenie
+Problemy z przesyłkami
+
+
+6. REFUNDACJE
+6.1 Metody refundacji
+A) Bankovní účet — najczęstsza. Agent wybiera konto, kwotę, konto odbiorcy (IBAN/CZ/PL format). Auto-prefill jeśli klient podał konto w portalu.
+B) Voucher — slevový kupón w e-shopie. Wspierane: Shoptet, Shopify, WooCommerce. Opcjonalna data ważności. Automatyczne tworzenie kuponu w platformie.
+C) QR kód — generuje QR do zeskanowania w aplikacji bankowej. Idealne dla szybkich jednorazowych refundacji.
+D) Webhook — dane refundacji wysłane na endpoint. Dla własnych systemów płatności.
+E) CSV (Custom) — export do zewnętrznych systemów.
+6.2 Przetwarzanie refundacji
+
+Agent tworzy "požadavek na refundaci" w detalu przypadku
+Požadavek trafia do kolejki "Nezpracované refundace"
+Masowe przetwarzanie: zaznacz → generuj plik (PAIN XML / ABO) lub wyślij do Fio banky
+Import pliku do bankowości internetowej → autoryzacja
+Po przetworzeniu → refundacja w "Zpracované refundační dávky"
+Możliwość cofnięcia (revertování) przetworzonej partii
+
+6.3 Konta refundacyjne
+
+Konfiguracja w ustawieniach
+System automatycznie dobiera konto wg waluty
+Integracja z Fio bankou (bezpośrednie wysłanie)
+
+
+7. DOBROPISY (KOREKTY FAKTUR)
+7.1 Obsługiwane systemy
+
+Shoptet — pełna integracja, auto-tworzenie w administracji Shoptetu
+Dativery — przez Dativery API (integracja z POHODA)
+Retino natywne — wewnętrzne korekty + webhook na endpoint
+
+7.2 Tworzeniekomplet?18 steps18 stepsDobra, sprawdziłem jeszcze raz i znalazłem istotne brakujące szczegóły. Oto uzupełnienie do specyfikacji Retino Returns, które powinieneś dodać do dokumentu:
+
+RETINO RETURNS — UZUPEŁNIENIE (brakujące sekcje)
+A. REMARKETING (Doplněk z Marketplace)
+Trzy narzędzia remarketingu:
+1. Slevový kupón (Voucher)
+
+Automatycznie generowany po założeniu przypadku w portalu
+Klient klika → generuje się unikalny kupon w e-shopie → klient kopiuje kod
+Konfiguracja: wysokość zniżki, minimalna wartość zamówienia, ważność (dni), różne kwoty per waluta
+Wspierane platformy: Shoptet, Shopify, WooCommerce
+
+2. Banner reklamowy
+
+Upload obrazu + URL docelowy
+System automatycznie śledzi kliknięcia (analiza skuteczności)
+Konfiguracja: gdzie wyświetlać (portal, detail przypadku, e-maile)
+
+3. Żádost o telefonát (Prośba o kontakt tel.)
+
+Klient żąda oddzwonienia
+W administracji tworzy się aktywność "Zavolat zákazníkovi" z terminem 2 dni
+Numer tel. zapisywany do przypadku
+
+Gdzie się wyświetla:
+
+Ostatni krok portalu (po założeniu przypadku)
+Klientský detail případu
+E-maile
+Kolejność: Kupón → Telefon → Banner
+Wygląd dziedziczy schemat kolorów portalu
+Różne narzędzia per typ przypadku
+
+
+B. SMS ZPRÁVY (Doplněk z Marketplace)
+
+Ręczne wysyłanie z detalu przypadku (zakładka SMS — widoczna tylko gdy klient ma telefon)
+Automatyczne wysyłanie przez automatyzację (akcja "Odeslat šablonu zprávy jako SMS")
+Max 160 znaków (wliczając link do detalu przypadku, dołączany automatycznie)
+Diakrityka i znaki specjalne usuwane
+Zmienne: [[code]], [[customer.name]], [[customer.email]], [[customer.phone]], [[order.code]]
+Dostępność: CZ i SK
+Cena: 2,40 CZK / 0,11 EUR za SMS (doliczane do faktury Retino)
+
+
+C. WŁASNE UMOWY Z PRZEWOŹNIKAMI — szczegóły
+Obsługiwani przewoźnicy dla własnych umów:
+DPD (Drop-off, Pickup), PPL (Pickup), GLS (Drop-off, Pickup), Packeta/Zásilkovna (Drop-off), DHL (Drop-off, Pickup, Freight), InPost (Drop-off, Pickup), UPS (Pickup)
+Setup:
+
+Ustawienia > Doprava > Přidat novou smlouvu
+Wybór przewoźnika → podanie API klucza/credentials
+Konfiguracja tras: kraj nadania → kraj dostawy, adres, cena, limity wagi
+Testowanie: testowa przesyłka, weryfikacja etykiet i śledzenia
+
+Koszt: 299 CZK/mies. za każdą aktywną umowę
+
+D. WEBHOOK SHIPPING.ORDERED — szczegóły
+Event: shipping.ordered — wywoływany przy zamówieniu transportu.
+Payload:
+json{
+  "event_type": "shipping.ordered",
+  "created_at": "ISO datetime",
+  "shipping": {
+    "id": "uuid",
+    "client_reference": "kod-przypadku",
+    "option_name": "Zásilkovna - Na výdejní místo",
+    "tracking_number": "Z3824826667",
+    "tracking_url": "URL śledzenia",
+    "customer_payment_details": [{
+      "amount": "99.00",
+      "currency": "CZK",
+      "invoice_url": "URL faktury"
+    }]
+  }
+}
+Retry: 72h z exponential backoff (2min → 4min → 8min → ... max 1h). Po 72h endpoint dezaktywowany + e-mail do adminów.
+
+E. REFUNDACJE — rozszerzone szczegóły
+Konta refundacyjne (Refundační účty):
+
+Nazwa, numer konta (CZ format), IBAN, przesunięcie terminu płatności (dni), waluta, źródło VS (kod ticketu/zamówienia/ostatnia korekta)
+Osobne konto per waluta (system auto-dobiera)
+
+Integracja z Fio bankou:
+
+API token z Fio → wklejenie do Retina
+Bezpośrednie wysyłanie poleceń przelewu do Fio
+Nadal wymagana autoryzacja w bankowości internetowej
+
+Formaty plików bankowych:
+WalutaFormatZastosowanieCZKABOStandardowe przelewy CZEURPAIN XMLSEPAUSD, GBP, CHF, etc.Foreign XMLZagraniczne (tylko z Fio API)
+Webhook refundacji — format:
+json{
+  "event_type": "retino_refund.created",
+  "note": "Refundace za vrácené zboží",
+  "amount": "1500.00",
+  "currency": "CZK",
+  "ticket_id": "uuid",
+  "approver_id": "uuid",
+  "valid_until": "2025-04-29",
+  "recipient_name": "Jan Novák"
+}
+CSV refundace:
+
+Konfigurowalne pola do exportu
+Ustawienia > Refundace > Vlastní refundace
+Ważność w dniach
+
+
+F. ULOŽENÉ ODPOVĚDI (Szablony odpowiedzi) — szczegóły
+
+Nazwa + Przedmiot (opcjonalny) + Treść + Soukromé (prywatne)
+Wielojęzyczność (ikona języka przy polach)
+Prywatne: widoczne tylko dla twórcy; Sdílené: dla wszystkich agentów
+W edytorze wiadomości: ikona błyskawicy → lista szablonów
+Filtrowanie wg języka przypadku (szablony bez tłumaczenia = nieaktywne)
+Przedmiot szablonu auto-wypełnia przedmiot wiadomości
+
+
+G. ORDERS API (Returns) — szczegóły
+Stavy zamówień (dwa typy):
+TypWartośćZnaczeniePrzetwarzanieNEWNowe zamówieniePrzetwarzaniePICKINGKompletacjaPrzetwarzaniePACKEDZapakowanePrzetwarzanieDISPATCHEDWysłanePrzetwarzanieON_HOLDWstrzymanePrzetwarzanieREADY_FOR_PICKUPGotowe do odbioruPrzetwarzaniePICKED_UPOdebranePłatnośćAWAITING_PAYMENTOczekiwanie na płatnośćPłatnośćPAIDZapłaconePłatnośćPARTIALLY_REFUNDEDCzęściowo zwróconePłatnośćREFUNDEDZwróconePłatnośćFAILEDPłatność nieudana
+Typy pozycji zamówienia (item_type):
+
+PRODUCT — produkt
+SHIPPING — opłata za dostawę
+BILLING — opłata za płatność (COD)
+DISCOUNT — rabaty/kupony
+
+Auto upsert:
+code + store_id = unikalny klucz. Pierwsze wysłanie = CREATE (201), kolejne = UPDATE (200). Nie trzeba sprawdzać istnienia.
+Historia statusów (bulk import):
+json"statuses": [
+  {"name": "PAID", "date": "2025-10-23T10:00:00Z"},
+  {"name": "PICKING", "date": "2025-10-23T12:00:00Z"},
+  {"name": "DISPATCHED", "date": "2025-10-23T15:00:00Z"}
+]
+Kiedy Orders API vs XML Feed:
+
+Orders API: potrzeba natychmiastowych notyfikacji (transakční e-maily), real-time tracking, instant aktualizacje
+XML Feed: prostsze, wystarczy dla Returns (klient nie zwraca w 6h), sync co 6h
 
-V uživatelských nastaveních si pak můžete mimo jiné nastavit váš osobní podpis u zpráv odeslaných přes Retino nebo nastavit různá oznámení a upozornění specifická pro daného uživatele.
-
- 
-
- 
-
-Krok 2: Propojení objednávek
-Objednávky
-Dalším krokem při implementaci Retino Returns je integrace vašich objednávek. Ta zajišťuje, že zákazníci i agenti mohou vyhledávat objednávky a zakládat případy bez nutnosti ručního zadávání dat nebo jejich manuálního importu.
-
- 
-
-Retino podporuje několik způsobů integrace:
-
-plugin, který aktivujete v administraci vaši e-shop platformy (Shoptet, Prestashop, …);
-
-XML feed pokud si používáte vlastní řešení e-shopu;
-
-API integrace buďto přímo přes naše API nebo za využití námi přednastavených API integrací (např. pro Shopify, Shopware, Byznysweb, …)
-
-Zde naleznete seznam podporovaných platforem a integrací spolu s podrobným návodem na integraci. Pokud v seznamu vaše platforma není, lze Retino integrovat pomocí XML feedu (případně i XML produktového feedu) nebo přes API.
-
-V jednom účtu můžete mít neomezený počet zdrojů objednávek a jejich kombinací.
-
- 
-
-Po propojení se začnou vaše objednávky automaticky synchronizovat z vašeho systému do Retino účtu a zákazníci budou moci vyhledat jejich objednávky spolu s jejich dalšími podrobnostmi.
-
- 
-
- 
-
-Krok 3: Správa případu
-Typy případů a jejich procesy a stavy
-V tomto kroku si nastavíte vlastní workflow (tzn. jak budete s případy pracovat). Retino definuje pracovní procesy (workflow) pomocí tří komponent, které jsou hierarchicky řazené v tomto pořadí:
-
-Typ případu - na tomto místě si přizpůsobíte, které případy budete vyřizovat - vrácení zboží, reklamace, výměna, servis a pod. Existují dva výchozí typy případů - vratka a reklamace a nelze je odstranit.
-​
-
-Procesní krok je hlavní fáze zpracování - existuje těchto 5 kroků: Nový případ → Čekáme na přijetí → Řešíme → Rozhodnutí → Vyřešeno.
-
- 
-
-Stav případu je konkrétní stav v rámci procesního kroku, např. Zboží je na cestě k nám nebo Uznáno - Refundace.
-
-Každý typ případu může mít vlastní sadu kroků a ty rovněž mohou mít vlastní sadu stavů.
-
-V praxi to znamená, že si workflow přizpůsobíte přesně tomu, jak váš tým interně funguje. Pro příklad reklamace typicky prochází jiným procesem než vratka (např. navíc zahrnuje krok posouzení závady), a výměna zboží má zase vlastní logiku. Díky tomu agent v detailu případu vždy vidí jen relevantní stavy pro danou fázi. Zároveň můžete na jednotlivé stavy a kroky navázat automatizace (např. při přechodu případu do vybraného stavu automaticky odeslat e-mail zákazníkovi) a filtrovat případy v seznamu podle stavu, což usnadňuje denní prioritizaci práce a rozdělení úkolů.
-
- 
-
-Seznam případů
-Seznam případů je hlavní přehled všech případů. Umožňuje:
-
-vyhledávání případu podle čísla objednávky, jména nebo e-mailu zákazníka, čísla případu, …
-
-filtrování podle stavu případu, typu, štítku, přiřazeného agenta, …
-
-hromadné akce
-
-export případů nebo produktů do CSV
-
-založení nového případu agentem
-
-Pokud potřebujete, můžete si nastavit vlastní pohledy, které často používáte a mít je uložené pro rychlý přístup např. k nevyřízeným případům.
-
- 
-
-Detail případu
-V detailu případu agent řeší konkrétní požadavek zákazníka. Naleznete zde zejména:
-
-hlavičku případu obsahující všechny podstatné informace k případu jako je přiřazený agent, stav případu, štítky atd.
-
-komunikaci se zákazníkem
-
-interní poznámky
-
-objednání dopravy
-
-aktivity
-
-refundace a dobropisy
-
-přehled produktů zákaznické objednávky a její další detaily
-
-Je také možnost vytvořit si vlastní pole, které k práci s případy potřebujete.
-
- 
-
-Štítky případu
-Velkým pomocníkem udržujícím přehled a operace s jednotlivými případy jsou štítky.
-
-Jsou flexibilní nástroj pro kategorizaci případů nad rámec standardních stavů. Umožňují vizuálně odlišit různé typy případů, rychle je filtrovat a na jejich základě vytvářet vlastní automatizace - přidávat nebo odebírat je na základě událostí a podmínek, nebo na jejich přítomnost navázat další akce.
-
-Například při založení případu s vysokou hodnotou objednávky automaticky přidat štítek „VIP reklamace" a přiřadit specializovaného agenta.
-
- 
-
-Krok 4: Nastavení portálu Retino a jeho integrace na váš web
-Zákaznický portál
-Zákaznický portál je místo na vašem webu, kde si zákazník založí nový případ.
-
-U jednotlivých typu případů si na začátku stránky můžete nastavit vzhled případu a také maximální stáří objednávek, pro které lze typ případu založit.
-
- 
-
-V nastavení portálu konfigurujete celý proces, kterým zákazník prochází při zakládání případu. Nastavení je rozděleno do sekcí odpovídajících jednotlivým krokům formuláře:
-
-Typy případů - které typy se zákazníkovi nabídnou (vratka, reklamace, vlastní). Můžete upravovat názvy, popisy i pořadí.
-
-Vyhledání objednávky - zákazník zadá číslo objednávky a e-mail. Volitelně lze povolit i vyhledání přes číslo faktury nebo ruční vyplnění formuláře bez znalosti čísla objednávky.
-
-Položky objednávky - zákazník vybere konkrétní produkty, zvolí důvod vrácení a množství. Sem lze přidat vlastní pole pro více detailů nebo informací. U polí lze vybrat, zda má byt jejich vyplnění povinné nebo ne.
-
-Zpětná doprava - nastavení způsobů vrácení zboží: svoz kurýrem, podání na  pobočku, vlastní způsob přepravy nebo doprava placená zákazníkem (platba kartou přímo v portálu).
-
-Možnosti vrácení peněz  - slevový kupón, vrácení na bankovní účet, ...
-
-Informace o zákazníkovi - jaké údaje požadujete (jméno, e-mail, adresa svozu, fakturační adresa). U každého pole můžete nastavit, zda je povinné a také lze přidat vlastní pole.
-
-Potvrzení založení případu  závěrečná obrazovka s potvrzením, instrukcemi pro další kroky, odkazem na sledování stavu a volitelně žádostí o zpětnou vazbu. Zde lze také nastavit remarketing.
-
-Všechny texty v portálu lze upravit ve všech vašich jazycích a také je možné změnit jeho vzhled (barvy, font, zaoblení rohů) tak, aby korespondoval se vzhledem vaší stránky.
-
- 
-
-Integrace portálu
-Zákaznický portál se na vaši stránku integruje jako vložený prvek pomocí JavaScript widget kódu. Zákazník tak nemusí u založení případu opouštět váš web.
-
-Alternativně je možno používat přímý odkaz, který zákazníka přesměruje k portálu.
-
-
-Pokud používáte platformu Shoptet, zde naleznete podrobný návod k integraci portálu.
-
- 
-
- 
-
-Krok 5: Nastavení zpětné dopravy
-V Retino Returns existují tyto 4 druhy zpětných doprav:
-
-Doprava placená zákazníkem u které zákazník zaplatí za dopravu kartou během zakládání případu v zákaznickém portálu. Je mu posléze poslán přepravní štítek nebo objednán svoz kurýrem a vystavena faktura od Retino. Vy jako e-shop dopravu nehradíte, ale máte možnost sledovat pohyby zásilky. Je vhodná pro typ případu vratka.
-​
-
-Doprava placená e-shopem u které využíváte smluv, které má sjednané Retino s dopravci, není tedy nutné mít vlastní smlouvu s dopravcem. Může si ji objednat zákazník během založení případu, nebo ji lze objednat také v detailu již založeného případu. Je vhodná pro reklamace nebo záruční servis.
-
-U této možnosti lze nastavit cenu dopravného pro zákazníka - v tomto případě ale zákazník za dopravu reálně nic neplatí a poplatek mu zaúčtujete např. během refundace.
-
- 
-
-Dopravu hrazenou a doručovanou přes vaše vlastní smlouvy s dopravci. Pokud již máte vlastní smlouvu s některým z podporovaných dopravců, můžete si ji integrovat přes API s vašim Retino účtem a tato doprava je vám posléze účtována dopravcem tak, jak jste se smluvně domluvili. I u toho typu dopravy si můžete nastavit cenu, kterou vidí zákazník u založení případu. Paušální měsíční poplatek za jednu vlastní smlouvu s dopravcem je 299,- Kč.
-
- 
-
-Vlastní způsob dopravy pokud  chcete zákazníkům nabídnout vlastní přepravu , např. osobní doručení na pobočku, firemní svoz, nebo doprava vyžadující speciální podmínky. Jde ale čistě o evidenční nástroj - negenerují se přepravní štítky, zásilka se nesleduje a doprava se neobjednává automaticky – stavy je nutné aktualizovat ručně.
-
- 
-
-Nastavení možnosti dopravy a trasy
-U každé dopravy si lze v jejím detailu přidáte různé možností dopravy. To se hodí, když např. potřebujete konkrétní dopravu nabízet zároveň pro vratky i reklamace. Pro každou možnost dopravy lze upravit e-mail s instrukcemi pro zákazníky, který se odesílá po objednání dopravy, a také lze vytvořit vlastní textaci, kterou vidí zákazníci v portálu - sem můžete psát více podrobností k dané možnosti dopravy.
-
-
-Pro každou možnost dopravy si nakonec nastavte její konkrétní trasy (ze které země do které země), jejich cenu pro zákazníka, doručovací adresu a případně i omezení váhy. Pro každou možnost dopravy a trasy lze nastavit rozdílnou cenu pro zákazníka a jinou textaci, kterou vidí zákazníci v portálu.
-​
-Nakonec v nastavení portálu přidejte možnosti dopravy k jednotlivým typům případů. Dopravce a možnosti dopravy lze v rámci jednoho případu libovolně kombinovat.
-
- 
-
-Objednání dopravy a seznam doprav
-Objednat dopravu lze ručně hromadně nebo také v detailu případu v záložce Doprava. Údaje o odesílateli, příjemci a balíku se předvyplní automaticky z dat případu.
-
-
-Doprava se na základě toho, jak je zásilka podána k přepravě, rozděluje na:
-
- 
-
-Podání na podacím místě (pobočce) přepravce​
-​
-
-vyzvednutí kurýrem na adrese odesílatele (svoz)​
-​
-
-Paletová přeprava pro nadrozměrné nebo těžké zásilky
-​
-
-specifikován e-shopem u vlastní možnost přepravy
-
- 
-
-V Seznamu doprav najdete přehled všech objednaných doprav včetně žádostí čekajících na schválení a stavů zásilek v reálném čase. Zde můžete monitorovat i případné problémy zásilek během zpětné přepravy.
-
- 
-
-Pokud nechcete, aby musel zákazník čekat na ruční schválení jeho dopravy agentem, lze si nastavit její automatické objednání.
-​
-
-Obecně doporučujeme mít aktivní jak dopravu placenou zákazníkem, tak i dopravu placenou e-shopem. Jak již bylo zmíněno výše, různé druhy a možnosti doprav lze kombinovat u jednotlivých typů případů tak, jak to nejlépe vyhovuje vašim potřebám. Doporučujeme také vytvořit si automatizace, které budou např. objednávat dopravu automaticky po změně stavu případu, měnit stav případu po změně stavu zpětné zásilky, přidávat štítky a pod.
-
- 
-
- 
-
-Krok 6: Zpracování případu
-Aktivity
-Aktivity slouží k plánování a organizaci zpracování vaši případů napříč týmem a pomáhá vám plánovat práci, sledovat lhůty a udržovat přehled o případech.
-
-Skládají se z jednotlivých úkolů, které si vytvoříte v detailu případu a upravíte na základě různých parametrů jako třeba přiřazený agent, termín splnění a pod.
-
-Nejvíc je oceníte pokud necháte aktivity vytvářet automatizace.
-
- 
-
-Refundace
-Refundace najdete jako samostatnou sekci v detailu případu. Existuje několik možností, jak refundovat vaše zákazníky:
-
-bankovním převodem - zde je potřeba mít nastaven refundační účet. Po zpracování požadavku na refundaci je vygenerován soubor ABO nebo PAIN XML, který nahrajete do vašeho internetového bankovnictví.
-
-poukázkou (voucherem) - podporované platformy jsou Shoptet, Shopify a WooCommerce
-
-QR kódem
-
-webhookem v případě, že máte vlastní systém
-
-exportem do CSV pro externí systémy
-
-Nezapomeňte, že po odeslání požadavku k refundaci ještě nedojde, je potřeba jej spolu s ostatními požadavky zpracovat.
-
- 
-
-Dobropisy 
-V záložce Dobropisy v detailu případu naleznete možnost jejich vytvoření aniž byste museli opouštět aplikaci Retino Returns.
-
-Vytváření dobropisů lze propojit s platformami Shoptet a Dativery. Pokud používáte vlastní integraci, je možnost vytvořit si nativní Retino dobropis a ten pak posílat do externího systému přes webhook.
-
- 
-
- 
-
-Krok 7: Automatizace
-Nyní, když už máte nastaveno vše pro vyřizování vašich případů, přichází na řadu neprůběrné množství konfigurací automatizací, které vám ulehčí spoustu práce.
-
-Automatizace vám umožní výrazně snížit manuální práci při správě reklamací a vratek. Fungují na jednoduchém principu: nastavíte událost, která automatizaci spustí, volitelné podmínky, za kterých se má spustit, a akci, která se má provést. U každé automatizace lze nastavit čas, za který se automatizace spustí po splnění její podmínek. 
-​
-
-Co může automatizaci spustit
-Automatizaci lze navázat na řadu událostí – například když zákazník nebo agent založí případ, když se změní stav případu nebo stav zásilky, když zákazník pošle novou zprávu, když případ dostane štítek, nebo když vyprší termín aktivity.
-
- 
-
-Co automatizace dokáže udělat
-Automatizace může odeslat zákazníkovi e-mail podle šablony, přiřadit případ agentovi, přidat nebo odebrat štítek, objednat dopravu, vygenerovat dokument, nastavit termín, uzavřít nebo znovu otevřít případ či vyplnit vlastní pole.
-​
-
-Podmínky automatizace a jejich kombinování
-Podmínky lze volně kombinovat – například omezit automatizaci jen na určitý typ případu (reklamace, vrátka), zemi zákazníka, stav nebo dopravy nebo stáří objednávky. Podmínky lze řetězit logikou „všechny musí platit" (AND) nebo „alespoň jedna musí platit" (OR).
-
- 
-
-Přednastavené automatizace
-V Retino naleznete několik automatizací připravených k okamžitému použití – například automatické přidání termínu podle typu případu nebo odeslání žádosti o hodnocení po uzavření případu. Ty lze upravit nebo použít jako inspiraci.
-​
-
-Zde naleznete několik situací, kde vám automatizace výrazně pomohou usnadnit práci.
-
- 
-
- 
-
-Krok 8: Testování a spuštění
-Než Retino Returns zpřístupníte zákazníkům, doporučujeme celý proces důkladně otestovat. Cílem je ověřit technickou funkčnost, ujistit se, že workflow odpovídá vašim interním procesům a že zákaznická zkušenost je plynulá.
-
-
-Začněte simulací reálného scénáře. Vytvořte testovací případ přes zákaznický portál a ověřte, že se správně propíše do administrace, včetně objednávky a produktů. Následně projděte proces z pohledu agenta — měňte stavy, otestujte komunikaci a zkontrolujte, že se automatizace i e-mailové notifikace spouštějí podle očekávání.
-
- 
-
-Pokud působíte ve více zemích, vyzkoušejte také jazykové verze portálu a šablon.
-
-
-Díky důkladnému testování zajistíte hladké spuštění a profesionální zákaznickou zkušenost od prvního dne.
-
- 
-
- 
-
-Krok 9: API, webhooky a další rozšíření
-Retino Returns lze plně propojit s vašimi dalšími systémy díky API a webhookům. To se hodí zejména tehdy, kdy potřebujete data z Retina automaticky přenášet do vlastního systému (ERP, účetnictví, sklad, BI) nebo naopak z vašeho systému ovládat případy v Retinu.
-
- 
-
-Tickets API
-Tickets API je REST API komunikující přes JSON. Autentifikace probíhá pomocí tokenu, který naleznete v nastavení API. Pomocí Tickets API můžete programově přistupovat k datům o případech, produktech, dopravě i přidružených objednávkách — například automaticky stahovat případy do vašeho ERP, synchronizovat stavy s interním systémem nebo hromadně exportovat data pro analytiku.
-
- 
-
-Orders API
-Pokud vaše e-shop platforma není mezi podporovanými integracemi a nechcete použít XML feed, můžete objednávky do Retina synchronizovat přímo přes Orders API.
-
- 
-
-Webhooky
-Webhooky vám umožňují dostávat upozornění z Retina v reálném čase. Místo opakovaného dotazování API vám Retino samo pošle HTTP POST požadavek ve formátu JSON na vámi zadanou URL adresu, kdykoli dojde k vybrané události (založení případu, změna stavu, objednání dopravy aj.).
-
-V praxi webhooky využijete například k automatické aktualizaci stavu reklamace ve vašem interním systému, ke spuštění procesu refundace v účetním softwaru při uzavření případu nebo k zasílání notifikací do Slacku při založení případu s vysokou hodnotou objednávky.
-
-Každý webhook je zabezpečen hlavičkou X-Retino-Secret. Kromě webhooků pro případy existují také samostatné webhooky dobropisů a webhooky o objednání dopravy.
-
- 
-
-Další integrace a rozšíření
-Retino Returns lze dále rozšířit o řadu aplikací a služeb:
-
-Integrace se SupportBoxem — detaily případů přímo v rozhraní SupportBoxu.
-
-Integrace s MessageOk — stav vrácení nebo reklamace v chatovém widgetu na vašem webu.
-
-Dobropisy přes Dativery — propojení s účetním systémem POHODA.
-
-Integrace se Skladonem — automatický přenos dat o vracených produktech do fulfillment systému.
-
-Dodavatelské reklamace — zakládání a sledování reklamací u vašich dodavatelů.
-
-Remarketing a SMS zprávy — rozšíření komunikace se zákazníky.
-
-Kompletní seznam všech integrací a rozšíření naleznete na stránce Integrace a v sekci Marketplace v dokumentaci.
-
- 
-
- 
-
-Závěr
-Retino Returns je navržen tak, aby se přizpůsobil vašim procesům - ne naopak. Díky vlastním typům případů, stavům, automatizacím a rozšiřitelnosti přes API a webhooky si systém nastavíte přesně podle toho, jak váš tým interně funguje a jak chcete komunikovat se zákazníky.
-
- 
-
-Ať už provozujete malý e-shop s desítkami vratek měsíčně, nebo velký obchod zpracovávající tisíce případů ve více zemích a jazycích, Returns vám pomůže celý proces zautomatizovat, zpřehlednit a zrychlit — od založení případu zákazníkem, přes zpětnou dopravu a komunikaci, až po refundaci a uzavření.
-
- 
-
-Pokud vám cokoliv není jasné, potřebujete poradit s nastavením nebo si nevíte rady s konkrétním krokem, neváhejte se obrátit na náš tým podpory na support@retino.com nebo přes chat přímo v aplikaci. Rádi vám pomůžeme.

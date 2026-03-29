@@ -49,6 +49,22 @@ router.post('/verify', async (req, res, next) => {
   }
 });
 
+// GET /case-types — active case types for public form
+router.get('/case-types', async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from('case_types')
+      .select('id, code, name_cs, color, icon')
+      .eq('enabled', true)
+      .order('sort_order');
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /reasons — active return reasons
 router.get('/reasons', async (req, res, next) => {
   try {
@@ -81,6 +97,7 @@ router.post('/create', async (req, res, next) => {
       deliveryNoteId, type = 'return', reasonCode, reasonDetail,
       vehicleInfo, wasMounted, customerName, customerEmail, customerPhone,
       items, // array of { deliveryNoteItemId, qtyReturned, condition, itemNote, images }
+      shippingMethod, shippingData, // transport zwrotny
     } = req.body;
 
     if (!deliveryNoteId || !reasonCode || !items || items.length === 0) {
@@ -153,10 +170,63 @@ router.post('/create', async (req, res, next) => {
       note: 'Žádost vytvořena zákazníkem',
     });
 
+    // Create return shipment if shipping method provided
+    let shipmentInfo = null;
+    if (shippingMethod && shippingMethod !== 'none') {
+      try {
+        const returnShippingService = require('../../services/retino/ReturnShippingService');
+        const carrier = shippingData?.carrier || (shippingMethod === 'self_ship' ? 'self' : 'zasilkovna');
+        const shipment = await returnShippingService.createShipment({
+          returnId: ret.id,
+          carrier,
+          shippingMethod,
+          pickupPoint: shippingData?.pickupPoint || null,
+          customerAddress: shippingData?.customerAddress || null,
+          notes: shippingData?.notes || null,
+        });
+
+        // Update cost
+        const cost = returnShippingService.getShippingCost(carrier, shippingMethod);
+        if (cost > 0) {
+          await supabase
+            .from('return_shipments')
+            .update({ cost })
+            .eq('id', shipment.id);
+        }
+
+        shipmentInfo = {
+          id: shipment.id,
+          carrier,
+          shippingMethod,
+          trackingNumber: shipment.tracking_number || null,
+          labelUrl: shipment.label_url || null,
+          cost,
+        };
+      } catch (shipErr) {
+        console.error('[Returns] Shipment creation error:', shipErr.message);
+        // Non-critical — return still created
+      }
+    }
+
+    // Trigger email: return_created
+    try {
+      const emailService = require('../../services/retino/ReturnEmailService');
+      await emailService.enqueueEmail('return_created', ret);
+    } catch (emailErr) {
+      console.error('[Returns] Email trigger error:', emailErr.message);
+    }
+
+    // Trigger webhooks
+    try {
+      const webhookService = require('../../services/retino/WebhookService');
+      webhookService.fire('return_created', { return_id: ret.id, return_number: returnNumber, type, reason_code: reasonCode });
+    } catch { /* non-critical */ }
+
     res.status(201).json({
       returnNumber,
       accessToken: ret.access_token,
       statusUrl: `/vraceni/stav/${ret.access_token}`,
+      shipment: shipmentInfo,
     });
   } catch (err) {
     next(err);

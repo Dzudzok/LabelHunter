@@ -286,6 +286,27 @@ router.patch('/:id/status', async (req, res, next) => {
       note: note || null,
     });
 
+    // Trigger email: return_status_changed
+    try {
+      const { data: fullRet } = await supabase.from('returns').select('*').eq('id', id).single();
+      if (fullRet?.customer_email) {
+        const emailService = require('../../services/retino/ReturnEmailService');
+        await emailService.enqueueEmail('return_status_changed', fullRet, {
+          new_status_label: getStatusLabel(newStatus),
+          previous_status_label: getStatusLabel(ret.status),
+          note: note || '',
+        });
+      }
+    } catch (emailErr) {
+      console.error('[Returns] Email trigger error:', emailErr.message);
+    }
+
+    // Trigger webhooks
+    try {
+      const webhookService = require('../../services/retino/WebhookService');
+      webhookService.fire('status_changed', { return_id: parseInt(id), previous_status: ret.status, new_status: newStatus, note });
+    } catch { /* non-critical */ }
+
     res.json({ success: true, previousStatus: ret.status, newStatus });
   } catch (err) {
     next(err);
@@ -339,6 +360,24 @@ router.patch('/:id/resolve', async (req, res, next) => {
       .eq('id', id);
 
     if (error) throw error;
+
+    // Trigger email: return_resolved
+    try {
+      const { data: fullRet } = await supabase.from('returns').select('*').eq('id', id).single();
+      if (fullRet?.customer_email) {
+        const emailService = require('../../services/retino/ReturnEmailService');
+        const resolutionLabels = { refund: 'Vrácení peněz', replacement: 'Výměna zboží', repair: 'Oprava', rejected: 'Zamítnuto' };
+        await emailService.enqueueEmail('return_resolved', fullRet, {
+          resolution_label: resolutionLabels[resolutionType] || resolutionType,
+          resolution_note: resNote || '',
+          refund_amount: amount || '',
+          currency: 'CZK',
+        });
+      }
+    } catch (emailErr) {
+      console.error('[Returns] Email trigger error:', emailErr.message);
+    }
+
     res.json({ success: true });
   } catch (err) {
     next(err);
@@ -368,6 +407,22 @@ router.post('/:id/messages', async (req, res, next) => {
       .single();
 
     if (error) throw error;
+
+    // Trigger email: return_message (only for non-internal messages)
+    if (!isInternal) {
+      try {
+        const { data: fullRet } = await supabase.from('returns').select('*').eq('id', id).single();
+        if (fullRet?.customer_email) {
+          const emailService = require('../../services/retino/ReturnEmailService');
+          await emailService.enqueueEmail('return_message', fullRet, {
+            message: content.trim(),
+          });
+        }
+      } catch (emailErr) {
+        console.error('[Returns] Email trigger error:', emailErr.message);
+      }
+    }
+
     res.status(201).json(msg);
   } catch (err) {
     next(err);
