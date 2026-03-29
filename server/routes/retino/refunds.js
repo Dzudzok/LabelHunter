@@ -51,7 +51,7 @@ router.post('/batch', async (req, res, next) => {
     const totalAmount = returns.reduce((sum, r) => sum + (parseFloat(r.resolution_amount) || 0), 0);
 
     // Generate batch number
-    const batchNumber = `ABO-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${String(Date.now()).slice(-4)}`;
+    const batchNumber = `ABO-${new Date().toISOString().slice(0, 10).replace(/-/g, '')}-${require('crypto').randomBytes(3).toString('hex')}`;
 
     // Create batch
     const { data: batch, error: batchErr } = await supabase

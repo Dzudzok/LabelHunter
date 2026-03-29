@@ -35,8 +35,9 @@ export default function ReturnAdminCreate() {
     try {
       // Search by invoice/doc number in packages
       const res = await api.get('/packages/search', { params: { query: docNumber.trim(), limit: 1 } })
-      const pkg = res.data?.[0]
-      if (!pkg) { setVerifyError('Objednávka nenalezena'); return }
+      const results = Array.isArray(res.data) ? res.data : (res.data?.data || [])
+      const pkg = results[0]
+      if (!pkg) { setVerifyError('Objednávka nenalezena'); setItems([]); return }
 
       setVerifiedNote(pkg)
       setCustomerName(pkg.customer_name || '')

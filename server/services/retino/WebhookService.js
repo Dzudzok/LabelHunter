@@ -22,7 +22,9 @@ class WebhookService {
       if (!endpoints?.length) return;
 
       for (const ep of endpoints) {
-        this.sendWebhook(ep, event, payload);
+        this.sendWebhook(ep, event, payload).catch(err => {
+          console.error(`[Webhook] ${ep.name} fire error:`, err.message);
+        });
       }
     } catch (err) {
       console.error('[Webhook] Error fetching endpoints:', err.message);

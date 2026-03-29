@@ -183,6 +183,20 @@ function RuleForm({ initial, onSave, onCancel, saving }) {
 
   const handleSubmit = (e) => {
     e.preventDefault()
+    // Validate webhook URLs
+    for (const action of form.actions) {
+      if (action.type === 'webhook') {
+        const url = action.config?.url
+        if (!url) {
+          alert('Webhook URL je povinný')
+          return
+        }
+        try { new URL(url) } catch {
+          alert('Neplatná webhook URL: ' + url)
+          return
+        }
+      }
+    }
     onSave(form)
   }
 
@@ -341,7 +355,7 @@ export default function AutomationRules() {
       setShowForm(false)
       fetchRules()
     } catch (err) {
-      console.error('Failed to create rule:', err)
+      alert(err.response?.data?.error || 'Nepodařilo se vytvořit pravidlo')
     } finally {
       setSaving(false)
     }
@@ -355,7 +369,7 @@ export default function AutomationRules() {
       setEditingRule(null)
       fetchRules()
     } catch (err) {
-      console.error('Failed to update rule:', err)
+      alert(err.response?.data?.error || 'Nepodařilo se uložit pravidlo')
     } finally {
       setSaving(false)
     }
@@ -368,7 +382,7 @@ export default function AutomationRules() {
         r.id === rule.id ? { ...r, enabled: !r.enabled } : r
       ))
     } catch (err) {
-      console.error('Failed to toggle rule:', err)
+      alert(err.response?.data?.error || 'Chyba')
     }
   }, [])
 
@@ -378,7 +392,7 @@ export default function AutomationRules() {
       setDeleteConfirm(null)
       setRules(prev => prev.filter(r => r.id !== id))
     } catch (err) {
-      console.error('Failed to delete rule:', err)
+      alert(err.response?.data?.error || 'Nepodařilo se smazat pravidlo')
     }
   }, [])
 

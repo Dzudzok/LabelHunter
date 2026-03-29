@@ -6,6 +6,7 @@ export default function RefundAccounts() {
   const [loading, setLoading] = useState(true)
   const [showForm, setShowForm] = useState(false)
   const [form, setForm] = useState({ name: '', accountNumber: '', iban: '', bic: '', currency: 'CZK', isDefault: false })
+  const [formError, setFormError] = useState('')
 
   const fetchAccounts = async () => {
     setLoading(true)
@@ -20,6 +21,16 @@ export default function RefundAccounts() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    setFormError('')
+    // Validate account number format (Czech: XXXXXX/XXXX)
+    if (!/^\d{1,16}\/\d{4}$/.test(form.accountNumber)) {
+      setFormError('Neplatný formát čísla účtu (např. 123456789/0100)')
+      return
+    }
+    if (form.iban && !/^[A-Z]{2}\d{2}[A-Z0-9]{4,30}$/.test(form.iban.replace(/\s/g, ''))) {
+      setFormError('Neplatný formát IBAN')
+      return
+    }
     try {
       await api.post('/retino/refunds/accounts', form)
       setForm({ name: '', accountNumber: '', iban: '', bic: '', currency: 'CZK', isDefault: false })
@@ -80,6 +91,7 @@ export default function RefundAccounts() {
             <input type="checkbox" checked={form.isDefault} onChange={e => setForm({...form, isDefault: e.target.checked})} className="w-4 h-4" />
             Výchozí účet
           </label>
+          {formError && <div className="text-red-400 text-sm">{formError}</div>}
           <button type="submit" className="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded-lg text-sm font-semibold">
             Uložit
           </button>

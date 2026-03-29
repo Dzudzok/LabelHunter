@@ -21,7 +21,7 @@ app.use(cors({
   },
   credentials: true,
 }));
-app.use(express.json());
+app.use(express.json({ limit: '10mb' }));
 
 // Serve label PDFs statically
 const labelsDir = path.join(__dirname, 'labels');
@@ -64,7 +64,6 @@ app.use('/api/retino/returns-analytics', require('./routes/retino/returnsAnalyti
 app.use('/api/retino/custom-fields', require('./routes/retino/customFields'));
 app.use('/api/retino/webhooks', require('./routes/retino/webhooks'));
 app.use('/api/retino/public/returns', require('./routes/retino/returnsPublic'));
-app.use('/api/retino/public', require('./routes/retino/returnsPublic'));
 
 // Health check
 app.get('/api/health', (req, res) => {

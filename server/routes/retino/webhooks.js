@@ -22,6 +22,7 @@ router.post('/', async (req, res, next) => {
   try {
     const { name, url, secret, events, enabled } = req.body;
     if (!name || !url) return res.status(400).json({ error: 'name and url required' });
+    try { new URL(url); } catch { return res.status(400).json({ error: 'Invalid URL format' }); }
 
     const { data, error } = await supabase
       .from('webhook_endpoints')

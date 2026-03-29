@@ -250,7 +250,7 @@ export default function TrackAndTrace() {
               {ratingValue > 0 && (
                 <button
                   onClick={handleSubmitRating}
-                  disabled={submittingRating}
+                  disabled={submittingRating || ratingSubmitted}
                   className="w-full bg-[#1046A0] text-white py-2.5 rounded-lg font-semibold text-sm hover:bg-[#0d3a8a] disabled:opacity-50 transition-colors"
                 >
                   {submittingRating ? 'Odes\u00edl\u00e1m...' : 'Odeslat hodnocen\u00ed'}

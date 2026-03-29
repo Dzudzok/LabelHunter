@@ -3,7 +3,7 @@ const router = express.Router();
 const supabase = require('../../db/supabase');
 
 // GET /analytics — aggregate cost analytics
-router.get('/analytics', async (req, res) => {
+router.get('/analytics', async (req, res, next) => {
   try {
     const { days = 30, shipper } = req.query;
     const dateFrom = new Date();
@@ -75,13 +75,12 @@ router.get('/analytics', async (req, res) => {
       unmatchedInvoices,
     });
   } catch (err) {
-    console.error('Cost analytics error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST /import — CSV import of cost data
-router.post('/import', express.text({ type: '*/*', limit: '10mb' }), async (req, res) => {
+router.post('/import', express.text({ type: '*/*', limit: '10mb' }), async (req, res, next) => {
   try {
     const raw = typeof req.body === 'string' ? req.body : String(req.body);
     const lines = raw.split(/\r?\n/).filter(l => l.trim());
@@ -171,13 +170,12 @@ router.post('/import', express.text({ type: '*/*', limit: '10mb' }), async (req,
 
     res.json({ imported: toInsert.length, matched, unmatched });
   } catch (err) {
-    console.error('Cost import error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // GET / — list cost records with pagination + filters
-router.get('/', async (req, res) => {
+router.get('/', async (req, res, next) => {
   try {
     const { page = 1, limit = 50, shipper, dateFrom, dateTo } = req.query;
     const offset = (Number(page) - 1) * Number(limit);
@@ -197,13 +195,12 @@ router.get('/', async (req, res) => {
 
     res.json({ data, total: count, page: Number(page), limit: Number(limit) });
   } catch (err) {
-    console.error('Cost list error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // POST / — manual single cost entry
-router.post('/', async (req, res) => {
+router.post('/', async (req, res, next) => {
   try {
     const {
       delivery_note_id,
@@ -236,13 +233,12 @@ router.post('/', async (req, res) => {
     if (error) throw error;
     res.json(data);
   } catch (err) {
-    console.error('Cost create error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 
 // DELETE /:id — delete cost record
-router.delete('/:id', async (req, res) => {
+router.delete('/:id', async (req, res, next) => {
   try {
     const { error } = await supabase
       .from('shipping_costs')
@@ -252,8 +248,7 @@ router.delete('/:id', async (req, res) => {
     if (error) throw error;
     res.json({ ok: true });
   } catch (err) {
-    console.error('Cost delete error:', err);
-    res.status(500).json({ error: err.message });
+    next(err);
   }
 });
 

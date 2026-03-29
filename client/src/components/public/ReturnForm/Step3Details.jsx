@@ -28,11 +28,13 @@ export default function Step3Details({ formData, updateForm, onNext, onBack }) {
     const newImages = []
     for (const file of files) {
       try {
-        const fd = new FormData()
-        fd.append('file', file)
-        // Upload will be done after return is created — for now store locally
-        const url = URL.createObjectURL(file)
-        newImages.push({ file, preview: url, name: file.name })
+        // Convert to base64 so preview survives page lifecycle; actual upload after return creation
+        const base64 = await new Promise((resolve) => {
+          const reader = new FileReader()
+          reader.onload = () => resolve(reader.result)
+          reader.readAsDataURL(file)
+        })
+        newImages.push({ file, preview: base64, name: file.name })
       } catch { /* ignore */ }
     }
     updateForm({ uploadedImages: [...(formData.uploadedImages || []), ...newImages] })

@@ -46,7 +46,9 @@ export default function ReturnStatus() {
       })
       setMessage('')
       fetchData()
-    } catch { /* ignore */ }
+    } catch {
+      alert('Nepodařilo se odeslat zprávu')
+    }
     setSending(false)
   }
 

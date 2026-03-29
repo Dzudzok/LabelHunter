@@ -2,12 +2,15 @@
  * Cron: process return email queue every 1 minute.
  */
 let intervalId = null;
+let isRunning = false;
 
 module.exports = {
   start() {
     const INTERVAL = 60 * 1000; // 1 min
 
     const run = async () => {
+      if (isRunning) return;
+      isRunning = true;
       try {
         const emailService = require('../services/retino/ReturnEmailService');
         const sent = await emailService.processQueue();
@@ -16,6 +19,8 @@ module.exports = {
         }
       } catch (err) {
         console.error('[Cron] processReturnEmails error:', err.message);
+      } finally {
+        isRunning = false;
       }
     };
 

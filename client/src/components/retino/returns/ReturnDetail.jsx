@@ -62,7 +62,9 @@ export default function ReturnDetail() {
       })
       setMessage('')
       fetchReturn()
-    } catch { /* ignore */ }
+    } catch (err) {
+      alert(err.response?.data?.error || 'Nepodařilo se odeslat zprávu')
+    }
     setSending(false)
   }
 
@@ -167,8 +169,8 @@ export default function ReturnDetail() {
                     if (['approved', 'rejected'].includes(t.status)) {
                       setShowResolve(true)
                     } else {
-                      const note = prompt(`Poznámka k přechodu na "${t.label}":`)
-                      if (note !== null) changeStatus(t.status, note)
+                      const statusNote = prompt(`Poznámka k přechodu na "${t.label}":`)
+                      if (statusNote !== null) changeStatus(t.status, statusNote)
                     }
                   }}
                   className="px-3 py-1.5 rounded-lg text-xs font-semibold bg-navy-600 hover:bg-navy-500 text-theme-primary transition-colors"

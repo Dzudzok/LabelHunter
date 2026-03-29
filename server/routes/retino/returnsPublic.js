@@ -4,7 +4,9 @@ const supabase = require('../../db/supabase');
 const { getUnifiedStatus, getStatusLabel } = require('../../services/retino/tracking-status-mapper');
 const { getStatusLabel: getReturnStatusLabel } = require('../../services/retino/return-workflow');
 const multer = require('multer');
+const crypto = require('crypto');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
+const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
 
 // POST /verify — verify order by doc_number + email → return items
 router.post('/verify', async (req, res, next) => {
@@ -14,7 +16,7 @@ router.post('/verify', async (req, res, next) => {
       return res.status(400).json({ error: 'docNumber and email are required' });
     }
 
-    const searchVal = docNumber.trim();
+    const searchVal = String(docNumber).trim().slice(0, 50);
 
     // Search by exact match first, then case-insensitive partial match
     let note = null;
@@ -372,8 +374,12 @@ router.post('/:accessToken/upload', upload.single('file'), async (req, res, next
     if (!ret) return res.status(404).json({ error: 'Žádost nenalezena' });
     if (!req.file) return res.status(400).json({ error: 'No file uploaded' });
 
+    if (!ALLOWED_MIME_TYPES.includes(req.file.mimetype)) {
+      return res.status(400).json({ error: 'Nepovolený typ souboru. Povolené: JPEG, PNG, WebP, GIF, PDF' });
+    }
+
     const ext = req.file.originalname.split('.').pop();
-    const fileName = `return-${ret.id}/${Date.now()}-${Math.random().toString(36).slice(2, 8)}.${ext}`;
+    const fileName = `return-${ret.id}/${Date.now()}-${crypto.randomBytes(6).toString('hex')}.${ext}`;
 
     const { data, error } = await supabase.storage
       .from('return-attachments')

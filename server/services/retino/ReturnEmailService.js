@@ -131,7 +131,7 @@ class ReturnEmailService {
         await supabase
           .from('email_queue')
           .update({
-            status: retries >= 3 ? 'failed' : 'failed',
+            status: retries >= 3 ? 'failed' : 'queued',
             error_message: sendErr.message,
             retry_count: retries,
             next_retry_at: nextRetry,

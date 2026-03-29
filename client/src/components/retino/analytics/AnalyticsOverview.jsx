@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -14,10 +15,11 @@ const PERIOD_OPTIONS = [
 ]
 
 export default function AnalyticsOverview() {
+  const [searchParams, setSearchParams] = useSearchParams()
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
-  const [days, setDays] = useState('90')
-  const [shipper, setShipper] = useState('')
+  const [days, setDays] = useState(searchParams.get('days') || '90')
+  const [shipper, setShipper] = useState(searchParams.get('shipper') || '')
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -32,6 +34,14 @@ export default function AnalyticsOverview() {
       setLoading(false)
     }
   }, [days, shipper])
+
+  // Sync filters to URL
+  useEffect(() => {
+    const params = {}
+    if (days !== '90') params.days = days
+    if (shipper) params.shipper = shipper
+    setSearchParams(params, { replace: true })
+  }, [days, shipper, setSearchParams])
 
   useEffect(() => { fetchData() }, [fetchData])
 

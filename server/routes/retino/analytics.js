@@ -35,12 +35,28 @@ async function fetchAllNotes(select, filters = {}) {
   return all;
 }
 
-// Cache for analytics
+// Cache for analytics (max 50 entries to prevent memory leak)
 let analyticsCache = {};
 const CACHE_TTL = 3 * 60 * 1000; // 3 min
+const CACHE_MAX_ENTRIES = 50;
 
 function getCacheKey(name, query) {
-  return `${name}:${JSON.stringify(query)}`;
+  const sortedKeys = Object.keys(query).sort();
+  const stable = sortedKeys.map(k => `${k}=${query[k]}`).join('&');
+  return `${name}:${stable}`;
+}
+
+function setCache(key, data) {
+  const keys = Object.keys(analyticsCache);
+  if (keys.length >= CACHE_MAX_ENTRIES) {
+    // Remove oldest entry
+    let oldest = null, oldestTime = Infinity;
+    for (const k of keys) {
+      if (analyticsCache[k].time < oldestTime) { oldest = k; oldestTime = analyticsCache[k].time; }
+    }
+    if (oldest) delete analyticsCache[oldest];
+  }
+  analyticsCache[key] = { data, time: Date.now() };
 }
 
 // GET /overview — carrier performance, volume trends, status breakdown
@@ -132,7 +148,7 @@ router.get('/overview', async (req, res, next) => {
       days: daysNum,
     };
 
-    analyticsCache[cacheKey] = { data: result, time: now };
+    setCache(cacheKey, result);
     res.json(result);
   } catch (err) {
     next(err);
@@ -221,7 +237,7 @@ router.get('/delivery-time', async (req, res, next) => {
       days: daysNum,
     };
 
-    analyticsCache[cacheKey] = { data: result, time: now };
+    setCache(cacheKey, result);
     res.json(result);
   } catch (err) {
     next(err);
@@ -321,7 +337,7 @@ router.get('/problems', async (req, res, next) => {
       days: daysNum,
     };
 
-    analyticsCache[cacheKey] = { data: result, time: now };
+    setCache(cacheKey, result);
     res.json(result);
   } catch (err) {
     next(err);
@@ -415,7 +431,7 @@ router.get('/timeliness', async (req, res, next) => {
       days: daysNum,
     };
 
-    analyticsCache[cacheKey] = { data: result, time: now };
+    setCache(cacheKey, result);
     res.json(result);
   } catch (err) {
     next(err);
@@ -549,7 +565,7 @@ router.get('/tt-analytics', async (req, res, next) => {
       days: daysNum,
     };
 
-    analyticsCache[cacheKey] = { data: result, time: now };
+    setCache(cacheKey, result);
     res.json(result);
   } catch (err) {
     next(err);

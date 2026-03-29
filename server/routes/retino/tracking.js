@@ -89,10 +89,17 @@ router.get('/shipments', async (req, res, next) => {
       else query = query.in('unified_status', statuses);
     }
     if (shipper) query = query.eq('shipper_code', shipper);
-    if (dateFrom) query = query.gte('date_issued', `${dateFrom}T00:00:00.000Z`);
-    if (dateTo) query = query.lte('date_issued', `${dateTo}T23:59:59.999Z`);
+    if (dateFrom) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom)) return res.status(400).json({ error: 'Invalid dateFrom format (YYYY-MM-DD)' });
+      query = query.gte('date_issued', `${dateFrom}T00:00:00.000Z`);
+    }
+    if (dateTo) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) return res.status(400).json({ error: 'Invalid dateTo format (YYYY-MM-DD)' });
+      query = query.lte('date_issued', `${dateTo}T23:59:59.999Z`);
+    }
     if (search) {
-      query = query.or(`doc_number.ilike.%${search}%,tracking_number.ilike.%${search}%,customer_name.ilike.%${search}%,customer_email.ilike.%${search}%,invoice_number.ilike.%${search}%`);
+      const s = String(search).slice(0, 100);
+      query = query.or(`doc_number.ilike.%${s}%,tracking_number.ilike.%${s}%,customer_name.ilike.%${s}%,customer_email.ilike.%${s}%,invoice_number.ilike.%${s}%`);
     }
 
     const from = (parseInt(page) - 1) * parseInt(pageSize);
@@ -322,17 +329,26 @@ router.post('/sync-jjd', async (req, res, next) => {
     const trackingNumbers = allPPLDHL.map(s => s.tracking_number);
     const jjdMap = await pplService.batchGetJJDNumbers(trackingNumbers);
 
-    // Update delivery_notes with JJD numbers
+    // Update delivery_notes with JJD numbers (batched)
+    const updates = allPPLDHL
+      .filter(s => jjdMap[s.tracking_number])
+      .map(s => ({ id: s.id, jjd: jjdMap[s.tracking_number] }));
+
+    // Batch update in chunks of 100
     let synced = 0;
-    for (const shipment of allPPLDHL) {
-      const jjd = jjdMap[shipment.tracking_number];
-      if (jjd) {
-        await supabase
-          .from('delivery_notes')
-          .update({ jjd_number: jjd })
-          .eq('id', shipment.id);
-        synced++;
+    for (let i = 0; i < updates.length; i += 100) {
+      const chunk = updates.slice(i, i + 100);
+      const ids = chunk.map(u => u.id);
+      // Update each unique JJD value
+      const byJjd = {};
+      for (const u of chunk) {
+        if (!byJjd[u.jjd]) byJjd[u.jjd] = [];
+        byJjd[u.jjd].push(u.id);
       }
+      await Promise.all(Object.entries(byJjd).map(([jjd, shipIds]) =>
+        supabase.from('delivery_notes').update({ jjd_number: jjd }).in('id', shipIds)
+      ));
+      synced += chunk.length;
     }
 
     res.json({

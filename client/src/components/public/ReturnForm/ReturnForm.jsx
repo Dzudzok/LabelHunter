@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect, useCallback } from 'react'
 import Step1Verify from './Step1Verify'
 import Step2Products from './Step2Products'
 import Step3Details from './Step3Details'
@@ -6,31 +6,57 @@ import StepTransport from './StepTransport'
 import Step4Confirm from './Step4Confirm'
 
 const STEPS = ['Ověření', 'Produkty', 'Detaily', 'Doprava', 'Potvrzení']
+const STORAGE_KEY = 'retino_return_form'
+
+const defaultFormData = {
+  deliveryNote: null,
+  items: [],
+  selectedItems: [],
+  type: 'return',
+  reasonCode: '',
+  reasonDetail: '',
+  vehicleInfo: '',
+  wasMounted: false,
+  customerName: '',
+  customerEmail: '',
+  customerPhone: '',
+  uploadedImages: [],
+  shippingOption: null,
+  shippingMethod: null,
+  shippingData: null,
+}
+
+function loadSavedForm() {
+  try {
+    const saved = sessionStorage.getItem(STORAGE_KEY)
+    if (!saved) return null
+    const parsed = JSON.parse(saved)
+    // Don't restore uploaded images (binary data)
+    return { ...defaultFormData, ...parsed, uploadedImages: [] }
+  } catch { return null }
+}
 
 export default function ReturnForm() {
-  const [step, setStep] = useState(1)
-  const [formData, setFormData] = useState({
-    deliveryNote: null,
-    items: [],
-    selectedItems: [],
-    type: 'return',
-    reasonCode: '',
-    reasonDetail: '',
-    vehicleInfo: '',
-    wasMounted: false,
-    customerName: '',
-    customerEmail: '',
-    customerPhone: '',
-    uploadedImages: [],
-    shippingOption: null,
-    shippingMethod: null,
-    shippingData: null,
-  })
+  const saved = loadSavedForm()
+  const [step, setStep] = useState(saved ? saved._step || 1 : 1)
+  const [formData, setFormData] = useState(saved || defaultFormData)
   const [result, setResult] = useState(null)
 
-  const updateForm = (updates) => {
+  // Persist form to sessionStorage on changes
+  useEffect(() => {
+    if (result) {
+      sessionStorage.removeItem(STORAGE_KEY)
+      return
+    }
+    try {
+      const toSave = { ...formData, uploadedImages: [], _step: step }
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
+    } catch { /* quota exceeded — ignore */ }
+  }, [formData, step, result])
+
+  const updateForm = useCallback((updates) => {
     setFormData(prev => ({ ...prev, ...updates }))
-  }
+  }, [])
 
   if (result) {
     return (

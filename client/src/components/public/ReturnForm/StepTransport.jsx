@@ -58,7 +58,7 @@ export default function StepTransport({ formData, updateForm, onNext, onBack }) 
       return
     }
     window.Packeta.Widget.pick(
-      process.env.ZASILKOVNA_API_KEY || 'e0794fa94f498c06',
+      import.meta.env.VITE_ZASILKOVNA_KEY || 'e0794fa94f498c06',
       (point) => {
         if (point) {
           setPickupPoint({

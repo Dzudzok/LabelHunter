@@ -18,10 +18,17 @@ router.get('/', async (req, res, next) => {
     if (status) query = query.eq('status', status);
     if (type) query = query.eq('type', type);
     if (assigned) query = query.eq('assigned_to', assigned);
-    if (dateFrom) query = query.gte('requested_at', `${dateFrom}T00:00:00.000Z`);
-    if (dateTo) query = query.lte('requested_at', `${dateTo}T23:59:59.999Z`);
+    if (dateFrom) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom)) return res.status(400).json({ error: 'Invalid dateFrom format' });
+      query = query.gte('requested_at', `${dateFrom}T00:00:00.000Z`);
+    }
+    if (dateTo) {
+      if (!/^\d{4}-\d{2}-\d{2}$/.test(dateTo)) return res.status(400).json({ error: 'Invalid dateTo format' });
+      query = query.lte('requested_at', `${dateTo}T23:59:59.999Z`);
+    }
     if (search) {
-      query = query.or(`return_number.ilike.%${search}%,customer_name.ilike.%${search}%,customer_email.ilike.%${search}%`);
+      const s = String(search).slice(0, 100);
+      query = query.or(`return_number.ilike.%${s}%,customer_name.ilike.%${s}%,customer_email.ilike.%${s}%`);
     }
 
     const from = (parseInt(page) - 1) * parseInt(pageSize);
