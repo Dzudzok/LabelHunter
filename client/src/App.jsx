@@ -18,6 +18,13 @@ import TrackingProblems from './components/retino/tracking/TrackingProblems'
 import AnalyticsOverview from './components/retino/analytics/AnalyticsOverview'
 import AnalyticsDeliveryTime from './components/retino/analytics/AnalyticsDeliveryTime'
 import AnalyticsProblems from './components/retino/analytics/AnalyticsProblems'
+import TagsManagement from './components/retino/settings/TagsManagement'
+import AutomationRules from './components/retino/settings/AutomationRules'
+import EmailDesigner from './components/retino/settings/EmailDesigner'
+import RatingsAnalytics from './components/retino/analytics/RatingsAnalytics'
+import AnalyticsTimeliness from './components/retino/analytics/AnalyticsTimeliness'
+import AnalyticsTT from './components/retino/analytics/AnalyticsTT'
+import CostAnalysis from './components/retino/analytics/CostAnalysis'
 import TrackAndTrace from './components/public/TrackAndTrace'
 import ReturnForm from './components/public/ReturnForm/ReturnForm'
 import ReturnStatus from './components/public/ReturnStatus'
@@ -63,6 +70,13 @@ export default function App() {
                 <Route path="analytics/overview" element={<AnalyticsOverview />} />
                 <Route path="analytics/delivery-time" element={<AnalyticsDeliveryTime />} />
                 <Route path="analytics/problems" element={<AnalyticsProblems />} />
+                <Route path="analytics/ratings" element={<RatingsAnalytics />} />
+                <Route path="analytics/timeliness" element={<AnalyticsTimeliness />} />
+                <Route path="analytics/tt" element={<AnalyticsTT />} />
+                <Route path="analytics/costs" element={<CostAnalysis />} />
+                <Route path="settings/tags" element={<TagsManagement />} />
+                <Route path="settings/automation" element={<AutomationRules />} />
+                <Route path="settings/email-designer" element={<EmailDesigner />} />
                 <Route path="returns" element={<ReturnsDashboard />} />
                 <Route path="returns/new" element={<ReturnAdminCreate />} />
                 <Route path="returns/:id" element={<ReturnDetail />} />

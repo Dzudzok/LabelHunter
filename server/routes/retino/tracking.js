@@ -102,8 +102,29 @@ router.get('/shipments', async (req, res, next) => {
     const { data, error, count } = await query;
     if (error) throw error;
 
+    // Fetch tags for all shipments in this page
+    let shipments = data || [];
+    if (shipments.length > 0) {
+      const ids = shipments.map(s => s.id);
+      const { data: tagLinks } = await supabase
+        .from('delivery_note_tags')
+        .select('delivery_note_id, shipment_tags(id, name, color, bg_color)')
+        .in('delivery_note_id', ids);
+
+      if (tagLinks && tagLinks.length > 0) {
+        const tagMap = {};
+        for (const link of tagLinks) {
+          if (!tagMap[link.delivery_note_id]) tagMap[link.delivery_note_id] = [];
+          if (link.shipment_tags) tagMap[link.delivery_note_id].push(link.shipment_tags);
+        }
+        shipments = shipments.map(s => ({ ...s, tags: tagMap[s.id] || [] }));
+      } else {
+        shipments = shipments.map(s => ({ ...s, tags: [] }));
+      }
+    }
+
     res.json({
-      shipments: data || [],
+      shipments,
       total: count || 0,
       page: parseInt(page),
       pageSize: parseInt(pageSize),
@@ -171,6 +192,88 @@ router.get('/shipments/:id', async (req, res, next) => {
       items: items || [],
       trackingTimeline,
     });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /expiring — shipments available_for_pickup nearing storage expiry ("brzy se bude vracet")
+router.get('/expiring', async (req, res, next) => {
+  try {
+    const { days = 2, page = 1, pageSize = 50 } = req.query;
+
+    // Default storage limits by carrier (days)
+    const CARRIER_STORAGE_DAYS = {
+      GLS: 7, PPL: 7, DPD: 7, UPS: 5,
+      Zasilkovna: 7, ZASILKOVNA: 7,
+      CP: 15, INTIME: 7, InTime: 7,
+    };
+
+    // Get all available_for_pickup shipments
+    let all = [];
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      const { data: batch, error } = await supabase
+        .from('delivery_notes')
+        .select('id, doc_number, customer_name, customer_email, shipper_code, tracking_number, unified_status, pickup_at, stored_until, last_tracking_description, date_issued')
+        .eq('unified_status', 'available_for_pickup')
+        .range(offset, offset + PAGE - 1);
+      if (error) throw error;
+      if (!batch || batch.length === 0) break;
+      all = all.concat(batch);
+      if (batch.length < PAGE) break;
+      offset += PAGE;
+    }
+
+    const now = new Date();
+    const daysThreshold = parseInt(days);
+
+    // Calculate expiry for each and filter
+    const expiring = all.map(s => {
+      const storageDays = CARRIER_STORAGE_DAYS[s.shipper_code] || 7;
+      const pickupDate = s.pickup_at ? new Date(s.pickup_at) : (s.date_issued ? new Date(s.date_issued) : now);
+      const expiryDate = s.stored_until ? new Date(s.stored_until) : new Date(pickupDate.getTime() + storageDays * 24 * 60 * 60 * 1000);
+      const daysLeft = Math.ceil((expiryDate - now) / (24 * 60 * 60 * 1000));
+      return { ...s, expiry_date: expiryDate.toISOString(), days_left: daysLeft, storage_days: storageDays };
+    }).filter(s => s.days_left <= daysThreshold && s.days_left >= -3) // include recently expired (up to 3 days ago)
+      .sort((a, b) => a.days_left - b.days_left);
+
+    const total = expiring.length;
+    const from = (parseInt(page) - 1) * parseInt(pageSize);
+    const paged = expiring.slice(from, from + parseInt(pageSize));
+
+    res.json({
+      shipments: paged,
+      total,
+      page: parseInt(page),
+      totalPages: Math.ceil(total / parseInt(pageSize)),
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /extend-storage/:id — extend storage period at carrier pickup point
+router.post('/extend-storage/:id', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const storageService = require('../../services/StorageExtensionService');
+
+    const { data: note, error } = await supabase
+      .from('delivery_notes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !note) return res.status(404).json({ error: 'Zásilka nenalezena' });
+
+    if (note.unified_status !== 'available_for_pickup') {
+      return res.status(400).json({ error: 'Prodloužení je možné pouze pro zásilky čekající na vyzvednutí' });
+    }
+
+    const result = await storageService.extendStorage(note);
+    res.json(result);
   } catch (err) {
     next(err);
   }

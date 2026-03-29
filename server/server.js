@@ -50,7 +50,12 @@ app.use('/api/qz', require('./routes/qz'));
 // Retino module
 app.use('/api/retino/tracking', require('./routes/retino/tracking'));
 app.use('/api/retino/analytics', require('./routes/retino/analytics'));
+app.use('/api/retino/tags', require('./routes/retino/tags'));
 app.use('/api/retino/returns', require('./routes/retino/returnsAdmin'));
+app.use('/api/retino/automation', require('./routes/retino/automation'));
+app.use('/api/retino/ratings', require('./routes/retino/ratings'));
+app.use('/api/retino/costs', require('./routes/retino/costs'));
+app.use('/api/retino/email-settings', require('./routes/retino/emailSettings'));
 app.use('/api/retino/public/returns', require('./routes/retino/returnsPublic'));
 app.use('/api/retino/public', require('./routes/retino/returnsPublic'));
 
@@ -71,7 +76,7 @@ app.listen(PORT, () => {
   // Nextis import disabled — import handled by lp-sync script on BOLOPC
   // require('./cron/importDeliveryNotes').start();
   require('./cron/syncTrackingStatus').start();
-
+  require('./cron/runAutomation').start();
 
   console.log('Cron jobs started');
 });

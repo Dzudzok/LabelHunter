@@ -1,8 +1,11 @@
 const supabase = require('../db/supabase');
 const labelPrinterService = require('./LabelPrinterService');
 const emailService = require('./EmailService');
+const trackingEmailService = require('./TrackingEmailService');
+const automationEngine = require('./AutomationEngine');
 const carrierRouter = require('./carriers/CarrierRouter');
 const { classifyDescription } = require('./retino/tracking-status-mapper');
+const eddService = require('./EDDService');
 
 class TrackingSyncService {
   constructor() {
@@ -147,15 +150,49 @@ class TrackingSyncService {
             tracking_data: trackingData,
           });
 
-          // Update unified_status
+          // Update unified_status + timestamps
+          const updates = {
+            unified_status: unifiedStatus,
+            last_tracking_update: new Date().toISOString(),
+            last_tracking_description: lastDescription,
+          };
+
+          // Set timestamp fields on status transitions
+          const now = new Date().toISOString();
+          if (unifiedStatus === 'available_for_pickup' && !shipment.pickup_at) {
+            updates.pickup_at = now;
+          }
+          if (unifiedStatus === 'delivered' && !shipment.delivered_at) {
+            updates.delivered_at = now;
+          }
+
           await supabase
             .from('delivery_notes')
-            .update({
-              unified_status: unifiedStatus,
-              last_tracking_update: new Date().toISOString(),
-              last_tracking_description: lastDescription,
-            })
+            .update(updates)
             .eq('id', shipment.id);
+
+          // On delivery: calculate timeliness
+          if (unifiedStatus === 'delivered' && unifiedStatus !== shipment.unified_status) {
+            try {
+              await eddService.updateEDDForShipment({ ...shipment, ...updates, unified_status: unifiedStatus });
+            } catch (eddErr) {
+              console.error(`[TrackingSync] EDD error ${shipment.doc_number}:`, eddErr.message);
+            }
+          }
+
+          // On status change: send email + run automation rules
+          if (unifiedStatus !== shipment.unified_status) {
+            try {
+              await trackingEmailService.processStatusChange(shipment, unifiedStatus, shipment.unified_status);
+            } catch (emailErr) {
+              console.error(`[TrackingSync/${carrier}] Email error ${shipment.doc_number}:`, emailErr.message);
+            }
+            try {
+              await automationEngine.processStatusChange(shipment, unifiedStatus, shipment.unified_status);
+            } catch (autoErr) {
+              console.error(`[TrackingSync/${carrier}] Automation error ${shipment.doc_number}:`, autoErr.message);
+            }
+          }
 
           synced++;
         } catch (err) {

@@ -6,10 +6,11 @@ import StatusBadge from '../shared/StatusBadge'
 const PROBLEM_STATUSES = 'failed_delivery,returned_to_sender,problem'
 
 const TABS = [
-  { label: 'Nedoručeno', status: 'failed_delivery' },
-  { label: 'Vráceno odesílateli', status: 'returned_to_sender' },
-  { label: 'Problémy dopravce', status: 'problem' },
-  { label: 'Vše', status: PROBLEM_STATUSES },
+  { label: 'Nedoručeno', status: 'failed_delivery', type: 'problem' },
+  { label: 'Vráceno odesílateli', status: 'returned_to_sender', type: 'problem' },
+  { label: 'Brzy se bude vracet', status: 'expiring', type: 'expiring' },
+  { label: 'Problémy dopravce', status: 'problem', type: 'problem' },
+  { label: 'Vše', status: PROBLEM_STATUSES, type: 'problem' },
 ]
 
 export default function TrackingProblems() {
@@ -17,57 +18,72 @@ export default function TrackingProblems() {
   const [total, setTotal] = useState(0)
   const [loading, setLoading] = useState(true)
   const [activeTab, setActiveTab] = useState(PROBLEM_STATUSES)
+  const [activeType, setActiveType] = useState('problem')
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [shipper, setShipper] = useState('')
+  const [expiryDays, setExpiryDays] = useState(3)
   const navigate = useNavigate()
   const pageSize = 50
 
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      const params = {
-        status: activeTab,
-        page,
-        pageSize,
-        sortBy: 'date_issued',
-        sortDir: 'desc',
+      if (activeType === 'expiring') {
+        const res = await api.get('/retino/tracking/expiring', {
+          params: { days: expiryDays, page, pageSize }
+        })
+        setShipments(res.data.shipments || [])
+        setTotal(res.data.total || 0)
+      } else {
+        const params = {
+          status: activeTab,
+          page,
+          pageSize,
+          sortBy: 'date_issued',
+          sortDir: 'desc',
+        }
+        if (search) params.search = search
+        if (shipper) params.shipper = shipper
+        const res = await api.get('/retino/tracking/shipments', { params })
+        setShipments(res.data.shipments || [])
+        setTotal(res.data.total || 0)
       }
-      if (search) params.search = search
-      if (shipper) params.shipper = shipper
-      const res = await api.get('/retino/tracking/shipments', { params })
-      setShipments(res.data.shipments || [])
-      setTotal(res.data.total || 0)
     } catch (err) {
       console.error('Problems fetch error:', err)
     } finally {
       setLoading(false)
     }
-  }, [activeTab, page, search, shipper])
+  }, [activeTab, activeType, page, search, shipper, expiryDays])
 
   useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => { setPage(1) }, [activeTab, search, shipper])
+  useEffect(() => { setPage(1) }, [activeTab, search, shipper, expiryDays])
 
   const totalPages = Math.ceil(total / pageSize)
 
   return (
-    <div className="p-6 space-y-4">
+    <div className="p-3 sm:p-6 space-y-4">
       <div>
-        <h1 className="text-2xl font-bold text-theme-primary">Problémové zásilky</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-theme-primary">Problémové zásilky</h1>
         <p className="text-sm text-theme-muted mt-1">
           Proaktivně řešte zásilky s problémy, abyste zajistili spokojenost zákazníků.
         </p>
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-navy-700">
+      <div className="flex gap-1 overflow-x-auto border-b border-navy-700">
         {TABS.map(tab => (
           <button
             key={tab.status}
-            onClick={() => setActiveTab(tab.status)}
-            className={`px-4 py-2.5 text-sm font-medium transition-colors border-b-2 ${
+            onClick={() => {
+              setActiveTab(tab.status)
+              setActiveType(tab.type)
+            }}
+            className={`px-3 sm:px-4 py-2.5 text-xs sm:text-sm font-medium transition-colors border-b-2 whitespace-nowrap ${
               activeTab === tab.status
-                ? 'border-blue-400 text-blue-400'
+                ? tab.type === 'expiring'
+                  ? 'border-amber-400 text-amber-400'
+                  : 'border-blue-400 text-blue-400'
                 : 'border-transparent text-theme-muted hover:text-theme-primary'
             }`}
           >
@@ -77,45 +93,69 @@ export default function TrackingProblems() {
       </div>
 
       {/* Filters */}
-      <div className="flex items-center gap-3">
-        <input
-          type="text"
-          placeholder="Sledovací číslo, číslo objednávky, jméno zákazníka..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 bg-navy-800 border border-navy-600 text-theme-primary rounded-lg px-3 py-2 text-sm placeholder-theme-muted"
-        />
-        <select
-          value={shipper}
-          onChange={(e) => setShipper(e.target.value)}
-          className="bg-navy-800 border border-navy-600 text-theme-primary rounded-lg px-3 py-2 text-sm"
-        >
-          <option value="">Dopravní společnost</option>
-          <option value="GLS">GLS</option>
-          <option value="PPL">PPL</option>
-          <option value="DPD">DPD</option>
-          <option value="UPS">UPS</option>
-          <option value="CP">Česká Pošta</option>
-          <option value="ZASILKOVNA">Zásilkovna</option>
-          <option value="WEDO">WeDo</option>
-          <option value="INTIME">InTime</option>
-        </select>
-      </div>
+      {activeType === 'expiring' ? (
+        <div className="flex flex-wrap items-center gap-3">
+          <span className="text-sm text-theme-muted">Zobrazit zásilky s expirací do:</span>
+          <div className="flex gap-1">
+            {[1, 2, 3, 5, 7].map(d => (
+              <button
+                key={d}
+                onClick={() => setExpiryDays(d)}
+                className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                  expiryDays === d
+                    ? 'bg-amber-600 text-white'
+                    : 'bg-navy-700 text-theme-muted hover:bg-navy-600'
+                }`}
+              >
+                {d}d
+              </button>
+            ))}
+          </div>
+        </div>
+      ) : (
+        <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 sm:gap-3">
+          <input
+            type="text"
+            placeholder="Sledovací číslo, doklad, zákazník..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="flex-1 bg-navy-800 border border-navy-600 text-theme-primary rounded-lg px-3 py-2 text-sm placeholder-theme-muted min-w-0"
+          />
+          <select
+            value={shipper}
+            onChange={(e) => setShipper(e.target.value)}
+            className="bg-navy-800 border border-navy-600 text-theme-primary rounded-lg px-3 py-2 text-sm"
+          >
+            <option value="">Dopravce</option>
+            <option value="GLS">GLS</option>
+            <option value="PPL">PPL</option>
+            <option value="DPD">DPD</option>
+            <option value="UPS">UPS</option>
+            <option value="CP">Česká Pošta</option>
+            <option value="Zasilkovna">Zásilkovna</option>
+            <option value="INTIME">InTime</option>
+          </select>
+        </div>
+      )}
 
       {/* Results */}
       {loading ? (
         <div className="text-theme-muted py-8 text-center">Načítání...</div>
       ) : shipments.length === 0 ? (
         <div className="text-center py-12">
-          <div className="text-4xl mb-3">&#128269;</div>
-          <div className="text-theme-muted">Žádné problémové zásilky nenalezeny.</div>
+          <div className="text-4xl mb-3">{activeType === 'expiring' ? '\u2705' : '\uD83D\uDD0D'}</div>
+          <div className="text-theme-muted">
+            {activeType === 'expiring'
+              ? 'Žádné zásilky s blížící se expirací.'
+              : 'Žádné problémové zásilky nenalezeny.'}
+          </div>
         </div>
       ) : (
         <>
           <div className="text-xs text-theme-muted">
-            Zobrazeno {(page - 1) * pageSize + 1} až {Math.min(page * pageSize, total)} z {total} výsledků
+            Zobrazeno {(page - 1) * pageSize + 1} až {Math.min(page * pageSize, total)} z {total}
           </div>
-          <div className="overflow-x-auto">
+          <div className="overflow-x-auto bg-navy-800 rounded-xl">
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-navy-600 text-theme-muted text-xs uppercase">
@@ -124,8 +164,12 @@ export default function TrackingProblems() {
                   <th className="text-left py-3 px-3">Zákazník</th>
                   <th className="text-left py-3 px-3">Dopravce</th>
                   <th className="text-left py-3 px-3">Tracking</th>
-                  <th className="text-left py-3 px-3">Stav</th>
-                  <th className="text-left py-3 px-3">Popis</th>
+                  {activeType === 'expiring' ? (
+                    <th className="text-left py-3 px-3">Zbývá dní</th>
+                  ) : (
+                    <th className="text-left py-3 px-3">Stav</th>
+                  )}
+                  <th className="text-left py-3 px-3 hidden sm:table-cell">Popis</th>
                 </tr>
               </thead>
               <tbody>
@@ -136,15 +180,23 @@ export default function TrackingProblems() {
                     onClick={() => navigate(`/retino/tracking/${s.id}`)}
                   >
                     <td className="py-2.5 px-3 text-theme-muted text-xs">
-                      {s.date_issued ? new Date(s.date_issued).toLocaleDateString('cs-CZ') : '—'}
+                      {s.date_issued ? new Date(s.date_issued).toLocaleDateString('cs-CZ') : '\u2014'}
                     </td>
                     <td className="py-2.5 px-3 text-theme-primary font-mono text-xs">{s.doc_number}</td>
-                    <td className="py-2.5 px-3 text-theme-secondary">{s.customer_name || '—'}</td>
-                    <td className="py-2.5 px-3 text-theme-secondary font-mono">{s.shipper_code}</td>
+                    <td className="py-2.5 px-3 text-theme-secondary">{s.customer_name || '\u2014'}</td>
+                    <td className="py-2.5 px-3 text-theme-secondary font-mono text-xs">{s.shipper_code}</td>
                     <td className="py-2.5 px-3 text-theme-muted font-mono text-xs">{s.tracking_number}</td>
-                    <td className="py-2.5 px-3"><StatusBadge status={s.unified_status} /></td>
-                    <td className="py-2.5 px-3 text-theme-muted text-xs max-w-[200px] truncate">
-                      {s.last_tracking_description || '—'}
+                    {activeType === 'expiring' ? (
+                      <td className="py-2.5 px-3">
+                        <ExpiryBadge daysLeft={s.days_left} />
+                      </td>
+                    ) : (
+                      <td className="py-2.5 px-3"><StatusBadge status={s.unified_status} /></td>
+                    )}
+                    <td className="py-2.5 px-3 text-theme-muted text-xs max-w-[200px] truncate hidden sm:table-cell">
+                      {activeType === 'expiring'
+                        ? (s.expiry_date ? `Expirace: ${new Date(s.expiry_date).toLocaleDateString('cs-CZ')}` : '\u2014')
+                        : (s.last_tracking_description || '\u2014')}
                     </td>
                   </tr>
                 ))}
@@ -179,5 +231,34 @@ export default function TrackingProblems() {
         </>
       )}
     </div>
+  )
+}
+
+function ExpiryBadge({ daysLeft }) {
+  let bgColor, textColor, label
+  if (daysLeft < 0) {
+    bgColor = '#450a0a'
+    textColor = '#EF4444'
+    label = `Expirováno (${Math.abs(daysLeft)}d)`
+  } else if (daysLeft === 0) {
+    bgColor = '#450a0a'
+    textColor = '#EF4444'
+    label = 'Dnes!'
+  } else if (daysLeft <= 1) {
+    bgColor = '#451a03'
+    textColor = '#F59E0B'
+    label = `${daysLeft} den`
+  } else {
+    bgColor = '#1e1b4b'
+    textColor = '#8B5CF6'
+    label = `${daysLeft} dní`
+  }
+  return (
+    <span
+      style={{ backgroundColor: bgColor, color: textColor }}
+      className="px-2 py-0.5 rounded-full text-xs font-semibold"
+    >
+      {label}
+    </span>
   )
 }

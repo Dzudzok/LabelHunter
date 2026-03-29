@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const supabase = require('../../db/supabase');
 const { STATUS_LABELS } = require('../../services/retino/tracking-status-mapper');
+const eddService = require('../../services/EDDService');
 
 const PAGE = 1000;
 
@@ -317,6 +318,234 @@ router.get('/problems', async (req, res, next) => {
       carrierProblems,
       problemTrend,
       recentProblems,
+      days: daysNum,
+    };
+
+    analyticsCache[cacheKey] = { data: result, time: now };
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /timeliness — timeliness analytics
+router.get('/timeliness', async (req, res, next) => {
+  try {
+    const { days = '90', shipper } = req.query;
+    const cacheKey = getCacheKey('timeliness', { days, shipper });
+    const now = Date.now();
+    if (analyticsCache[cacheKey] && (now - analyticsCache[cacheKey].time) < CACHE_TTL) {
+      return res.json(analyticsCache[cacheKey].data);
+    }
+
+    const daysNum = parseInt(days) || 90;
+    const dateFrom = new Date(now - daysNum * 24 * 60 * 60 * 1000).toISOString();
+
+    let query = supabase
+      .from('delivery_notes')
+      .select('id, timeliness, shipper_code, expected_delivery_date, last_tracking_update, unified_status')
+      .not('expected_delivery_date', 'is', null)
+      .gte('date_issued', dateFrom);
+
+    if (shipper) query = query.eq('shipper_code', shipper);
+
+    // Paginated fetch
+    let all = [];
+    let offset = 0;
+    while (true) {
+      const { data, error } = await query.range(offset, offset + PAGE - 1);
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      all = all.concat(data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
+      // Re-create query for next page
+      query = supabase
+        .from('delivery_notes')
+        .select('id, timeliness, shipper_code, expected_delivery_date, last_tracking_update, unified_status')
+        .not('expected_delivery_date', 'is', null)
+        .gte('date_issued', dateFrom);
+      if (shipper) query = query.eq('shipper_code', shipper);
+    }
+
+    let onTime = 0, late = 0, early = 0, inProgressOnTime = 0, inProgressLate = 0;
+    const byCarrier = {};
+
+    for (const note of all) {
+      const t = note.timeliness;
+      if (!t) continue;
+
+      if (t === 'on_time') onTime++;
+      else if (t === 'late') late++;
+      else if (t === 'early') early++;
+      else if (t === 'in_progress_on_time') inProgressOnTime++;
+      else if (t === 'in_progress_late') inProgressLate++;
+
+      const c = note.shipper_code || 'Neznamy';
+      if (!byCarrier[c]) byCarrier[c] = { onTime: 0, late: 0, early: 0, total: 0 };
+      byCarrier[c].total++;
+      if (t === 'on_time' || t === 'early') byCarrier[c].onTime++;
+      if (t === 'early') byCarrier[c].early++;
+      if (t === 'late') byCarrier[c].late++;
+    }
+
+    const total = all.length;
+    const onTimePercent = total > 0 ? Math.round(((onTime + early) / total) * 1000) / 10 : 0;
+
+    const byCarrierResult = {};
+    for (const [carrier, stats] of Object.entries(byCarrier)) {
+      byCarrierResult[carrier] = {
+        onTime: stats.onTime,
+        late: stats.late,
+        early: stats.early,
+        total: stats.total,
+        percent: stats.total > 0 ? Math.round((stats.onTime / stats.total) * 1000) / 10 : 0,
+      };
+    }
+
+    const result = {
+      onTime,
+      late,
+      early,
+      inProgressOnTime,
+      inProgressLate,
+      total,
+      onTimePercent,
+      byCarrier: byCarrierResult,
+      days: daysNum,
+    };
+
+    analyticsCache[cacheKey] = { data: result, time: now };
+    res.json(result);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /edd-config — list all edd_config entries
+router.get('/edd-config', async (req, res, next) => {
+  try {
+    const { data, error } = await supabase
+      .from('edd_config')
+      .select('*')
+      .order('shipper_code');
+
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /edd-config — upsert edd_config
+router.post('/edd-config', async (req, res, next) => {
+  try {
+    const { shipper_code, country_code = 'CZ', business_days, count_weekends = false } = req.body;
+
+    if (!shipper_code || !business_days) {
+      return res.status(400).json({ error: 'shipper_code and business_days are required' });
+    }
+
+    const { data, error } = await supabase
+      .from('edd_config')
+      .upsert(
+        { shipper_code, country_code, business_days: parseInt(business_days), count_weekends },
+        { onConflict: 'shipper_code,country_code' }
+      )
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Clear analytics cache
+    analyticsCache = {};
+
+    res.json(data);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /tt-analytics — Track & Trace page view analytics
+router.get('/tt-analytics', async (req, res, next) => {
+  try {
+    const { days = '30' } = req.query;
+    const cacheKey = getCacheKey('tt-analytics', { days });
+    const now = Date.now();
+    if (analyticsCache[cacheKey] && (now - analyticsCache[cacheKey].time) < CACHE_TTL) {
+      return res.json(analyticsCache[cacheKey].data);
+    }
+
+    const daysNum = parseInt(days) || 30;
+    const dateFrom = new Date(now - daysNum * 24 * 60 * 60 * 1000).toISOString();
+
+    // Fetch all page views in period
+    let allViews = [];
+    let offset = 0;
+    while (true) {
+      const { data, error } = await supabase
+        .from('tt_page_views')
+        .select('id, delivery_note_id, tracking_token, ip_address, viewed_at')
+        .gte('viewed_at', dateFrom)
+        .range(offset, offset + PAGE - 1);
+
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      allViews = allViews.concat(data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
+    }
+
+    const totalViews = allViews.length;
+    const uniqueIPs = new Set(allViews.map(v => v.ip_address).filter(Boolean));
+    const uniqueVisitors = uniqueIPs.size;
+
+    // Views by day
+    const viewsByDayMap = {};
+    for (const v of allViews) {
+      const day = (v.viewed_at || '').substring(0, 10);
+      if (day) viewsByDayMap[day] = (viewsByDayMap[day] || 0) + 1;
+    }
+    const viewsByDay = Object.entries(viewsByDayMap)
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, views]) => ({ date, views }));
+
+    // Top shipments by views
+    const byToken = {};
+    for (const v of allViews) {
+      const token = v.tracking_token;
+      if (!token) continue;
+      if (!byToken[token]) byToken[token] = { tracking_token: token, delivery_note_id: v.delivery_note_id, views: 0 };
+      byToken[token].views++;
+    }
+    const topTokens = Object.values(byToken).sort((a, b) => b.views - a.views).slice(0, 20);
+
+    // Enrich top shipments with doc_number and tracking_number
+    let topShipments = [];
+    if (topTokens.length > 0) {
+      const noteIds = topTokens.map(t => t.delivery_note_id).filter(Boolean);
+      if (noteIds.length > 0) {
+        const { data: notes } = await supabase
+          .from('delivery_notes')
+          .select('id, doc_number, tracking_number')
+          .in('id', noteIds);
+
+        const noteMap = {};
+        for (const n of (notes || [])) noteMap[n.id] = n;
+
+        topShipments = topTokens.map(t => ({
+          doc_number: noteMap[t.delivery_note_id]?.doc_number || '-',
+          tracking_number: noteMap[t.delivery_note_id]?.tracking_number || '-',
+          views: t.views,
+        }));
+      }
+    }
+
+    const result = {
+      totalViews,
+      uniqueVisitors,
+      viewsByDay,
+      topShipments,
       days: daysNum,
     };
 

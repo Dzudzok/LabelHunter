@@ -341,12 +341,75 @@ router.get('/track/:trackingToken', async (req, res, next) => {
       trackingTimeline.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
     }
 
+    // Check if rating already exists
+    const { data: existingRating } = await supabase
+      .from('delivery_ratings')
+      .select('id, rating, problems, comment, created_at')
+      .eq('delivery_note_id', note.id)
+      .maybeSingle();
+
     res.json({
       ...note,
       statusLabel: getStatusLabel(note.unified_status),
       items: items || [],
       trackingTimeline,
+      rating: existingRating || null,
     });
+
+    // Log T&T page view (fire and forget)
+    supabase.from('tt_page_views').insert({
+      delivery_note_id: note.id,
+      tracking_token: trackingToken,
+      ip_address: req.ip,
+      user_agent: req.get('user-agent'),
+    }).then(() => {}).catch(() => {});
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /track/:trackingToken/rate — submit rating from public T&T page
+router.post('/track/:trackingToken/rate', async (req, res, next) => {
+  try {
+    const { trackingToken } = req.params;
+    const { rating, problems, comment } = req.body;
+
+    if (!rating || rating < 1 || rating > 5 || !Number.isInteger(rating)) {
+      return res.status(400).json({ error: 'Rating must be integer 1-5' });
+    }
+
+    // Find delivery note
+    const { data: note, error: noteErr } = await supabase
+      .from('delivery_notes')
+      .select('id, unified_status')
+      .eq('tracking_token', trackingToken)
+      .single();
+
+    if (noteErr || !note) return res.status(404).json({ error: 'Zásilka nenalezena' });
+    if (note.unified_status !== 'delivered') {
+      return res.status(400).json({ error: 'Hodnocení lze zadat pouze pro doručené zásilky' });
+    }
+
+    // Insert rating
+    const { data, error } = await supabase
+      .from('delivery_ratings')
+      .insert({
+        delivery_note_id: note.id,
+        rating,
+        problems: problems || [],
+        comment: comment || null,
+      })
+      .select()
+      .single();
+
+    if (error) {
+      if (error.code === '23505') {
+        return res.status(409).json({ error: 'Tato zásilka již byla hodnocena' });
+      }
+      throw error;
+    }
+
+    res.status(201).json(data);
   } catch (err) {
     next(err);
   }

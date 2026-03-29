@@ -84,6 +84,16 @@ export default function TrackingDashboard() {
       <span className="font-mono text-xs">{r.tracking_number}</span>
     ) : '-' },
     { header: 'Status', width: '150px', render: (r) => <StatusBadge status={r.unified_status} /> },
+    { header: 'Štítky', width: '120px', render: (r) => r.tags && r.tags.length > 0 ? (
+      <div className="flex flex-wrap gap-1">
+        {r.tags.map(t => (
+          <span key={t.id} className="inline-block px-1.5 py-0.5 rounded text-[10px] font-medium leading-tight"
+            style={{ backgroundColor: t.bg_color || '#3b82f6', color: t.color || '#fff' }}>
+            {t.name}
+          </span>
+        ))}
+      </div>
+    ) : null },
     { header: 'Poslední update', render: (r) => (
       <span className="text-xs text-theme-muted">{r.last_tracking_description || '-'}</span>
     )},

@@ -15,9 +15,15 @@ function start() {
     console.log('[Cron] Running tracking status sync...');
     try {
       await trackingSyncService.syncAll();
-      // After tracking sync, update unified statuses for Retino
-      const { syncAll: syncUnified } = require('../jobs/syncUnifiedStatus');
-      await syncUnified();
+
+      // After tracking sync, batch update EDD for new shipments
+      try {
+        const eddService = require('../services/EDDService');
+        await eddService.batchUpdateEDD();
+      } catch (eddErr) {
+        console.error('[Cron] EDD batch update error:', eddErr.message);
+      }
+
       console.log('[Cron] Tracking sync complete');
     } catch (err) {
       console.error('[Cron] Tracking sync error:', err.message);

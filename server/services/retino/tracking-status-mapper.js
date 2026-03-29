@@ -195,12 +195,84 @@ function getStatusColor(status) {
   return STATUS_COLORS[status] || STATUS_COLORS.unknown;
 }
 
+// Sub-status labels for more granular tracking
+const SUB_STATUS_LABELS = {
+  // PENDING
+  'new_shipment': 'Nova zasilka',
+  'cannot_track': 'Nelze sledovat',
+  // IN_TRANSIT
+  'accepted_by_carrier': 'Prijato dopravcem',
+  'distribution_center': 'Distribucni centrum',
+  'depot': 'Depo',
+  'customs_clearance': 'Celni rizeni',
+  'customs_cleared': 'Procleno',
+  // FAILED_ATTEMPT
+  'recipient_not_home': 'Prijemce nezastizen',
+  // AVAILABLE_FOR_PICKUP
+  'standard_storage': 'Standardni ulozni doba',
+  'extended_storage': 'Prodlouzena ulozni doba',
+  // DELIVERED
+  'standard_delivery': 'Standardni doruceni',
+  'picked_up': 'Vyzvednuto zakaznikem',
+  // EXCEPTION
+  'damaged': 'Poskozena zasilka',
+  'lost': 'Ztracena zasilka',
+  'rejected': 'Odmitnuto prijemcem',
+  'incorrect_address': 'Nespravna adresa',
+};
+
+// Sub-status detection rules based on description text analysis
+const SUB_STATUS_RULES = [
+  // EXCEPTION
+  { sub: 'damaged', patterns: [/posko[zž]/i, /damaged/i] },
+  { sub: 'lost', patterns: [/ztracen/i, /lost/i, /nedohledan/i] },
+  { sub: 'rejected', patterns: [/odm[ií]tnut/i, /rejected/i, /refuse/i] },
+  { sub: 'incorrect_address', patterns: [/nespr[aá]vn[aá] adresa/i, /incorrect address/i, /bad address/i, /chybn[aá] adresa/i] },
+  // FAILED_ATTEMPT
+  { sub: 'recipient_not_home', patterns: [/nezasti[zž]en/i, /not home/i, /not available/i] },
+  // IN_TRANSIT
+  { sub: 'accepted_by_carrier', patterns: [/p[rř]evzat.*p[rř]eprav/i, /received.*from.*sender/i, /vyzvedli u odes/i, /received.*for delivery/i] },
+  { sub: 'distribution_center', patterns: [/distribu[cč]/i, /za[rř][ií]zen[ií]/i, /zpracov[aá]n[ií] v/i, /hub inbound/i, /hub storage/i] },
+  { sub: 'depot', patterns: [/depo/i, /depot/i, /rollkarte/i] },
+  { sub: 'customs_clearance', patterns: [/celn[ií]/i, /customs/i, /proclení/i] },
+  { sub: 'customs_cleared', patterns: [/proclen/i, /customs cleared/i] },
+  // AVAILABLE_FOR_PICKUP
+  { sub: 'picked_up', patterns: [/vyzvednuto/i, /picked up/i, /parcelshop/i, /parcellocker/i, /access point/i] },
+  { sub: 'standard_storage', patterns: [/uskladn[eě]no/i, /stored/i, /ulo[zž]/i] },
+  { sub: 'extended_storage', patterns: [/prodlou[zž]en/i, /extended/i] },
+  // DELIVERED
+  { sub: 'standard_delivery', patterns: [/doru[cč]eno/i, /delivered/i, /dodání/i] },
+  // PENDING
+  { sub: 'new_shipment', patterns: [/registrace/i, /data p[rř]ijata/i, /[sš]t[ií]tek/i, /label/i, /obdr[zž]eny/i] },
+  { sub: 'cannot_track', patterns: [/nelze sledovat/i, /cannot track/i, /no tracking/i] },
+];
+
+/**
+ * Get the best matching sub-status based on carrier code, status code, and description text.
+ */
+function getSubStatus(carrierCode, statusCode, description) {
+  if (!description) return null;
+
+  const text = description.trim();
+  for (const rule of SUB_STATUS_RULES) {
+    for (const pattern of rule.patterns) {
+      if (pattern.test(text)) {
+        return rule.sub;
+      }
+    }
+  }
+
+  return null;
+}
+
 module.exports = {
   getUnifiedStatus,
   classifyDescription,
   getStatusLabel,
   getStatusColor,
+  getSubStatus,
   STATUS_PRIORITY,
   STATUS_LABELS,
   STATUS_COLORS,
+  SUB_STATUS_LABELS,
 };
