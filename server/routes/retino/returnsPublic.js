@@ -14,14 +14,36 @@ router.post('/verify', async (req, res, next) => {
       return res.status(400).json({ error: 'docNumber and email are required' });
     }
 
-    const { data: note, error } = await supabase
+    const searchVal = docNumber.trim();
+
+    // Search by exact match first, then case-insensitive partial match
+    let note = null;
+
+    // 1) Exact match on invoice_number, doc_number, or order_number
+    const { data: exactMatch } = await supabase
       .from('delivery_notes')
       .select('id, doc_number, invoice_number, order_number, date_issued, customer_name, customer_email, shipper_code, unified_status')
-      .or(`invoice_number.eq.${docNumber},doc_number.eq.${docNumber},order_number.eq.${docNumber}`)
+      .or(`invoice_number.eq.${searchVal},doc_number.eq.${searchVal},order_number.eq.${searchVal}`)
       .limit(1)
-      .single();
+      .maybeSingle();
 
-    if (error || !note) {
+    if (exactMatch) {
+      note = exactMatch;
+    } else {
+      // 2) Case-insensitive partial match (handles prefixes, trailing spaces, etc.)
+      const { data: fuzzyMatch } = await supabase
+        .from('delivery_notes')
+        .select('id, doc_number, invoice_number, order_number, date_issued, customer_name, customer_email, shipper_code, unified_status')
+        .or(`invoice_number.ilike.%${searchVal}%,doc_number.ilike.%${searchVal}%,order_number.ilike.%${searchVal}%`)
+        .limit(1)
+        .maybeSingle();
+
+      if (fuzzyMatch) {
+        note = fuzzyMatch;
+      }
+    }
+
+    if (!note) {
       return res.status(404).json({ error: 'Objednávka nenalezena' });
     }
 
