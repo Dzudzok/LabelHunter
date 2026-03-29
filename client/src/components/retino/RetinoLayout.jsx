@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { NavLink, Outlet, useNavigate, useLocation } from 'react-router-dom'
 import { useAuthStore } from '../../store/authStore'
 import { useThemeStore } from '../../store/themeStore'
@@ -74,7 +74,7 @@ const NAV_SECTIONS = [
   },
 ]
 
-function NavItem({ item }) {
+function NavItem({ item, onNavigate }) {
   const location = useLocation()
   const [expanded, setExpanded] = useState(() => {
     if (!item.expandable) return false
@@ -103,6 +103,7 @@ function NavItem({ item }) {
           <NavLink
             key={j}
             to={child.to}
+            onClick={onNavigate}
             className={({ isActive }) =>
               `flex items-center gap-3 pl-12 pr-5 py-2 text-[13px] transition-colors ${
                 isActive
@@ -122,6 +123,7 @@ function NavItem({ item }) {
     <NavLink
       to={item.to + (item.search || '')}
       end={item.exact}
+      onClick={onNavigate}
       className={({ isActive }) =>
         `flex items-center gap-3 px-5 py-2.5 text-[13px] font-medium transition-colors ${
           isActive
@@ -140,17 +142,46 @@ export default function RetinoLayout() {
   const navigate = useNavigate()
   const worker = useAuthStore(s => s.worker)
   const { theme, toggleTheme } = useThemeStore()
+  const [sidebarOpen, setSidebarOpen] = useState(false)
+
+  // Close sidebar on route change (mobile)
+  const location = useLocation()
+  useEffect(() => {
+    setSidebarOpen(false)
+  }, [location.pathname])
+
+  // Close sidebar on escape
+  useEffect(() => {
+    const handleKey = (e) => { if (e.key === 'Escape') setSidebarOpen(false) }
+    window.addEventListener('keydown', handleKey)
+    return () => window.removeEventListener('keydown', handleKey)
+  }, [])
+
+  const closeSidebar = () => setSidebarOpen(false)
 
   return (
     <div className="flex h-screen bg-navy-900">
-      {/* Sidebar */}
-      <aside className="w-60 flex-shrink-0 bg-[#0b1121] flex flex-col">
-        {/* Logo */}
+      {/* Mobile overlay */}
+      {sidebarOpen && (
         <div
-          className="px-5 py-5 cursor-pointer hover:opacity-80 transition-opacity"
-          onClick={() => navigate('/')}
-        >
-          <div className="flex items-center gap-3">
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={closeSidebar}
+        />
+      )}
+
+      {/* Sidebar */}
+      <aside className={`
+        fixed inset-y-0 left-0 z-50 w-64 bg-[#0b1121] flex flex-col
+        transform transition-transform duration-200 ease-in-out
+        lg:relative lg:translate-x-0 lg:w-60
+        ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'}
+      `}>
+        {/* Logo + mobile close */}
+        <div className="px-5 py-5 flex items-center justify-between">
+          <div
+            className="flex items-center gap-3 cursor-pointer hover:opacity-80 transition-opacity"
+            onClick={() => navigate('/')}
+          >
             <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center flex-shrink-0 shadow-lg shadow-orange-500/20">
               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
                 <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -162,6 +193,15 @@ export default function RetinoLayout() {
               <div className="text-[11px] text-white/40 leading-tight">Mroauto.cz</div>
             </div>
           </div>
+          {/* Mobile close button */}
+          <button
+            onClick={closeSidebar}
+            className="lg:hidden p-1.5 text-white/50 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
 
         {/* Divider */}
@@ -176,7 +216,7 @@ export default function RetinoLayout() {
                 {section.title}
               </div>
               {section.items.map((item, i) => (
-                <NavItem key={i} item={item} />
+                <NavItem key={i} item={item} onNavigate={closeSidebar} />
               ))}
             </div>
           ))}
@@ -231,7 +271,27 @@ export default function RetinoLayout() {
       </aside>
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto">
+      <main className="flex-1 overflow-y-auto min-w-0">
+        {/* Mobile top bar */}
+        <div className="lg:hidden sticky top-0 z-30 bg-[#0b1121] border-b border-white/10 px-4 py-3 flex items-center gap-3">
+          <button
+            onClick={() => setSidebarOpen(true)}
+            className="p-1.5 text-white/70 hover:text-white hover:bg-white/10 rounded-lg transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
+            </svg>
+          </button>
+          <div className="flex items-center gap-2">
+            <div className="w-7 h-7 rounded-lg bg-gradient-to-br from-orange-400 to-orange-600 flex items-center justify-center">
+              <svg className="w-4 h-4 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
+                <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
+              </svg>
+            </div>
+            <span className="text-white font-bold text-sm">retino</span>
+          </div>
+        </div>
         <Outlet />
       </main>
     </div>

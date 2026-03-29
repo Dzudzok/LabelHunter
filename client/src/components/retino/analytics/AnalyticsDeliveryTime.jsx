@@ -46,8 +46,8 @@ export default function AnalyticsDeliveryTime() {
 
   if (loading || !data) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-theme-primary mb-6">Čas dodání</h1>
+      <div className="p-3 sm:p-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-theme-primary mb-6">Čas dodání</h1>
         <div className="text-theme-muted">Načítání dat...</div>
       </div>
     )
@@ -70,11 +70,11 @@ export default function AnalyticsDeliveryTime() {
   }
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-theme-primary">Čas dodání</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-theme-primary">Čas dodání</h1>
           <p className="text-sm text-theme-muted mt-1">
             Analýza doby doručení zásilek podle dopravců.
           </p>
@@ -111,7 +111,7 @@ export default function AnalyticsDeliveryTime() {
       </div>
 
       {/* KPI row */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         <div className="bg-navy-800 rounded-xl p-5 border border-navy-700 text-center">
           <div className="text-4xl font-bold text-theme-primary">
             {data.avgDays !== null ? `${data.avgDays}` : '—'}
@@ -135,10 +135,11 @@ export default function AnalyticsDeliveryTime() {
       </div>
 
       {/* Distribution chart + sidebar */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
         {/* Bar chart */}
         <div className="col-span-2 bg-navy-800 rounded-xl p-5 border border-navy-700">
           <h2 className="text-lg font-semibold text-theme-primary mb-4">Distribuce doby doručení</h2>
+          <div className="min-w-0">
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={distributionData}>
               <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -156,6 +157,7 @@ export default function AnalyticsDeliveryTime() {
               </Bar>
             </BarChart>
           </ResponsiveContainer>
+          </div>
         </div>
 
         {/* Sidebar distribution list */}

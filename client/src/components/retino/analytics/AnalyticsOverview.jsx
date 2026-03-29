@@ -37,8 +37,8 @@ export default function AnalyticsOverview() {
 
   if (loading || !data) {
     return (
-      <div className="p-6">
-        <h1 className="text-2xl font-bold text-theme-primary mb-6">Analytický přehled</h1>
+      <div className="p-3 sm:p-6">
+        <h1 className="text-xl sm:text-2xl font-bold text-theme-primary mb-6">Analytický přehled</h1>
         <div className="text-theme-muted">Načítání dat...</div>
       </div>
     )
@@ -61,11 +61,11 @@ export default function AnalyticsOverview() {
   }))
 
   return (
-    <div className="p-6 space-y-6">
+    <div className="p-3 sm:p-6 space-y-4 sm:space-y-6">
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-theme-primary">Analytický přehled</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-theme-primary">Analytický přehled</h1>
           <p className="text-sm text-theme-muted mt-1">
             Celkové statistiky výkonu vašeho doručování.
           </p>
@@ -100,7 +100,7 @@ export default function AnalyticsOverview() {
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
         <KpiCard label="Celkový počet zásilek" value={data.total} />
         <KpiCard label="Doručeno" value={data.delivered} valueColor="#10B981" />
         <KpiCard
@@ -125,6 +125,7 @@ export default function AnalyticsOverview() {
         <p className="text-xs text-theme-muted mb-4">
           Zobrazuje počet zásilek importovaných do Retino Tracking v průběhu času.
         </p>
+        <div className="min-w-0">
         <ResponsiveContainer width="100%" height={280}>
           <AreaChart data={data.volumeTrend}>
             <CartesianGrid strokeDasharray="3 3" stroke="#334155" />
@@ -157,10 +158,11 @@ export default function AnalyticsOverview() {
             />
           </AreaChart>
         </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Volume by carrier + Status pie */}
-      <div className="grid grid-cols-2 gap-4">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4">
         {/* Volume by carrier */}
         <div className="bg-navy-800 rounded-xl p-5 border border-navy-700">
           <h2 className="text-lg font-semibold text-theme-primary mb-1">Volume by carrier</h2>
@@ -273,7 +275,7 @@ function KpiCard({ label, value, sub, valueColor }) {
   return (
     <div className="bg-navy-800 rounded-xl p-4 border border-navy-700">
       <div className="text-xs text-theme-muted mb-1">{label}</div>
-      <div className="text-2xl font-bold" style={{ color: valueColor || '#e2e8f0' }}>
+      <div className="text-xl sm:text-2xl font-bold" style={{ color: valueColor || '#e2e8f0' }}>
         {value}
       </div>
       {sub && <div className="text-xs text-theme-muted mt-0.5">{sub}</div>}

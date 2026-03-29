@@ -72,6 +72,7 @@ app.listen(PORT, () => {
   // require('./cron/importDeliveryNotes').start();
   require('./cron/syncTrackingStatus').start();
 
+
   console.log('Cron jobs started');
 });
 

@@ -92,87 +92,91 @@ export default function TrackingDashboard() {
   const carriers = dashboard?.carrierStats ? Object.keys(dashboard.carrierStats).sort() : []
 
   return (
-    <div className="bg-navy-900 text-theme-primary p-6">
+    <div className="bg-navy-900 text-theme-primary p-3 sm:p-6">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Tracking Dashboard</h1>
+      <div className="flex items-center justify-between mb-4 sm:mb-6">
+        <h1 className="text-xl sm:text-2xl font-bold">Tracking Dashboard</h1>
       </div>
 
       {/* Stats */}
       {dashboard && <StatsCards cards={statsCards} />}
 
       {/* Filters */}
-      <div className="flex flex-wrap items-center gap-3 mb-4">
+      <div className="space-y-3 mb-4">
         <form onSubmit={handleSearch} className="flex gap-2">
           <input
             type="text"
             placeholder="Hledat (doklad, tracking, zákazník...)"
             value={searchInput}
             onChange={(e) => setSearchInput(e.target.value)}
-            className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-1.5 text-sm text-theme-primary w-64"
+            className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-1.5 text-sm text-theme-primary flex-1 min-w-0"
           />
-          <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold">
+          <button type="submit" className="bg-blue-600 hover:bg-blue-500 text-white px-3 py-1.5 rounded-lg text-sm font-semibold flex-shrink-0">
             Hledat
           </button>
         </form>
 
-        {/* Quick date buttons */}
-        <div className="flex gap-1">
-          {[
-            { label: '3 dny', days: 3 },
-            { label: '7 dní', days: 7 },
-            { label: '14 dní', days: 14 },
-            { label: '30 dní', days: 30 },
-          ].map(({ label, days }) => {
-            const from = new Date(); from.setDate(from.getDate() - days);
-            const fromStr = from.toISOString().slice(0, 10);
-            const toStr = new Date().toISOString().slice(0, 10);
-            const isActive = dateFrom === fromStr && dateTo === toStr;
-            return (
-              <button
-                key={days}
-                onClick={() => {
-                  if (isActive) { setDateFrom(''); setDateTo('') }
-                  else { setDateFrom(fromStr); setDateTo(toStr) }
-                  setPage(1)
-                }}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
-                  isActive ? 'bg-blue-600 text-white' : 'bg-navy-700 text-theme-muted hover:bg-navy-600 hover:text-theme-primary'
-                }`}
-              >
-                {label}
-              </button>
-            )
-          })}
-        </div>
+        <div className="flex flex-wrap items-center gap-2">
+          {/* Quick date buttons */}
+          <div className="flex gap-1">
+            {[
+              { label: '3d', days: 3 },
+              { label: '7d', days: 7 },
+              { label: '14d', days: 14 },
+              { label: '30d', days: 30 },
+            ].map(({ label, days }) => {
+              const from = new Date(); from.setDate(from.getDate() - days);
+              const fromStr = from.toISOString().slice(0, 10);
+              const toStr = new Date().toISOString().slice(0, 10);
+              const isActive = dateFrom === fromStr && dateTo === toStr;
+              return (
+                <button
+                  key={days}
+                  onClick={() => {
+                    if (isActive) { setDateFrom(''); setDateTo('') }
+                    else { setDateFrom(fromStr); setDateTo(toStr) }
+                    setPage(1)
+                  }}
+                  className={`px-2.5 py-1.5 rounded-lg text-xs font-semibold transition-colors ${
+                    isActive ? 'bg-blue-600 text-white' : 'bg-navy-700 text-theme-muted hover:bg-navy-600 hover:text-theme-primary'
+                  }`}
+                >
+                  {label}
+                </button>
+              )
+            })}
+          </div>
 
-        <select
-          value={shipperFilter}
-          onChange={(e) => { setShipperFilter(e.target.value); setPage(1) }}
-          className="bg-navy-700 border border-navy-600 rounded-lg px-3 py-1.5 text-sm text-theme-primary"
-        >
-          <option value="">Všichni dopravci</option>
-          {carriers.map(c => <option key={c} value={c}>{c}</option>)}
-        </select>
-
-        <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
-          className="bg-navy-700 border border-navy-600 rounded-lg px-2 py-1.5 text-sm text-theme-primary" />
-        <span className="text-theme-muted text-sm">—</span>
-        <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
-          className="bg-navy-700 border border-navy-600 rounded-lg px-2 py-1.5 text-sm text-theme-primary" />
-
-        {(statusFilter || shipperFilter || dateFrom || dateTo || search) && (
-          <button
-            onClick={() => { setStatusFilter(''); setShipperFilter(''); setDateFrom(''); setDateTo(''); setSearch(''); setSearchInput(''); setPage(1) }}
-            className="text-red-400 hover:text-red-300 text-sm"
+          <select
+            value={shipperFilter}
+            onChange={(e) => { setShipperFilter(e.target.value); setPage(1) }}
+            className="bg-navy-700 border border-navy-600 rounded-lg px-2 py-1.5 text-sm text-theme-primary"
           >
-            Zrušit filtry
-          </button>
-        )}
+            <option value="">Dopravce</option>
+            {carriers.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+
+          <div className="hidden sm:flex items-center gap-2">
+            <input type="date" value={dateFrom} onChange={(e) => { setDateFrom(e.target.value); setPage(1) }}
+              className="bg-navy-700 border border-navy-600 rounded-lg px-2 py-1.5 text-sm text-theme-primary" />
+            <span className="text-theme-muted text-sm">—</span>
+            <input type="date" value={dateTo} onChange={(e) => { setDateTo(e.target.value); setPage(1) }}
+              className="bg-navy-700 border border-navy-600 rounded-lg px-2 py-1.5 text-sm text-theme-primary" />
+          </div>
+
+          {(statusFilter || shipperFilter || dateFrom || dateTo || search) && (
+            <button
+              onClick={() => { setStatusFilter(''); setShipperFilter(''); setDateFrom(''); setDateTo(''); setSearch(''); setSearchInput(''); setPage(1) }}
+              className="text-red-400 hover:text-red-300 text-xs sm:text-sm"
+            >
+              Zrušit
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Table */}
-      <div className="bg-navy-800 rounded-xl p-4">
+      <div className="bg-navy-800 rounded-xl p-2 sm:p-4 overflow-x-auto">
         <DataTable
           columns={columns}
           rows={shipments}
