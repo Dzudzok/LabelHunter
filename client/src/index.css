@@ -39,11 +39,6 @@ body {
   font-family: 'Inter', system-ui, -apple-system, sans-serif;
   background-color: var(--navy-800);
   color: var(--text-primary);
-  -webkit-user-select: none;
-  user-select: none;
-}
-
-input, textarea {
   -webkit-user-select: text;
   user-select: text;
 }
