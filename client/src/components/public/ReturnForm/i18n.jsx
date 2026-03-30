@@ -14,6 +14,9 @@ const translations = {
   'result.track': { cs: 'Sledovat stav žádosti', en: 'Track request status' },
   'result.downloadLabel': { cs: 'Stáhnout přepravní štítek (PDF)', en: 'Download shipping label (PDF)' },
   'result.labelInfo': { cs: 'Vytiskněte štítek a nalepte jej na balík před odesláním.', en: 'Print the label and attach it to your package before shipping.' },
+  'result.payForLabel': { cs: 'Zaplatit za přepravní štítek', en: 'Pay for shipping label' },
+  'result.payInfo': { cs: 'Po zaplacení se vygeneruje přepravní štítek ke stažení.', en: 'After payment, a shipping label will be generated for download.' },
+  'result.payAmount': { cs: 'Částka', en: 'Amount' },
   'header.subtitle': { cs: 'Vrácení a reklamace zboží', en: 'Returns & complaints' },
 
   // === Step1Verify ===

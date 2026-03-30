@@ -28,6 +28,7 @@ import CostAnalysis from './components/retino/analytics/CostAnalysis'
 import TrackAndTrace from './components/public/TrackAndTrace'
 import ReturnForm from './components/public/ReturnForm/ReturnForm'
 import ReturnStatus from './components/public/ReturnStatus'
+import PaymentReturn from './components/public/PaymentReturn'
 import RefundQueue from './components/retino/returns/RefundQueue'
 import RefundAccounts from './components/retino/settings/RefundAccounts'
 import CaseTypes from './components/retino/settings/CaseTypes'
@@ -55,6 +56,7 @@ export default function App() {
         <Route path="/sledovani/:trackingToken" element={<TrackAndTrace />} />
         <Route path="/vraceni" element={<ReturnForm />} />
         <Route path="/vraceni/stav/:accessToken" element={<ReturnStatus />} />
+        <Route path="/vraceni/platba/:shipmentId/:accessToken" element={<PaymentReturn />} />
 
         {/* All other routes require system login (JWT) + worker selection */}
         <Route path="/*" element={

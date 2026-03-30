@@ -47,58 +47,51 @@ class ReturnShippingService {
 
     if (error) throw error;
 
-    // GLS — generate label via GLS MyGLS API directly
-    if (carrier === 'gls') {
-      try {
-        const label = await this.generateGLSLabel(returnId, shipment.id);
-        const { data: updated } = await supabase
-          .from('return_shipments')
-          .update({
-            tracking_number: label.trackingNumber || null,
-            label_url: label.labelUrl || null,
-            label_data: { parcelId: label.parcelId, labelBase64: label.labelBase64 },
-            status: 'label_generated',
-          })
-          .eq('id', shipment.id)
-          .select()
-          .single();
-        return updated || shipment;
-      } catch (labelErr) {
-        const errDetail = labelErr.response?.data || labelErr.message;
-        console.error('[ReturnShipping] GLS label error:', JSON.stringify(errDetail));
-        await supabase
-          .from('return_shipments')
-          .update({ notes: `GLS label failed: ${typeof errDetail === 'object' ? JSON.stringify(errDetail) : errDetail}` })
-          .eq('id', shipment.id);
-      }
-    }
+    // If paid shipping (GLS, Zásilkovna) — don't generate label yet, wait for payment
+    if (carrier !== 'self') {
+      const cost = this.getShippingCost(carrier, shippingMethod);
+      if (cost > 0) {
+        // Build GoPay payment URL
+        const goId = process.env.GOPAY_GOID || '8387806526';
+        const goSecret = process.env.GOPAY_SECRET || '';
+        const frontendUrl = process.env.FRONTEND_URL || 'https://returo.mroautoapp.cz';
 
-    // If Zásilkovna drop-off, generate label
-    if (carrier === 'zasilkovna' && shippingMethod === 'drop_off') {
-      try {
-        console.log('[ReturnShipping] Zásilkovna label generation — pickupPoint:', JSON.stringify(pickupPoint), 'apiPassword configured:', !!this.zasilkovnaApiPassword);
-        const label = await this.createZasilkovnaPacket(returnId, shipment.id, pickupPoint, customerAddress);
-        // Update shipment with label info
-        const { data: updated } = await supabase
-          .from('return_shipments')
-          .update({
-            tracking_number: label.packetId,
-            label_url: label.labelUrl || null,
-            label_data: label,
-            status: 'label_generated',
-          })
-          .eq('id', shipment.id)
-          .select()
+        // Fetch access token for success URL
+        const { data: ret } = await supabase
+          .from('returns')
+          .select('access_token')
+          .eq('id', returnId)
           .single();
 
-        return updated || shipment;
-      } catch (labelErr) {
-        console.error('[ReturnShipping] Zásilkovna label error:', labelErr.message);
-        // Shipment created but label failed — admin can retry
+        const successUrl = `${frontendUrl}/vraceni/platba/${shipment.id}/${ret?.access_token || ''}?status=ok`;
+        const failedUrl = `${frontendUrl}/vraceni/platba/${shipment.id}/${ret?.access_token || ''}?status=fail`;
+
+        // GoPay payment button URL (simple redirect, no API needed)
+        const paymentUrl = `https://gate.gopay.com/gw/pay-base-v2?` +
+          `paymentCommand.targetGoId=${goId}` +
+          `&paymentCommand.totalPrice=${cost * 100}` +
+          `&paymentCommand.currency=CZK` +
+          `&paymentCommand.productName=${encodeURIComponent('RETURO - zpětný štítek')}` +
+          `&paymentCommand.orderNumber=${encodeURIComponent(`RET-${shipment.id}`)}` +
+          `&paymentCommand.successURL=${encodeURIComponent(successUrl)}` +
+          `&paymentCommand.failedURL=${encodeURIComponent(failedUrl)}` +
+          (goSecret ? `&paymentCommand.encryptedSignature=${goSecret}` : '');
+
+        // Update shipment with payment info
         await supabase
           .from('return_shipments')
-          .update({ notes: `Label generation failed: ${labelErr.message}` })
+          .update({
+            status: 'pending_payment',
+            payment_status: 'unpaid',
+            cost,
+            gopay_payment_url: paymentUrl,
+          })
           .eq('id', shipment.id);
+
+        shipment.status = 'pending_payment';
+        shipment.cost = cost;
+        shipment.gopay_payment_url = paymentUrl;
+        return shipment;
       }
     }
 

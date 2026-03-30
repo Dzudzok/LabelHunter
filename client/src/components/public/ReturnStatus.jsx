@@ -114,11 +114,20 @@ export default function ReturnStatus() {
                   </a>
                 </div>
               )}
+              {s.status === 'pending_payment' && s.gopay_payment_url && (
+                <div className="mt-2">
+                  <p className="text-sm text-orange-700 mb-2">Štítek bude vygenerován po zaplacení.</p>
+                  <a href={s.gopay_payment_url}
+                    className="inline-block bg-[#2ECC71] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90">
+                    Zaplatit {s.cost} Kč
+                  </a>
+                </div>
+              )}
               {s.shipping_method === 'self_ship' && s.status === 'pending' && (
                 <div className="mt-2 bg-white rounded-lg p-3 text-sm text-gray-700">
                   <strong>Adresa pro zaslání:</strong><br />
                   MROAUTO AUTODÍLY s.r.o.<br />
-                  Reklamační oddělení, Průmyslová 1472, 280 02 Kolín
+                  Čs. armády 360, Pudlov, 735 51 Bohumín
                 </div>
               )}
             </div>

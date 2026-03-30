@@ -239,6 +239,7 @@ router.post('/create', async (req, res, next) => {
           shippingMethod,
           trackingNumber: shipment.tracking_number || null,
           labelUrl: shipment.label_url || null,
+          paymentUrl: shipment.gopay_payment_url || null,
           cost,
         };
       } catch (shipErr) {
@@ -266,6 +267,71 @@ router.post('/create', async (req, res, next) => {
       accessToken: ret.access_token,
       statusUrl: `/vraceni/stav/${ret.access_token}`,
       shipment: shipmentInfo,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /payment-complete/:shipmentId/:accessToken — generate label after successful payment
+router.post('/payment-complete/:shipmentId/:accessToken', async (req, res, next) => {
+  try {
+    const { shipmentId, accessToken } = req.params;
+
+    // Verify access token matches a real return
+    const { data: ret } = await supabase
+      .from('returns')
+      .select('id, access_token')
+      .eq('access_token', accessToken)
+      .single();
+    if (!ret) return res.status(404).json({ error: 'Return not found' });
+
+    // Verify shipment belongs to this return
+    const { data: shipment } = await supabase
+      .from('return_shipments')
+      .select('id, return_id, carrier, shipping_method, status, pickup_point_id, pickup_point_name, pickup_point_address')
+      .eq('id', parseInt(shipmentId))
+      .eq('return_id', ret.id)
+      .single();
+    if (!shipment) return res.status(404).json({ error: 'Shipment not found' });
+    if (shipment.status !== 'pending_payment') {
+      return res.status(400).json({ error: 'Shipment is not pending payment', currentStatus: shipment.status });
+    }
+
+    const returnShippingService = require('../../services/retino/ReturnShippingService');
+
+    let labelResult = null;
+    if (shipment.carrier === 'gls') {
+      labelResult = await returnShippingService.generateGLSLabel(ret.id, shipment.id);
+    } else if (shipment.carrier === 'zasilkovna') {
+      const pickupPoint = shipment.pickup_point_id
+        ? { id: shipment.pickup_point_id, name: shipment.pickup_point_name, address: shipment.pickup_point_address }
+        : null;
+      labelResult = await returnShippingService.createZasilkovnaPacket(ret.id, shipment.id, pickupPoint, null);
+    }
+
+    if (labelResult) {
+      const updateData = {
+        status: 'label_generated',
+        payment_status: 'paid',
+      };
+
+      if (shipment.carrier === 'gls') {
+        updateData.tracking_number = labelResult.trackingNumber || null;
+        updateData.label_url = labelResult.labelUrl || null;
+        updateData.label_data = { parcelId: labelResult.parcelId, labelBase64: labelResult.labelBase64 };
+      } else if (shipment.carrier === 'zasilkovna') {
+        updateData.tracking_number = labelResult.packetId || null;
+        updateData.label_url = labelResult.labelUrl || null;
+        updateData.label_data = labelResult;
+      }
+
+      await supabase.from('return_shipments').update(updateData).eq('id', shipment.id);
+    }
+
+    res.json({
+      success: true,
+      labelUrl: labelResult?.labelUrl || null,
     });
   } catch (err) {
     next(err);

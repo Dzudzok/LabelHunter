@@ -88,6 +88,23 @@ function ReturnFormInner() {
             </div>
           )}
 
+          {result.shipment?.paymentUrl && !result.shipment?.labelUrl && (
+            <div className="mb-6">
+              <p className="text-sm text-gray-600 mb-2">
+                {t('result.payInfo')}
+              </p>
+              <p className="text-lg font-bold text-gray-800 mb-3">
+                {t('result.payAmount')}: {result.shipment.cost} Kč
+              </p>
+              <a
+                href={result.shipment.paymentUrl}
+                className="inline-block bg-[#2ECC71] text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mb-2"
+              >
+                {t('result.payForLabel')}
+              </a>
+            </div>
+          )}
+
           <a
             href={`/vraceni/stav/${result.accessToken}`}
             className="inline-block bg-[#1046A0] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
