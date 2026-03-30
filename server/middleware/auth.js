@@ -32,6 +32,8 @@ function requireAuth(req, res, next) {
 
   // Also allow view-label endpoints (used for printing via QZ Tray/iframe)
   if (req.path.match(/^\/api\/packages\/\d+\/view-label/)) return next();
+  // Allow public access to return shipment labels (PDF download for customers)
+  if (req.path.match(/^\/api\/retino\/return-shipments\/\d+\/label\.pdf/)) return next();
 
   const isPublic = publicPrefixes.some(prefix => req.path.startsWith(prefix));
   if (isPublic) return next();
