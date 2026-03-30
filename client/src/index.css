@@ -49,19 +49,26 @@ button {
 }
 
 /* Public pages — override dark theme for light backgrounds */
-.min-h-screen.bg-gray-50 {
+[data-public-page],
+[data-public-page] * {
   --text-primary: #0f172a;
   --text-secondary: #334155;
   --text-muted: #64748b;
+}
+[data-public-page] {
+  color: #1f2937;
+  background: linear-gradient(to bottom, #f8fafc, #f1f5f9);
+}
+[data-public-page] input,
+[data-public-page] select,
+[data-public-page] textarea {
   color: #1f2937;
 }
-.min-h-screen.bg-gray-50 input,
-.min-h-screen.bg-gray-50 select,
-.min-h-screen.bg-gray-50 textarea {
-  color: #1f2937;
-}
-.min-h-screen.bg-gray-50 button {
+[data-public-page] button {
   min-height: auto;
+}
+[data-public-page] ::placeholder {
+  color: #9ca3af;
 }
 
 /* Modal overlay using CSS var */
