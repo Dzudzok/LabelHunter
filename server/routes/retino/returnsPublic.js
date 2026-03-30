@@ -10,9 +10,11 @@ const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif'
 
 // GET /payment-links — return GoPay payment links per carrier
 router.get('/payment-links', (req, res) => {
+  const skipPayment = process.env.SKIP_PAYMENT_CHECK === 'true';
   res.json({
     gls: process.env.GOPAY_LINK_GLS || null,
     zasilkovna: process.env.GOPAY_LINK_ZASILKOVNA || null,
+    testMode: skipPayment,
   });
 });
 

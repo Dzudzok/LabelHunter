@@ -81,6 +81,14 @@ export default function StepTransport({ formData, updateForm, onNext, onBack }) 
       shippingMethod: selected.method,
       shippingData: { carrier: selected.carrier, shippingMethod: selected.method, cost: selected.cost, pickupPoint: pickupPoint || null },
     })
+
+    // Test mode — skip GoPay, mark as paid immediately
+    if (paymentLinks.testMode) {
+      setPaid(true)
+      updateForm({ shippingPaid: true })
+      return
+    }
+
     // Get payment link for carrier
     const link = paymentLinks[selected.carrier]
     if (!link) {
