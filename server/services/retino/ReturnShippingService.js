@@ -47,10 +47,11 @@ class ReturnShippingService {
 
     if (error) throw error;
 
-    // GLS — generate label via GLS MyGLS API directly
+    // GLS — generate label via GLS MyGLS API
     if (carrier === 'gls') {
       try {
         const label = await this.generateGLSLabel(returnId, shipment.id);
+        const cost = this.getShippingCost(carrier, shippingMethod);
         const { data: updated } = await supabase
           .from('return_shipments')
           .update({
@@ -58,7 +59,7 @@ class ReturnShippingService {
             label_url: label.labelUrl || null,
             label_data: { parcelId: label.parcelId, labelBase64: label.labelBase64 },
             status: 'label_generated',
-            cost: this.getShippingCost(carrier, shippingMethod),
+            cost,
             payment_status: 'paid',
           })
           .eq('id', shipment.id)
@@ -66,10 +67,9 @@ class ReturnShippingService {
           .single();
         return updated || shipment;
       } catch (labelErr) {
-        const errDetail = labelErr.response?.data || labelErr.message;
-        console.error('[ReturnShipping] GLS label error:', JSON.stringify(errDetail));
+        console.error('[ReturnShipping] GLS label error:', JSON.stringify(labelErr.response?.data || labelErr.message));
         await supabase.from('return_shipments')
-          .update({ notes: `GLS label failed: ${typeof errDetail === 'object' ? JSON.stringify(errDetail) : errDetail}` })
+          .update({ notes: `GLS label failed: ${labelErr.message}`, cost: this.getShippingCost(carrier, shippingMethod) })
           .eq('id', shipment.id);
       }
     }
@@ -77,8 +77,8 @@ class ReturnShippingService {
     // Zásilkovna — generate label via Zásilkovna API
     if (carrier === 'zasilkovna' && shippingMethod === 'drop_off') {
       try {
-        console.log('[ReturnShipping] Zásilkovna label — pickupPoint:', JSON.stringify(pickupPoint));
         const label = await this.createZasilkovnaPacket(returnId, shipment.id, pickupPoint, customerAddress);
+        const cost = this.getShippingCost(carrier, shippingMethod);
         const { data: updated } = await supabase
           .from('return_shipments')
           .update({
@@ -86,7 +86,7 @@ class ReturnShippingService {
             label_url: label.labelUrl || null,
             label_data: label,
             status: 'label_generated',
-            cost: this.getShippingCost(carrier, shippingMethod),
+            cost,
             payment_status: 'paid',
           })
           .eq('id', shipment.id)
@@ -96,7 +96,7 @@ class ReturnShippingService {
       } catch (labelErr) {
         console.error('[ReturnShipping] Zásilkovna label error:', labelErr.message);
         await supabase.from('return_shipments')
-          .update({ notes: `Label generation failed: ${labelErr.message}` })
+          .update({ notes: `Label failed: ${labelErr.message}`, cost: this.getShippingCost(carrier, shippingMethod) })
           .eq('id', shipment.id);
       }
     }

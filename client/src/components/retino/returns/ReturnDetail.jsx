@@ -6,8 +6,8 @@ import StatusBadge from '../shared/StatusBadge'
 
 const CARRIER_LABELS = { zasilkovna: 'Zásilkovna', ppl: 'PPL', gls: 'GLS', cp: 'Česká pošta', self: 'Vlastní doprava' }
 const METHOD_LABELS = { drop_off: 'Výdejní místo', courier_pickup: 'Svoz kurýrem', self_ship: 'Vlastní odeslání' }
-const SHIPMENT_STATUS_LABELS = { pending: 'Čeká', label_generated: 'Štítek vygenerován', shipped: 'Odesláno', in_transit: 'V přepravě', delivered: 'Doručeno' }
-const SHIPMENT_STATUS_COLORS = { pending: '#9CA3AF', label_generated: '#3B82F6', shipped: '#8B5CF6', in_transit: '#F59E0B', delivered: '#10B981' }
+const SHIPMENT_STATUS_LABELS = { pending: 'Čeká', pending_payment: 'Čeká na platbu', label_generated: 'Štítek vygenerován', shipped: 'Odesláno', in_transit: 'V přepravě', delivered: 'Doručeno' }
+const SHIPMENT_STATUS_COLORS = { pending: '#9CA3AF', pending_payment: '#F59E0B', label_generated: '#3B82F6', shipped: '#8B5CF6', in_transit: '#F59E0B', delivered: '#10B981' }
 
 export default function ReturnDetail() {
   const { id } = useParams()
@@ -166,20 +166,28 @@ export default function ReturnDetail() {
                       className="inline-block mt-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
                       Stáhnout štítek (PDF)
                     </a>
-                  ) : ['gls', 'ppl', 'dpd', 'cp'].includes(s.carrier) && s.status === 'pending' ? (
+                  ) : (s.status === 'pending_payment' || s.status === 'pending') && ['gls', 'zasilkovna'].includes(s.carrier) ? (
                     <button
                       onClick={async () => {
+                        const msg = s.status === 'pending_payment'
+                          ? 'Opravdu potvrdit platbu a vygenerovat štítek?'
+                          : 'Vygenerovat štítek?'
+                        if (!confirm(msg)) return
                         try {
-                          const res = await api.post(`/retino/return-shipments/${s.id}/generate-label`)
+                          await api.post(`/retino/return-shipments/${s.id}/generate-label`)
                           alert('Štítek vygenerován!')
                           fetchReturn()
                         } catch (err) {
                           alert(err.response?.data?.error || 'Nepodařilo se vygenerovat štítek')
                         }
                       }}
-                      className="mt-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                      className={`mt-2 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors ${
+                        s.status === 'pending_payment'
+                          ? 'bg-green-600 hover:bg-green-500'
+                          : 'bg-orange-600 hover:bg-orange-500'
+                      }`}
                     >
-                      Vygenerovat štítek (LP)
+                      {s.status === 'pending_payment' ? 'Potvrdit platbu + vygenerovat štítek' : 'Vygenerovat štítek'}
                     </button>
                   ) : null}
                 </div>
