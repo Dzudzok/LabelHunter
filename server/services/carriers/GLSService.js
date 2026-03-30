@@ -91,6 +91,82 @@ class GLSService {
   }
 
   /**
+   * Create parcel and get label PDF via PrintLabels endpoint.
+   * @param {object} opts - { senderName, senderStreet, senderCity, senderZip, senderCountry, senderPhone, senderEmail,
+   *                          recipientName, recipientStreet, recipientCity, recipientZip, recipientCountry, recipientPhone, recipientEmail,
+   *                          reference, weight, count }
+   * @returns {object} { parcelId, parcelNumber, labels (base64 PDF) }
+   */
+  async printLabels(opts) {
+    const parcel = {
+      ClientNumber: parseInt(this.clientNumber),
+      ClientReference: opts.reference || '',
+      Count: opts.count || 1,
+      DeliveryAddress: {
+        ContactEmail: opts.recipientEmail || '',
+        ContactName: opts.recipientName || '',
+        ContactPhone: opts.recipientPhone || '',
+        Name: opts.recipientName || '',
+        Street: opts.recipientStreet || '',
+        City: opts.recipientCity || '',
+        ZipCode: String(opts.recipientZip || '').replace(/\s/g, ''),
+        CountryIsoCode: opts.recipientCountry || 'CZ',
+      },
+      PickupAddress: {
+        ContactEmail: opts.senderEmail || '',
+        ContactName: opts.senderName || '',
+        ContactPhone: opts.senderPhone || '',
+        Name: opts.senderName || '',
+        Street: opts.senderStreet || '',
+        City: opts.senderCity || '',
+        ZipCode: String(opts.senderZip || '').replace(/\s/g, ''),
+        CountryIsoCode: opts.senderCountry || 'CZ',
+      },
+      ServiceList: [],
+    };
+
+    const requestBody = {
+      Username: this.username,
+      Password: this._getPasswordHash(),
+      ParcelList: [parcel],
+      PrintPosition: 1,
+      ShowPrintDialog: false,
+    };
+
+    console.log('[GLS] PrintLabels request:', JSON.stringify(requestBody).substring(0, 500));
+
+    const res = await axios.post(
+      `${this.baseUrl}/ParcelService.svc/json/PrintLabels`,
+      requestBody,
+      {
+        headers: { 'Content-Type': 'application/json' },
+        timeout: 30000,
+      }
+    );
+
+    const data = res.data;
+
+    // Check errors
+    if (data.PrintLabelsErrorList?.length > 0) {
+      const errs = data.PrintLabelsErrorList.map(e =>
+        (e.ErrorDescriptionList || []).map(d => `${d.ErrorCode}: ${d.ErrorDescription}`).join('; ')
+      ).join(' | ');
+      throw new Error(`GLS PrintLabels error: ${errs}`);
+    }
+
+    // Extract parcel info
+    const printed = data.PrintLabelsInfoList?.[0];
+    const parcelId = printed?.ParcelId || null;
+    const parcelNumber = printed?.ParcelNumber || null;
+
+    return {
+      parcelId,
+      parcelNumber,
+      labels: data.Labels || null, // base64 PDF
+    };
+  }
+
+  /**
    * Parse GLS date format: "/Date(1774252163000+0100)/"
    */
   _parseDate(dateStr) {

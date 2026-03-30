@@ -93,19 +93,19 @@ router.post('/:id/generate-label', async (req, res, next) => {
     if (error || !shipment) return res.status(404).json({ error: 'Shipment not found' });
     if (shipment.label_url) return res.status(400).json({ error: 'Label already generated' });
 
-    const carrier = (shipment.carrier || '').toUpperCase();
-    if (!['GLS', 'PPL', 'DPD', 'CP'].includes(carrier)) {
-      return res.status(400).json({ error: `LP label not supported for carrier: ${shipment.carrier}` });
+    const carrier = (shipment.carrier || '').toLowerCase();
+    if (carrier !== 'gls') {
+      return res.status(400).json({ error: `Automatické generování štítku zatím podporuje pouze GLS a Zásilkovnu` });
     }
 
-    const label = await returnShippingService.generateLPLabel(shipment.return_id, shipment.id, carrier);
+    const label = await returnShippingService.generateGLSLabel(shipment.return_id, shipment.id);
 
     const { data: updated } = await supabase
       .from('return_shipments')
       .update({
         tracking_number: label.trackingNumber || null,
         label_url: label.labelUrl || null,
-        label_data: label,
+        label_data: { parcelId: label.parcelId },
         status: 'label_generated',
       })
       .eq('id', shipment.id)
