@@ -78,6 +78,46 @@ router.patch('/:id/status', async (req, res, next) => {
   }
 });
 
+// POST /api/retino/return-shipments/:id/generate-label — generate label via LP API (admin)
+router.post('/:id/generate-label', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+
+    // Fetch shipment
+    const { data: shipment, error } = await supabase
+      .from('return_shipments')
+      .select('id, return_id, carrier, status, label_url')
+      .eq('id', id)
+      .single();
+
+    if (error || !shipment) return res.status(404).json({ error: 'Shipment not found' });
+    if (shipment.label_url) return res.status(400).json({ error: 'Label already generated' });
+
+    const carrier = (shipment.carrier || '').toUpperCase();
+    if (!['GLS', 'PPL', 'DPD', 'CP'].includes(carrier)) {
+      return res.status(400).json({ error: `LP label not supported for carrier: ${shipment.carrier}` });
+    }
+
+    const label = await returnShippingService.generateLPLabel(shipment.return_id, shipment.id, carrier);
+
+    const { data: updated } = await supabase
+      .from('return_shipments')
+      .update({
+        tracking_number: label.trackingNumber || null,
+        label_url: label.labelUrl || null,
+        label_data: label,
+        status: 'label_generated',
+      })
+      .eq('id', shipment.id)
+      .select()
+      .single();
+
+    res.json(updated || shipment);
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /api/retino/return-shipments/costs/config — get shipping cost config
 router.get('/costs/config', async (req, res) => {
   const costs = {

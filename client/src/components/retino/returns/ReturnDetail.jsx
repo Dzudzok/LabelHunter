@@ -101,7 +101,21 @@ export default function ReturnDetail() {
             <InfoRow label="Jméno" value={ret.customer_name} />
             <InfoRow label="E-mail" value={ret.customer_email} />
             <InfoRow label="Telefon" value={ret.customer_phone} />
+            {ret.vin && <InfoRow label="VIN" value={ret.vin} />}
+            {ret.workshop_name && <InfoRow label="Dílna" value={`${ret.workshop_name}${ret.workshop_address ? ` — ${ret.workshop_address}` : ''}`} />}
           </div>
+
+          {/* Bank account */}
+          <BankAccountSection ret={ret} onUpdate={fetchReturn} />
+
+          {/* Extra costs */}
+          {ret.extra_costs_amount > 0 && (
+            <div className="bg-navy-800 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-theme-muted mb-3 uppercase tracking-wider">Dodatečné náklady</h3>
+              <InfoRow label="Popis" value={ret.extra_costs_description} />
+              <InfoRow label="Částka" value={`${ret.extra_costs_amount} CZK`} />
+            </div>
+          )}
 
           {/* Delivery note */}
           {ret.deliveryNote && (
@@ -147,12 +161,27 @@ export default function ReturnDetail() {
                   {s.tracking_number && <InfoRow label="Tracking" value={s.tracking_number} />}
                   {s.cost > 0 && <InfoRow label="Cena" value={`${s.cost} ${s.currency || 'CZK'}`} />}
                   {s.pickup_point_name && <InfoRow label="Výdejní místo" value={s.pickup_point_name} />}
-                  {s.label_url && (
+                  {s.label_url ? (
                     <a href={s.label_url} target="_blank" rel="noopener noreferrer"
-                      className="inline-block mt-2 text-xs text-blue-400 hover:text-blue-300 underline">
+                      className="inline-block mt-2 bg-blue-600 hover:bg-blue-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
                       Stáhnout štítek (PDF)
                     </a>
-                  )}
+                  ) : ['gls', 'ppl', 'dpd', 'cp'].includes(s.carrier) && s.status === 'pending' ? (
+                    <button
+                      onClick={async () => {
+                        try {
+                          const res = await api.post(`/retino/return-shipments/${s.id}/generate-label`)
+                          alert('Štítek vygenerován!')
+                          fetchReturn()
+                        } catch (err) {
+                          alert(err.response?.data?.error || 'Nepodařilo se vygenerovat štítek')
+                        }
+                      }}
+                      className="mt-2 bg-orange-600 hover:bg-orange-500 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors"
+                    >
+                      Vygenerovat štítek (LP)
+                    </button>
+                  ) : null}
                 </div>
               ))}
             </div>
@@ -373,6 +402,83 @@ function ResolveModal({ onClose, onResolve }) {
           </button>
         </div>
       </div>
+    </div>
+  )
+}
+
+function BankAccountSection({ ret, onUpdate }) {
+  const [editing, setEditing] = useState(false)
+  const [newAccount, setNewAccount] = useState(ret.refund_bank_account || '')
+  const [saving, setSaving] = useState(false)
+  const [log, setLog] = useState([])
+  const [showLog, setShowLog] = useState(false)
+
+  useEffect(() => {
+    if (showLog && ret.id) {
+      api.get(`/retino/returns/${ret.id}/bank-account-log`)
+        .then(res => setLog(res.data))
+        .catch(() => {})
+    }
+  }, [showLog, ret.id])
+
+  const handleSave = async () => {
+    if (!newAccount.trim()) return
+    setSaving(true)
+    try {
+      await api.patch(`/retino/returns/${ret.id}/bank-account`, { bankAccount: newAccount.trim() })
+      setEditing(false)
+      onUpdate()
+    } catch (err) {
+      alert(err.response?.data?.error || 'Chyba')
+    } finally {
+      setSaving(false)
+    }
+  }
+
+  return (
+    <div className="bg-navy-800 rounded-xl p-4">
+      <div className="flex items-center justify-between mb-3">
+        <h3 className="text-sm font-semibold text-theme-muted uppercase tracking-wider">Bankovní účet</h3>
+        <div className="flex gap-2">
+          <button onClick={() => setShowLog(!showLog)} className="text-[10px] text-theme-muted hover:text-theme-primary">
+            {showLog ? 'Skrýt historii' : 'Historie změn'}
+          </button>
+          {!editing && (
+            <button onClick={() => { setEditing(true); setNewAccount(ret.refund_bank_account || '') }}
+              className="text-[10px] text-blue-400 hover:text-blue-300">Upravit</button>
+          )}
+        </div>
+      </div>
+
+      {editing ? (
+        <div className="flex gap-2">
+          <input type="text" value={newAccount} onChange={e => setNewAccount(e.target.value)}
+            placeholder="123456789/0100 nebo IBAN"
+            className="flex-1 bg-navy-700 border border-navy-600 rounded-lg px-3 py-1.5 text-sm text-theme-primary font-mono focus:outline-none focus:border-blue-500" />
+          <button onClick={handleSave} disabled={saving || !newAccount.trim()}
+            className="px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 text-white text-xs rounded-lg">
+            {saving ? '...' : 'Uložit'}
+          </button>
+          <button onClick={() => setEditing(false)} className="px-3 py-1.5 bg-navy-700 text-theme-muted text-xs rounded-lg">Zrušit</button>
+        </div>
+      ) : (
+        <div className="text-sm text-theme-primary font-mono">{ret.refund_bank_account || '—'}</div>
+      )}
+
+      {showLog && log.length > 0 && (
+        <div className="mt-3 space-y-1.5">
+          {log.map((entry, i) => (
+            <div key={i} className="text-[10px] text-theme-muted bg-navy-700/50 rounded p-2">
+              <span className="text-yellow-400">{entry.changed_by || 'system'}</span>
+              {' změnil účet '}
+              <span className="text-red-400 font-mono">{entry.old_account || '—'}</span>
+              {' → '}
+              <span className="text-green-400 font-mono">{entry.new_account}</span>
+              <span className="ml-2 opacity-60">{entry.changed_at ? new Date(entry.changed_at).toLocaleString('cs-CZ') : ''}</span>
+            </div>
+          ))}
+        </div>
+      )}
     </div>
   )
 }

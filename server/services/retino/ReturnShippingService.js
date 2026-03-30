@@ -1,5 +1,8 @@
 const axios = require('axios');
+const fs = require('fs');
+const path = require('path');
 const supabase = require('../../db/supabase');
+const labelPrinterService = require('../LabelPrinterService');
 
 /**
  * ReturnShippingService — zarządza transportem zwrotnym.
@@ -43,6 +46,31 @@ class ReturnShippingService {
       .single();
 
     if (error) throw error;
+
+    // GLS — generate label via LabelPrinter API
+    if (carrier === 'gls') {
+      try {
+        const label = await this.generateLPLabel(returnId, shipment.id, 'GLS');
+        const { data: updated } = await supabase
+          .from('return_shipments')
+          .update({
+            tracking_number: label.trackingNumber || null,
+            label_url: label.labelUrl || null,
+            label_data: label,
+            status: 'label_generated',
+          })
+          .eq('id', shipment.id)
+          .select()
+          .single();
+        return updated || shipment;
+      } catch (labelErr) {
+        console.error('[ReturnShipping] GLS label error:', labelErr.message);
+        await supabase
+          .from('return_shipments')
+          .update({ notes: `GLS label failed: ${labelErr.message}` })
+          .eq('id', shipment.id);
+      }
+    }
 
     // If Zásilkovna drop-off, generate label
     if (carrier === 'zasilkovna' && shippingMethod === 'drop_off') {
@@ -143,6 +171,72 @@ class ReturnShippingService {
       labelUrl,
       raw: xml,
     };
+  }
+
+  /**
+   * Generate label via LabelPrinter API (GLS, PPL etc.) — swaps sender/recipient for return.
+   */
+  async generateLPLabel(returnId, shipmentId, shipperCode) {
+    // Fetch return + delivery note info
+    const { data: ret } = await supabase
+      .from('returns')
+      .select('return_number, customer_name, customer_email, customer_phone, delivery_note_id')
+      .eq('id', returnId)
+      .single();
+    if (!ret) throw new Error('Return not found');
+
+    const { data: dn } = await supabase
+      .from('delivery_notes')
+      .select('customer_name, customer_email, customer_phone, delivery_street, delivery_city, delivery_postal_code, delivery_country')
+      .eq('id', ret.delivery_note_id)
+      .single();
+
+    // Swap: customer becomes sender, MROAUTO is recipient
+    const shipmentData = {
+      shipperCode: shipperCode,
+      serviceCode: shipperCode,
+      recipient: {
+        name: 'MROAUTO AUTODÍLY s.r.o.',
+        street: 'Čs. armády 360, Pudlov',
+        city: 'Bohumín',
+        postalCode: '73551',
+        country: 'CZ',
+        phone: '+420 774 917 859',
+        email: 'info@mroauto.cz',
+      },
+      sender: {
+        name: ret.customer_name || dn?.customer_name || '',
+        street: dn?.delivery_street || '',
+        city: dn?.delivery_city || '',
+        postalCode: dn?.delivery_postal_code || '',
+        country: dn?.delivery_country || 'CZ',
+        phone: ret.customer_phone || dn?.customer_phone || '',
+        email: ret.customer_email || dn?.customer_email || '',
+      },
+      packages: [{ weight: 1 }],
+      reference: `RET-${ret.return_number}`,
+    };
+
+    const result = await labelPrinterService.createShipment(shipmentData);
+
+    let labelUrl = null;
+    let trackingNumber = null;
+
+    if (result.data && result.data[0]) {
+      const lpShipment = result.data[0];
+      trackingNumber = lpShipment.trackingNumber || lpShipment.shipmentId || null;
+
+      // Save label PDF
+      if (lpShipment.labels) {
+        const labelsDir = path.join(__dirname, '..', '..', 'labels');
+        if (!fs.existsSync(labelsDir)) fs.mkdirSync(labelsDir, { recursive: true });
+        const filename = `return_${shipmentId}_${shipperCode}.pdf`;
+        fs.writeFileSync(path.join(labelsDir, filename), Buffer.from(lpShipment.labels, 'base64'));
+        labelUrl = `/labels/${filename}`;
+      }
+    }
+
+    return { trackingNumber, labelUrl, raw: result };
   }
 
   /**

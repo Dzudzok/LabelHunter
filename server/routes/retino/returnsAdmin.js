@@ -436,4 +436,63 @@ router.post('/:id/messages', async (req, res, next) => {
   }
 });
 
+// PATCH /:id/bank-account — update bank account with audit log
+router.patch('/:id/bank-account', async (req, res, next) => {
+  try {
+    const returnId = parseInt(req.params.id, 10);
+    const { bankAccount } = req.body;
+    if (!bankAccount?.trim()) return res.status(400).json({ error: 'Bank account is required' });
+
+    // Get current value
+    const { data: ret } = await supabase
+      .from('returns')
+      .select('id, refund_bank_account')
+      .eq('id', returnId)
+      .single();
+    if (!ret) return res.status(404).json({ error: 'Return not found' });
+
+    const oldAccount = ret.refund_bank_account || null;
+    const newAccount = bankAccount.trim();
+
+    // Log the change
+    if (oldAccount !== newAccount) {
+      await supabase.from('bank_account_log').insert({
+        return_id: returnId,
+        old_account: oldAccount,
+        new_account: newAccount,
+        changed_by: req.headers['x-worker-name'] || 'admin',
+      });
+    }
+
+    // Update
+    const { data: updated, error } = await supabase
+      .from('returns')
+      .update({ refund_bank_account: newAccount })
+      .eq('id', returnId)
+      .select()
+      .single();
+    if (error) throw error;
+
+    res.json(updated);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /:id/bank-account-log — get bank account change history
+router.get('/:id/bank-account-log', async (req, res, next) => {
+  try {
+    const returnId = parseInt(req.params.id, 10);
+    const { data, error } = await supabase
+      .from('bank_account_log')
+      .select('*')
+      .eq('return_id', returnId)
+      .order('changed_at', { ascending: false });
+    if (error) throw error;
+    res.json(data || []);
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
