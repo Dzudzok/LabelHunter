@@ -17,11 +17,16 @@ export default function CostAnalysis() {
   const [data, setData] = useState(null)
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState('30')
+  // Unified import state
+  const [importStep, setImportStep] = useState(null) // null | 'preview' | 'mapping'
+  const [importFile, setImportFile] = useState(null)
+  const [importPreview, setImportPreview] = useState(null)
+  const [selectedSheet, setSelectedSheet] = useState(null)
+  const [importType, setImportType] = useState('cost') // 'cost' | 'revenue'
+  const [columnMap, setColumnMap] = useState({ tracking: '', cost: '', revenue: '', weight: '', invoice: '', date: '' })
+  const [shipperCode, setShipperCode] = useState('')
   const [importResult, setImportResult] = useState(null)
   const [importing, setImporting] = useState(false)
-  const [importCarrier, setImportCarrier] = useState('')
-  const [revenueResult, setRevenueResult] = useState(null)
-  const [importingRevenue, setImportingRevenue] = useState(false)
   const [showManual, setShowManual] = useState(false)
   const [manualForm, setManualForm] = useState({
     tracking_number: '',
@@ -48,68 +53,71 @@ export default function CostAnalysis() {
 
   useEffect(() => { fetchData() }, [fetchData])
 
-  const handleCSVUpload = async (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files?.[0]
     if (!file) return
+    setImportFile(file)
+    setImportStep('preview')
+    setImportResult(null)
+    setImportPreview(null)
+    setColumnMap({ tracking: '', cost: '', revenue: '', weight: '', invoice: '', date: '' })
+
+    try {
+      const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+      const body = isXlsx ? await file.arrayBuffer() : await file.text()
+      const res = await api.post('/retino/costs/preview', body, {
+        headers: { 'Content-Type': isXlsx ? 'application/octet-stream' : 'text/plain' },
+        timeout: 30000,
+      })
+      setImportPreview(res.data)
+      setSelectedSheet(res.data.sheets[0]?.name || null)
+    } catch (err) {
+      setImportResult({ error: err.response?.data?.error || err.message })
+      setImportStep(null)
+    }
+    e.target.value = ''
+  }
+
+  const handleImportMapped = async () => {
+    if (!importFile) return
     setImporting(true)
     setImportResult(null)
     try {
-      const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
-      const url = importCarrier
-        ? `/retino/costs/import?carrier=${encodeURIComponent(importCarrier)}`
-        : '/retino/costs/import'
+      const isXlsx = importFile.name.endsWith('.xlsx') || importFile.name.endsWith('.xls')
+      const body = isXlsx ? await importFile.arrayBuffer() : await importFile.text()
+      const params = new URLSearchParams()
+      if (selectedSheet) params.set('sheet', selectedSheet)
+      params.set('importType', importType)
+      if (columnMap.tracking) params.set('trackingCol', columnMap.tracking)
+      if (columnMap.cost) params.set('costCol', columnMap.cost)
+      if (columnMap.revenue) params.set('revenueCol', columnMap.revenue)
+      if (columnMap.weight) params.set('weightCol', columnMap.weight)
+      if (columnMap.invoice) params.set('invoiceCol', columnMap.invoice)
+      if (columnMap.date) params.set('dateCol', columnMap.date)
+      if (shipperCode) params.set('shipperCode', shipperCode)
 
-      let body, contentType
-      if (isXlsx) {
-        body = await file.arrayBuffer()
-        contentType = 'application/octet-stream'
-      } else {
-        body = await file.text()
-        contentType = 'text/plain'
-      }
-
-      const res = await api.post(url, body, {
-        headers: { 'Content-Type': contentType },
-        timeout: 120000,
+      const res = await api.post(`/retino/costs/import-mapped?${params.toString()}`, body, {
+        headers: { 'Content-Type': isXlsx ? 'application/octet-stream' : 'text/plain' },
+        timeout: 180000,
       })
       setImportResult(res.data)
+      setImportStep(null)
       fetchData()
     } catch (err) {
       setImportResult({ error: err.response?.data?.error || err.message })
     } finally {
       setImporting(false)
-      e.target.value = ''
     }
   }
 
-  const handleRevenueUpload = async (e) => {
-    const file = e.target.files?.[0]
-    if (!file) return
-    setImportingRevenue(true)
-    setRevenueResult(null)
-    try {
-      const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
-      let body, contentType
-      if (isXlsx) {
-        body = await file.arrayBuffer()
-        contentType = 'application/octet-stream'
-      } else {
-        body = await file.text()
-        contentType = 'text/plain'
-      }
-      const res = await api.post('/retino/costs/import-revenue', body, {
-        headers: { 'Content-Type': contentType },
-        timeout: 120000,
-      })
-      setRevenueResult(res.data)
-      fetchData()
-    } catch (err) {
-      setRevenueResult({ error: err.response?.data?.error || err.message })
-    } finally {
-      setImportingRevenue(false)
-      e.target.value = ''
-    }
+  const cancelImport = () => {
+    setImportStep(null)
+    setImportFile(null)
+    setImportPreview(null)
+    setImportResult(null)
   }
+
+  const currentSheetData = importPreview?.sheets?.find(s => s.name === selectedSheet)
 
   const handleManualSubmit = async (e) => {
     e.preventDefault()
@@ -241,90 +249,131 @@ export default function CostAnalysis() {
             </div>
           </div>
 
-          {/* CSV import */}
+          {/* Unified import */}
           <div className="bg-navy-800 rounded-xl p-4 mb-6">
-            <h2 className="text-sm font-semibold text-theme-primary mb-3">Import nákladů</h2>
-            <p className="text-xs text-theme-muted mb-3">
-              Nahrajte CSV nebo XLSX soubor s fakturačními daty od dopravce. Systém automaticky rozpozná formát a namapuje sloupce
-              (tracking číslo, cena, váha). Podporované formáty: GLS Settlement XLSX, PPL, DPD, Zásilkovna, UPS, ČP.
-            </p>
-            <div className="flex items-center gap-3 flex-wrap">
-              <select
-                value={importCarrier}
-                onChange={e => setImportCarrier(e.target.value)}
-                className="bg-navy-700 border border-navy-600 text-theme-primary rounded-lg px-3 py-2 text-xs"
-              >
-                <option value="">Auto-detekce dopravce</option>
-                <option value="GLS">GLS</option>
-                <option value="PPL">PPL</option>
-                <option value="DPD">DPD</option>
-                <option value="UPS">UPS</option>
-                <option value="Zasilkovna">Zásilkovna</option>
-                <option value="CP">Česká pošta</option>
-              </select>
-              <label className="cursor-pointer bg-navy-700 hover:bg-navy-600 text-theme-primary text-xs font-medium px-4 py-2 rounded-lg transition-colors">
-                {importing ? 'Importuji...' : 'Vybrat soubor (CSV/XLSX)'}
-                <input
-                  type="file"
-                  accept=".csv,.txt,.xlsx,.xls"
-                  onChange={handleCSVUpload}
-                  disabled={importing}
-                  className="hidden"
-                />
-              </label>
-            </div>
+            <h2 className="text-sm font-semibold text-theme-primary mb-3">Import dat</h2>
+
+            {!importStep && (
+              <>
+                <p className="text-xs text-theme-muted mb-3">
+                  Nahrajte CSV nebo XLSX soubor. Po nahrání si vyberete arkuš, typ importu a ručně namapujete sloupce.
+                </p>
+                <label className="cursor-pointer bg-navy-700 hover:bg-navy-600 text-theme-primary text-xs font-medium px-4 py-2 rounded-lg transition-colors inline-block">
+                  Nahrát soubor (CSV/XLSX)
+                  <input type="file" accept=".csv,.txt,.xlsx,.xls" onChange={handleFileSelect} className="hidden" />
+                </label>
+              </>
+            )}
+
+            {/* Preview + Mapping */}
+            {importStep && importPreview && (
+              <div className="space-y-4">
+                {/* Sheet selector (for XLSX) */}
+                {importPreview.sheets.length > 1 && (
+                  <div>
+                    <label className="text-xs text-theme-muted block mb-1">Arkuš</label>
+                    <div className="flex gap-1 flex-wrap">
+                      {importPreview.sheets.map(s => (
+                        <button key={s.name} onClick={() => { setSelectedSheet(s.name); setColumnMap({ tracking: '', cost: '', revenue: '', weight: '', invoice: '', date: '' }) }}
+                          className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${
+                            selectedSheet === s.name ? 'bg-blue-600 text-white' : 'bg-navy-700 text-theme-muted hover:bg-navy-600'
+                          }`}>
+                          {s.name} ({s.totalRows})
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Import type */}
+                <div>
+                  <label className="text-xs text-theme-muted block mb-1">Typ importu</label>
+                  <div className="flex gap-2">
+                    <button onClick={() => setImportType('cost')}
+                      className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${importType === 'cost' ? 'bg-red-600 text-white' : 'bg-navy-700 text-theme-muted'}`}>
+                      Náklady (faktura od dopravce)
+                    </button>
+                    <button onClick={() => setImportType('revenue')}
+                      className={`px-3 py-1.5 text-xs rounded-lg transition-colors ${importType === 'revenue' ? 'bg-green-600 text-white' : 'bg-navy-700 text-theme-muted'}`}>
+                      Příjmy (cena dopravy z Nextis)
+                    </button>
+                  </div>
+                </div>
+
+                {/* Sample data table */}
+                {currentSheetData && (
+                  <div className="overflow-x-auto">
+                    <div className="text-xs text-theme-muted mb-1">Náhled ({currentSheetData.totalRows} řádků) — vyberte sloupce níže:</div>
+                    <table className="w-full text-[10px] border border-navy-600">
+                      <thead>
+                        <tr className="bg-navy-700">
+                          {currentSheetData.headers.map((h, i) => (
+                            <th key={i} className="px-2 py-1.5 text-left text-theme-muted font-medium border-r border-navy-600 whitespace-nowrap max-w-[150px] truncate" title={h}>
+                              {h}
+                            </th>
+                          ))}
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {currentSheetData.sampleRows.map((row, ri) => (
+                          <tr key={ri} className="border-t border-navy-700">
+                            {currentSheetData.headers.map((_, ci) => (
+                              <td key={ci} className="px-2 py-1 text-theme-secondary border-r border-navy-700 whitespace-nowrap max-w-[150px] truncate" title={row[ci]}>
+                                {row[ci] || ''}
+                              </td>
+                            ))}
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Column mapping */}
+                {currentSheetData && (
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                    {importType === 'cost' ? (
+                      <>
+                        <ColSelect label="Tracking *" value={columnMap.tracking} onChange={v => setColumnMap(p => ({ ...p, tracking: v }))} headers={currentSheetData.headers} />
+                        <ColSelect label="Náklady (cena)" value={columnMap.cost} onChange={v => setColumnMap(p => ({ ...p, cost: v }))} headers={currentSheetData.headers} />
+                        <ColSelect label="Váha" value={columnMap.weight} onChange={v => setColumnMap(p => ({ ...p, weight: v }))} headers={currentSheetData.headers} />
+                        <ColSelect label="Číslo faktury" value={columnMap.invoice} onChange={v => setColumnMap(p => ({ ...p, invoice: v }))} headers={currentSheetData.headers} />
+                        <ColSelect label="Datum" value={columnMap.date} onChange={v => setColumnMap(p => ({ ...p, date: v }))} headers={currentSheetData.headers} />
+                        <div>
+                          <label className="text-[10px] text-theme-muted block mb-0.5">Dopravce</label>
+                          <input type="text" value={shipperCode} onChange={e => setShipperCode(e.target.value)}
+                            placeholder="GLS, PPL..."
+                            className="w-full bg-navy-700 border border-navy-600 text-theme-primary rounded px-2 py-1.5 text-xs" />
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <ColSelect label="Číslo faktury *" value={columnMap.invoice} onChange={v => setColumnMap(p => ({ ...p, invoice: v }))} headers={currentSheetData.headers} />
+                        <ColSelect label="Cena dopravy *" value={columnMap.revenue} onChange={v => setColumnMap(p => ({ ...p, revenue: v }))} headers={currentSheetData.headers} />
+                      </>
+                    )}
+                  </div>
+                )}
+
+                {/* Actions */}
+                <div className="flex items-center gap-3">
+                  <button onClick={handleImportMapped} disabled={importing}
+                    className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold px-5 py-2 rounded-lg transition-colors">
+                    {importing ? 'Importuji...' : `Importovat (${importType === 'cost' ? 'náklady' : 'příjmy'})`}
+                  </button>
+                  <button onClick={cancelImport} className="text-theme-muted text-xs hover:text-theme-primary">Zrušit</button>
+                </div>
+              </div>
+            )}
+
+            {/* Result */}
             {importResult && (
               <div className={`mt-3 text-xs p-3 rounded-lg ${importResult.error ? 'bg-red-900/30 text-red-300' : 'bg-green-900/30 text-green-300'}`}>
                 {importResult.error
-                  ? <>
-                      Chyba: {importResult.error}
-                      {importResult.headers && (
-                        <div className="mt-1 text-[10px] opacity-70">Nalezené sloupce: {importResult.headers.join(', ')}</div>
-                      )}
-                    </>
-                  : <>
-                      Importováno: {importResult.imported} | Spárováno: {importResult.matched} | Nespárováno: {importResult.unmatched}
-                      {importResult.detectedCarrier && (
-                        <span className="ml-2 opacity-70">| Dopravce: {importResult.detectedCarrier}</span>
-                      )}
-                      {importResult.columnsUsed && (
-                        <div className="mt-1 text-[10px] opacity-70">
-                          Použité sloupce: tracking={importResult.columnsUsed.tracking || '—'}, cena={importResult.columnsUsed.cost || '—'}, váha={importResult.columnsUsed.weight || '—'}
-                        </div>
-                      )}
-                    </>
-                }
-              </div>
-            )}
-          </div>
-
-          {/* Revenue import */}
-          <div className="bg-navy-800 rounded-xl p-4 mb-6">
-            <h2 className="text-sm font-semibold text-theme-primary mb-3">Import příjmů (Nextis)</h2>
-            <p className="text-xs text-theme-muted mb-3">
-              Nahrajte export položek z Nextisu (CSV/XLSX). Systém automaticky vyfiltruje pouze dopravní položky (GLS, PPL, Zásilkovna, DPD...), sečte balné + doprava per faktura a spáruje s náklady.
-            </p>
-            <div className="flex items-center gap-3">
-              <label className="cursor-pointer bg-navy-700 hover:bg-navy-600 text-theme-primary text-xs font-medium px-4 py-2 rounded-lg transition-colors">
-                {importingRevenue ? 'Importuji...' : 'Vybrat soubor (CSV/XLSX)'}
-                <input
-                  type="file"
-                  accept=".csv,.txt,.xlsx,.xls"
-                  onChange={handleRevenueUpload}
-                  disabled={importingRevenue}
-                  className="hidden"
-                />
-              </label>
-            </div>
-            {revenueResult && (
-              <div className={`mt-3 text-xs p-3 rounded-lg ${revenueResult.error ? 'bg-red-900/30 text-red-300' : 'bg-green-900/30 text-green-300'}`}>
-                {revenueResult.error
-                  ? <>Chyba: {revenueResult.error}</>
-                  : <>
-                      Řádků celkem: {revenueResult.totalRows} | Dopravních: {revenueResult.shippingRows} | Přeskočeno: {revenueResult.skippedRows}
-                      <br />
-                      Unikátních faktur: {revenueResult.uniqueInvoices} | Aktualizováno: {revenueResult.updated} | Vytvořeno: {revenueResult.created} | Nenalezeno: {revenueResult.notFound}
-                    </>
+                  ? `Chyba: ${importResult.error}`
+                  : importResult.importType === 'revenue'
+                    ? `Řádků: ${importResult.totalRows} | Faktur: ${importResult.uniqueInvoices} | Aktualizováno: ${importResult.updated} | Vytvořeno: ${importResult.created} | Nenalezeno: ${importResult.notFound}`
+                    : `Importováno: ${importResult.imported} | Spárováno: ${importResult.matched} | Nespárováno: ${importResult.unmatched}`
                 }
               </div>
             )}
@@ -386,6 +435,19 @@ export default function CostAnalysis() {
       ) : (
         <div className="text-center py-20 text-theme-muted">Nepodařilo se načíst data</div>
       )}
+    </div>
+  )
+}
+
+function ColSelect({ label, value, onChange, headers }) {
+  return (
+    <div>
+      <label className="text-[10px] text-theme-muted block mb-0.5">{label}</label>
+      <select value={value} onChange={e => onChange(e.target.value)}
+        className="w-full bg-navy-700 border border-navy-600 text-theme-primary rounded px-2 py-1.5 text-xs">
+        <option value="">— nevybráno —</option>
+        {headers.map((h, i) => <option key={i} value={h}>{h}</option>)}
+      </select>
     </div>
   )
 }

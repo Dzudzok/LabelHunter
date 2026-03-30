@@ -201,6 +201,214 @@ router.get('/carrier-mappings', (req, res) => {
   res.json(mappings);
 });
 
+// POST /preview — parse file and return headers, sheets, sample rows for manual column mapping
+router.post('/preview', express.raw({ type: '*/*', limit: '20mb' }), async (req, res, next) => {
+  try {
+    const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+    const isXlsx = buf.length > 4 && buf[0] === 0x50 && buf[1] === 0x4B;
+
+    if (isXlsx) {
+      const workbook = XLSX.read(buf, { type: 'buffer' });
+      const sheets = workbook.SheetNames.map(name => {
+        const sheet = workbook.Sheets[name];
+        const csv = XLSX.utils.sheet_to_csv(sheet, { FS: ';' });
+        const lines = csv.split(/\r?\n/).filter(l => l.trim());
+        const headers = lines[0] ? lines[0].split(';').map(h => h.trim().replace(/^["']|["']$/g, '')) : [];
+        const sampleRows = lines.slice(1, 6).map(l => l.split(';').map(c => c.trim().replace(/^["']|["']$/g, '')));
+        return { name, headers, sampleRows, totalRows: lines.length - 1 };
+      });
+      res.json({ type: 'xlsx', sheets });
+    } else {
+      const raw = buf.toString('utf8');
+      const lines = raw.split(/\r?\n/).filter(l => l.trim());
+      const headerLine = lines[0] || '';
+      const delimiter = headerLine.includes(';') ? ';' : headerLine.includes('\t') ? '\t' : ',';
+      const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^["']|["']$/g, '').replace(/^\uFEFF/, ''));
+      const sampleRows = lines.slice(1, 6).map(l => l.split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, '')));
+      res.json({ type: 'csv', sheets: [{ name: 'CSV', headers, sampleRows, totalRows: lines.length - 1 }] });
+    }
+  } catch (err) {
+    next(err);
+  }
+});
+
+// POST /import-mapped — import with manual column mapping
+router.post('/import-mapped', express.raw({ type: '*/*', limit: '20mb' }), async (req, res, next) => {
+  try {
+    const { sheet, trackingCol, costCol, revenueCol, weightCol, invoiceCol, dateCol, shipperCode, importType } = req.query;
+
+    const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+    const isXlsx = buf.length > 4 && buf[0] === 0x50 && buf[1] === 0x4B;
+    let lines;
+
+    if (isXlsx) {
+      const workbook = XLSX.read(buf, { type: 'buffer' });
+      const sheetName = sheet
+        ? (workbook.SheetNames.find(s => s === sheet) || workbook.SheetNames[0])
+        : workbook.SheetNames[0];
+      const ws = workbook.Sheets[sheetName];
+      const csv = XLSX.utils.sheet_to_csv(ws, { FS: ';' });
+      lines = csv.split(/\r?\n/).filter(l => l.trim());
+    } else {
+      const raw = buf.toString('utf8');
+      lines = raw.split(/\r?\n/).filter(l => l.trim());
+    }
+
+    if (lines.length < 2) {
+      return res.status(400).json({ error: 'Soubor musí mít hlavičku a alespoň jeden řádek dat' });
+    }
+
+    const headerLine = lines[0];
+    const delimiter = headerLine.includes(';') ? ';' : headerLine.includes('\t') ? '\t' : ',';
+    const headers = headerLine.split(delimiter).map(h => h.trim().replace(/^["']|["']$/g, '').replace(/^\uFEFF/, ''));
+
+    // Column indices from query params (by column name)
+    const getCol = (name) => name ? headers.findIndex(h => h === name) : -1;
+    const iTrack = getCol(trackingCol);
+    const iCost = getCol(costCol);
+    const iRevenue = getCol(revenueCol);
+    const iWeight = getCol(weightCol);
+    const iInvoice = getCol(invoiceCol);
+    const iDate = getCol(dateCol);
+
+    // For cost import: need tracking or invoice
+    // For revenue import: need invoice + cost/revenue column
+    const isRevenueImport = importType === 'revenue';
+
+    if (isRevenueImport) {
+      if (iInvoice === -1) return res.status(400).json({ error: 'Sloupec s číslem faktury je povinný' });
+      if (iRevenue === -1 && iCost === -1) return res.status(400).json({ error: 'Sloupec s cenou je povinný' });
+    } else {
+      if (iTrack === -1) return res.status(400).json({ error: 'Sloupec s tracking číslem je povinný' });
+    }
+
+    const rows = [];
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
+
+      if (isRevenueImport) {
+        const invoiceNumber = String(cols[iInvoice] || '').trim();
+        if (!invoiceNumber) continue;
+        const revenue = iRevenue >= 0 ? parseAmount(cols[iRevenue]) : parseAmount(cols[iCost]);
+        if (revenue <= 0) continue;
+        rows.push({ invoiceNumber, revenue });
+      } else {
+        const trackingNumber = String(cols[iTrack] || '').trim();
+        if (!trackingNumber) continue;
+        rows.push({
+          tracking_number: trackingNumber,
+          shipper_code: shipperCode || null,
+          cost_amount: iCost >= 0 ? parseAmount(cols[iCost]) : 0,
+          revenue_amount: iRevenue >= 0 ? parseAmount(cols[iRevenue]) : 0,
+          weight_kg: iWeight >= 0 ? parseAmount(cols[iWeight]) || null : null,
+          invoice_number: iInvoice >= 0 ? String(cols[iInvoice] || '').trim() || null : null,
+          invoice_date: iDate >= 0 ? cols[iDate] || null : null,
+        });
+      }
+    }
+
+    if (rows.length === 0) {
+      return res.status(400).json({ error: 'Žádné platné řádky k importu' });
+    }
+
+    if (isRevenueImport) {
+      // Group by invoice, sum revenue
+      const revenueByInvoice = {};
+      for (const row of rows) {
+        revenueByInvoice[row.invoiceNumber] = (revenueByInvoice[row.invoiceNumber] || 0) + row.revenue;
+      }
+
+      const invoiceNumbers = Object.keys(revenueByInvoice);
+
+      // Build lookup variants: original + zero-padded (10 digits) + stripped zeros
+      const lookupVariants = new Set();
+      for (const inv of invoiceNumbers) {
+        lookupVariants.add(inv);
+        // Pad to 10 digits (DB format: 0047237926)
+        if (/^\d+$/.test(inv)) lookupVariants.add(inv.padStart(10, '0'));
+        // Strip leading zeros
+        lookupVariants.add(inv.replace(/^0+/, ''));
+      }
+
+      const noteMap = {};
+      const MATCH_BATCH = 200;
+      const allVariants = [...lookupVariants];
+      for (let i = 0; i < allVariants.length; i += MATCH_BATCH) {
+        const batch = allVariants.slice(i, i + MATCH_BATCH);
+        const { data: notes, error } = await supabase
+          .from('delivery_notes')
+          .select('id, invoice_number, tracking_number')
+          .in('invoice_number', batch);
+        if (error) throw error;
+        for (const n of notes || []) {
+          noteMap[n.invoice_number] = n;
+          // Also map by stripped version for reverse lookup
+          noteMap[n.invoice_number.replace(/^0+/, '')] = n;
+        }
+      }
+
+      let updated = 0, created = 0, notFound = 0;
+      for (const [invoiceNumber, revenue] of Object.entries(revenueByInvoice)) {
+        const note = noteMap[invoiceNumber];
+        if (!note) { notFound++; continue; }
+        if (!note.tracking_number) continue;
+
+        const { data: existing } = await supabase
+          .from('shipping_costs').select('id')
+          .eq('tracking_number', note.tracking_number).limit(1).maybeSingle();
+
+        if (existing) {
+          await supabase.from('shipping_costs').update({ revenue_amount: revenue }).eq('id', existing.id);
+          updated++;
+        } else {
+          await supabase.from('shipping_costs').insert({
+            delivery_note_id: note.id, tracking_number: note.tracking_number,
+            revenue_amount: revenue, cost_amount: 0,
+          });
+          created++;
+        }
+      }
+
+      return res.json({ importType: 'revenue', totalRows: rows.length, uniqueInvoices: invoiceNumbers.length, updated, created, notFound });
+    }
+
+    // Cost import — match tracking to delivery_notes
+    const noteMap = {};
+    const trackingNumbers = rows.map(r => r.tracking_number);
+    const MATCH_BATCH = 200;
+    for (let i = 0; i < trackingNumbers.length; i += MATCH_BATCH) {
+      const batch = trackingNumbers.slice(i, i + MATCH_BATCH);
+      const { data: notes, error } = await supabase
+        .from('delivery_notes').select('id, tracking_number, shipper_code')
+        .in('tracking_number', batch);
+      if (error) throw error;
+      for (const n of notes || []) noteMap[n.tracking_number] = n;
+    }
+
+    let matched = 0, unmatched = 0;
+    const toInsert = rows.map(row => {
+      const note = noteMap[row.tracking_number];
+      if (note) {
+        matched++;
+        return { ...row, delivery_note_id: note.id, shipper_code: row.shipper_code || note.shipper_code };
+      }
+      unmatched++;
+      return { ...row, delivery_note_id: null };
+    });
+
+    const BATCH = 500;
+    for (let i = 0; i < toInsert.length; i += BATCH) {
+      const batch = toInsert.slice(i, i + BATCH);
+      const { error: insertErr } = await supabase.from('shipping_costs').insert(batch);
+      if (insertErr) throw insertErr;
+    }
+
+    res.json({ importType: 'cost', imported: toInsert.length, matched, unmatched });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /import — CSV/XLSX import with auto-detection or explicit carrier mapping
 router.post('/import', express.raw({ type: '*/*', limit: '20mb' }), async (req, res, next) => {
   try {
@@ -452,11 +660,18 @@ router.post('/import-revenue', express.raw({ type: '*/*', limit: '20mb' }), asyn
       return res.status(400).json({ error: 'Žádné řádky s dopravou nalezeny' });
     }
 
-    // Match invoice numbers to delivery_notes
+    // Match invoice numbers to delivery_notes (with zero-padding variants)
+    const lookupVariants = new Set();
+    for (const inv of invoiceNumbers) {
+      lookupVariants.add(inv);
+      if (/^\d+$/.test(inv)) lookupVariants.add(inv.padStart(10, '0'));
+      lookupVariants.add(inv.replace(/^0+/, ''));
+    }
     const noteMap = {};
     const MATCH_BATCH = 200;
-    for (let i = 0; i < invoiceNumbers.length; i += MATCH_BATCH) {
-      const batch = invoiceNumbers.slice(i, i + MATCH_BATCH);
+    const allVariants = [...lookupVariants];
+    for (let i = 0; i < allVariants.length; i += MATCH_BATCH) {
+      const batch = allVariants.slice(i, i + MATCH_BATCH);
       const { data: notes, error } = await supabase
         .from('delivery_notes')
         .select('id, invoice_number, tracking_number')
@@ -464,6 +679,7 @@ router.post('/import-revenue', express.raw({ type: '*/*', limit: '20mb' }), asyn
       if (error) throw error;
       for (const n of notes || []) {
         noteMap[n.invoice_number] = n;
+        noteMap[n.invoice_number.replace(/^0+/, '')] = n;
       }
     }
 
@@ -594,6 +810,24 @@ router.delete('/:id', async (req, res, next) => {
 
     if (error) throw error;
     res.json({ ok: true });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// DELETE /bulk — delete all cost records by shipper_code
+router.delete('/bulk/:shipper', async (req, res, next) => {
+  try {
+    const { shipper } = req.params;
+    if (!shipper) return res.status(400).json({ error: 'Shipper code is required' });
+
+    const { count, error } = await supabase
+      .from('shipping_costs')
+      .delete({ count: 'exact' })
+      .eq('shipper_code', shipper);
+
+    if (error) throw error;
+    res.json({ deleted: count || 0, shipper });
   } catch (err) {
     next(err);
   }
