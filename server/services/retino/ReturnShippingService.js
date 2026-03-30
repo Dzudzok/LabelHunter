@@ -19,6 +19,7 @@ class ReturnShippingService {
    * Create a return shipment record + generate label if applicable.
    */
   async createShipment({ returnId, carrier, shippingMethod, pickupPoint, customerAddress, notes }) {
+    console.log(`[ReturnShipping] createShipment: carrier=${carrier}, method=${shippingMethod}, pickupPoint=${!!pickupPoint}`);
     // Build shipment data
     const shipmentData = {
       return_id: returnId,
@@ -75,8 +76,9 @@ class ReturnShippingService {
     }
 
     // Zásilkovna — generate label via Zásilkovna API
-    if (carrier === 'zasilkovna' && shippingMethod === 'drop_off') {
+    if (carrier === 'zasilkovna') {
       try {
+        console.log('[ReturnShipping] Zásilkovna: generating label, pickupPoint:', JSON.stringify(pickupPoint), 'apiPassword set:', !!this.zasilkovnaApiPassword);
         const label = await this.createZasilkovnaPacket(returnId, shipment.id, pickupPoint, customerAddress);
         const cost = this.getShippingCost(carrier, shippingMethod);
         const { data: updated } = await supabase
