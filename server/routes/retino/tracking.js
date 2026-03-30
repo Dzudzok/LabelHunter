@@ -362,4 +362,83 @@ router.post('/sync-jjd', async (req, res, next) => {
   }
 });
 
+// POST /shipments/:id/send-email — send manual email to customer from shipment detail
+router.post('/shipments/:id/send-email', async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { subject, message } = req.body;
+    if (!subject || !message) {
+      return res.status(400).json({ error: 'Předmět a zpráva jsou povinné' });
+    }
+    if (subject.length > 200) {
+      return res.status(400).json({ error: 'Předmět je příliš dlouhý (max 200 znaků)' });
+    }
+
+    // Fetch delivery note
+    const { data: note, error } = await supabase
+      .from('delivery_notes')
+      .select('id, doc_number, customer_email, customer_name, tracking_number, tracking_token, order_number, shipper_code, transport_name, unified_status')
+      .eq('id', id)
+      .single();
+    if (error || !note) {
+      return res.status(404).json({ error: 'Zásilka nenalezena' });
+    }
+
+    const TrackingEmailService = require('../../services/TrackingEmailService');
+    const recipient = TrackingEmailService.prototype.getRecipient(note);
+    if (!recipient) {
+      return res.status(400).json({ error: 'Zákazník nemá e-mailovou adresu' });
+    }
+
+    const from = TrackingEmailService.prototype.getFromAddress();
+    const trackingLink = TrackingEmailService.prototype.getTrackingLink(note);
+
+    // Build simple HTML email
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto;">
+        <div style="background: #1046A0; padding: 20px; text-align: center;">
+          <h2 style="color: white; margin: 0;">MROAUTO AUTODÍLY</h2>
+        </div>
+        <div style="padding: 24px; background: #fff;">
+          <p>Dobrý den${note.customer_name ? `, ${note.customer_name}` : ''},</p>
+          <div style="white-space: pre-line; margin: 16px 0;">${message.replace(/</g, '&lt;').replace(/>/g, '&gt;')}</div>
+          ${trackingLink ? `<p style="margin-top: 16px;"><a href="${trackingLink}" style="background: #1046A0; color: white; padding: 10px 20px; text-decoration: none; border-radius: 6px;">Sledovat zásilku</a></p>` : ''}
+        </div>
+        <div style="background: #f3f4f6; padding: 16px; text-align: center; font-size: 12px; color: #6b7280;">
+          MROAUTO AUTODÍLY s.r.o. | info@mroauto.cz
+        </div>
+      </div>
+    `;
+
+    const nodemailer = require('nodemailer');
+    const transporter = nodemailer.createTransport({
+      host: process.env.SMTP_HOST,
+      port: parseInt(process.env.SMTP_PORT, 10) || 587,
+      secure: (parseInt(process.env.SMTP_PORT, 10) || 587) === 465,
+      auth: { user: process.env.SMTP_USER, pass: process.env.SMTP_PASSWORD },
+      tls: { rejectUnauthorized: false },
+    });
+
+    await transporter.sendMail({
+      from,
+      to: recipient,
+      subject,
+      html,
+    });
+
+    // Log to email_log
+    await supabase.from('email_log').insert({
+      delivery_note_id: note.id,
+      email_type: 'manual',
+      recipient,
+      subject,
+      status: 'sent',
+    });
+
+    res.json({ success: true, recipient });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;

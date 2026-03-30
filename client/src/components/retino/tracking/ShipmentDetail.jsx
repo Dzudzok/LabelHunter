@@ -28,6 +28,12 @@ export default function ShipmentDetail() {
   const [extendingStorage, setExtendingStorage] = useState(false)
   const [extendResult, setExtendResult] = useState(null)
 
+  // Manual email state
+  const [emailSubject, setEmailSubject] = useState('')
+  const [emailMessage, setEmailMessage] = useState('')
+  const [emailSending, setEmailSending] = useState(false)
+  const [emailResult, setEmailResult] = useState(null)
+
   useEffect(() => {
     async function fetch() {
       try {
@@ -122,6 +128,29 @@ export default function ShipmentDetail() {
       console.error('Failed to add note:', err)
     } finally {
       setNoteSaving(false)
+    }
+  }
+
+  async function handleSendEmail(e) {
+    e.preventDefault()
+    if (!emailSubject.trim() || !emailMessage.trim()) return
+    setEmailSending(true)
+    setEmailResult(null)
+    try {
+      const res = await api.post(`/retino/tracking/shipments/${shipment.id}/send-email`, {
+        subject: emailSubject,
+        message: emailMessage,
+      })
+      setEmailResult({ success: true, message: `Odesláno na ${res.data.recipient}` })
+      setEmailSubject('')
+      setEmailMessage('')
+      // Refresh email log
+      const emailsRes = await api.get(`/retino/tags/emails/${shipment.id}`)
+      setEmails(emailsRes.data)
+    } catch (err) {
+      setEmailResult({ success: false, message: err.response?.data?.error || 'Nepodařilo se odeslat' })
+    } finally {
+      setEmailSending(false)
     }
   }
 
@@ -365,6 +394,49 @@ export default function ShipmentDetail() {
               </div>
             )}
           </div>
+
+          {/* Send email to customer */}
+          {shipment.customer_email && (
+            <div className="bg-navy-800 rounded-xl p-4">
+              <h3 className="text-sm font-semibold text-theme-muted mb-3 uppercase tracking-wider">Odeslat e-mail zákazníkovi</h3>
+              <form onSubmit={handleSendEmail} className="space-y-2">
+                <input
+                  type="text"
+                  placeholder="Předmět"
+                  value={emailSubject}
+                  onChange={e => setEmailSubject(e.target.value)}
+                  required
+                  maxLength={200}
+                  className="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-1.5 text-sm text-theme-primary placeholder-theme-muted focus:outline-none focus:ring-1 focus:ring-blue-500"
+                />
+                <textarea
+                  placeholder="Zpráva pro zákazníka..."
+                  value={emailMessage}
+                  onChange={e => setEmailMessage(e.target.value)}
+                  required
+                  rows={4}
+                  className="w-full bg-navy-700 border border-navy-600 rounded-lg px-3 py-2 text-sm text-theme-primary placeholder-theme-muted focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none"
+                />
+                <div className="flex items-center justify-between">
+                  <span className="text-xs text-theme-muted">
+                    Příjemce: {shipment.customer_email}
+                  </span>
+                  <button
+                    type="submit"
+                    disabled={emailSending || !emailSubject.trim() || !emailMessage.trim()}
+                    className="px-4 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-40 disabled:cursor-not-allowed rounded-lg text-sm text-white transition-colors"
+                  >
+                    {emailSending ? 'Odesílání...' : 'Odeslat e-mail'}
+                  </button>
+                </div>
+                {emailResult && (
+                  <div className={`text-xs mt-1 ${emailResult.success ? 'text-green-400' : 'text-red-400'}`}>
+                    {emailResult.message}
+                  </div>
+                )}
+              </form>
+            </div>
+          )}
         </div>
 
         {/* Right — tracking timeline */}

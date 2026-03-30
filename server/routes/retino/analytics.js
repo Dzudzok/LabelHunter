@@ -155,11 +155,11 @@ router.get('/overview', async (req, res, next) => {
   }
 });
 
-// GET /delivery-time — delivery time distribution per carrier
+// GET /delivery-time — delivery time distribution per carrier (with country filter)
 router.get('/delivery-time', async (req, res, next) => {
   try {
-    const { days = '90', shipper } = req.query;
-    const cacheKey = getCacheKey('delivery-time', { days, shipper });
+    const { days = '90', shipper, country } = req.query;
+    const cacheKey = getCacheKey('delivery-time', { days, shipper, country: country || '' });
     const now = Date.now();
     if (analyticsCache[cacheKey] && (now - analyticsCache[cacheKey].time) < CACHE_TTL) {
       return res.json(analyticsCache[cacheKey].data);
@@ -171,18 +171,28 @@ router.get('/delivery-time', async (req, res, next) => {
     if (shipper) filters.shipper = shipper;
 
     const notes = await fetchAllNotes(
-      'id, shipper_code, date_issued, label_generated_at, last_tracking_update',
+      'id, shipper_code, date_issued, label_generated_at, last_tracking_update, delivered_at, delivery_country',
       filters
     );
 
+    // Filter by country if specified
+    const filtered = country
+      ? notes.filter(n => (n.delivery_country || 'CZ').toUpperCase() === country.toUpperCase())
+      : notes;
+
+    // Collect unique countries for filter dropdown
+    const countrySet = new Set();
+    for (const n of notes) countrySet.add((n.delivery_country || 'CZ').toUpperCase());
+    const countries = [...countrySet].sort();
+
     // Calculate delivery days for each shipment
-    // delivery_days = last_tracking_update - label_generated_at (or date_issued as fallback)
+    // Prefer delivered_at over last_tracking_update for more accurate end date
     const deliveryDays = [];
     const byCarrier = {};
 
-    for (const note of notes) {
+    for (const note of filtered) {
       const startDate = note.label_generated_at || note.date_issued;
-      const endDate = note.last_tracking_update;
+      const endDate = note.delivered_at || note.last_tracking_update;
       if (!startDate || !endDate) continue;
 
       const start = new Date(startDate);
@@ -234,6 +244,7 @@ router.get('/delivery-time', async (req, res, next) => {
       distribution,
       distributionPct,
       carrierAvg,
+      countries,
       days: daysNum,
     };
 
