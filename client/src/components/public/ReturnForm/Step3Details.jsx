@@ -18,8 +18,9 @@ export default function Step3Details({ formData, updateForm, onNext, onBack }) {
   }, [formData.type])
 
   const handleReasonChange = (code) => {
-    setSelectedReason(reasons.find(r => r.code === code) || null)
-    updateForm({ reasonCode: code })
+    const reason = reasons.find(r => r.code === code) || null
+    setSelectedReason(reason)
+    updateForm({ reasonCode: code, reasonLabel: reason?.label_cs || code })
   }
 
   const handleFileUpload = async (e) => {

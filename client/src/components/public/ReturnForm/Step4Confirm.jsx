@@ -72,7 +72,7 @@ export default function Step4Confirm({ formData, onBack, onResult }) {
             <div className="font-semibold text-gray-800">{TYPE_LABELS[formData.type] || formData.type}</div>
           </Section>
           <Section label={t('confirm.reason')}>
-            <div className="font-semibold text-gray-800">{formData.reasonCode}</div>
+            <div className="font-semibold text-gray-800">{formData.reasonLabel || formData.reasonCode}</div>
           </Section>
         </div>
 
