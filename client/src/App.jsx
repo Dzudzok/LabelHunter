@@ -42,7 +42,7 @@ function PrivateRoute({ children }) {
 }
 
 // Detect if running on retino subdomain
-const isRetinoDomain = window.location.hostname.startsWith('retino.');
+const isRetinoDomain = window.location.hostname.startsWith('retino.') || window.location.hostname.startsWith('returo.');
 
 export default function App() {
   return (

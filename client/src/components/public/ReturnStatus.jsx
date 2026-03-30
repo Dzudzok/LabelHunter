@@ -26,6 +26,7 @@ export default function ReturnStatus() {
   const fetchData = async () => {
     try {
       const res = await axios.get(`${apiBase}/retino/public/returns/${accessToken}`)
+      console.log('[ReturnStatus] Data:', JSON.stringify(res.data?.shipments))
       setData(res.data)
     } catch {
       setError('Žádost nenalezena')

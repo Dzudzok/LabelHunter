@@ -51,6 +51,7 @@ export default function Step4Confirm({ formData, onBack, onResult }) {
           } catch {}
         }
       }
+      console.log('[ReturnForm] Create result:', JSON.stringify(res.data))
       onResult(res.data)
     } catch (err) {
       setError(err.response?.data?.error || t('confirm.error'))
