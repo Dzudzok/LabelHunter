@@ -369,7 +369,26 @@ router.post('/import-mapped', express.raw({ type: '*/*', limit: '20mb' }), async
         }
       }
 
-      return res.json({ importType: 'revenue', totalRows: rows.length, uniqueInvoices: invoiceNumbers.length, updated, created, notFound });
+      // Debug: show sample of what we searched vs what DB has
+      const sampleSearched = invoiceNumbers.slice(0, 3);
+      const sampleVariants = sampleSearched.map(inv => [inv, inv.padStart(10, '0')]);
+      // Quick check: what does DB actually have for these?
+      let sampleDbValues = [];
+      if (sampleSearched.length > 0) {
+        const searchTerms = sampleSearched.flatMap(inv => [inv, inv.padStart(10, '0'), inv.replace(/^0+/, '')]);
+        const { data: dbCheck } = await supabase
+          .from('delivery_notes')
+          .select('invoice_number')
+          .in('invoice_number', searchTerms)
+          .limit(5);
+        sampleDbValues = (dbCheck || []).map(d => d.invoice_number);
+      }
+
+      return res.json({
+        importType: 'revenue', totalRows: rows.length, uniqueInvoices: invoiceNumbers.length,
+        updated, created, notFound, matchedInNoteMap: Object.keys(noteMap).length,
+        debug: { sampleSearched, sampleVariants, sampleDbValues },
+      });
     }
 
     // Cost import — match tracking to delivery_notes
