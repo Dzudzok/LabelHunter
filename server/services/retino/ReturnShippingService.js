@@ -76,6 +76,7 @@ class ReturnShippingService {
     // If Zásilkovna drop-off, generate label
     if (carrier === 'zasilkovna' && shippingMethod === 'drop_off') {
       try {
+        console.log('[ReturnShipping] Zásilkovna label generation — pickupPoint:', JSON.stringify(pickupPoint), 'apiPassword configured:', !!this.zasilkovnaApiPassword);
         const label = await this.createZasilkovnaPacket(returnId, shipment.id, pickupPoint, customerAddress);
         // Update shipment with label info
         const { data: updated } = await supabase

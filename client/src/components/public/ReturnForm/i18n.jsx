@@ -12,6 +12,8 @@ const translations = {
   'result.title': { cs: 'Žádost byla odeslána', en: 'Request has been submitted' },
   'result.number': { cs: 'Číslo žádosti', en: 'Request number' },
   'result.track': { cs: 'Sledovat stav žádosti', en: 'Track request status' },
+  'result.downloadLabel': { cs: 'Stáhnout přepravní štítek (PDF)', en: 'Download shipping label (PDF)' },
+  'result.labelInfo': { cs: 'Vytiskněte štítek a nalepte jej na balík před odesláním.', en: 'Print the label and attach it to your package before shipping.' },
   'header.subtitle': { cs: 'Vrácení a reklamace zboží', en: 'Returns & complaints' },
 
   // === Step1Verify ===

@@ -73,6 +73,21 @@ function ReturnFormInner() {
           <div className="text-5xl mb-4">✅</div>
           <h2 className="text-2xl font-bold text-gray-800 mb-2">{t('result.title')}</h2>
           <p className="text-gray-600 mb-4">{t('result.number')}: <strong>{result.returnNumber}</strong></p>
+
+          {result.shipment?.labelUrl && (
+            <div className="mb-6">
+              <a
+                href={result.shipment.labelUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-block bg-[#D8112A] text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mb-2"
+              >
+                {t('result.downloadLabel')}
+              </a>
+              <p className="text-sm text-gray-500">{t('result.labelInfo')}</p>
+            </div>
+          )}
+
           <a
             href={`/vraceni/stav/${result.accessToken}`}
             className="inline-block bg-[#1046A0] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
