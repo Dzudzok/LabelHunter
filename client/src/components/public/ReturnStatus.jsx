@@ -13,7 +13,7 @@ const STATUS_COLORS = {
 
 const CARRIER_LABELS = { zasilkovna: 'Zásilkovna', ppl: 'PPL', gls: 'GLS', cp: 'Česká pošta', self: 'Vlastní doprava' }
 const METHOD_LABELS = { drop_off: 'Výdejní místo', courier_pickup: 'Svoz kurýrem', self_ship: 'Vlastní odeslání' }
-const SHIPMENT_STATUS_LABELS = { pending: 'Připraveno', label_generated: 'Štítek vygenerován', shipped: 'Odesláno', in_transit: 'V přepravě', delivered: 'Doručeno' }
+const SHIPMENT_STATUS_LABELS = { pending: 'Připraveno', pending_payment: 'Čeká na platbu', label_generated: 'Štítek vygenerován', shipped: 'Odesláno', in_transit: 'V přepravě', delivered: 'Doručeno' }
 
 export default function ReturnStatus() {
   const { accessToken } = useParams()

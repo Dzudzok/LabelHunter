@@ -376,7 +376,7 @@ router.get('/:accessToken', async (req, res, next) => {
     // Fetch return shipments
     const { data: shipments } = await supabase
       .from('return_shipments')
-      .select('id, carrier, shipping_method, tracking_number, label_url, status, cost, currency, pickup_point_name, pickup_point_address, customer_address')
+      .select('id, carrier, shipping_method, tracking_number, label_url, status, cost, currency, pickup_point_name, pickup_point_address, customer_address, gopay_payment_url, payment_status')
       .eq('return_id', ret.id)
       .order('created_at', { ascending: false });
 
