@@ -43,10 +43,25 @@ body {
   user-select: text;
 }
 
-/* Large touch targets */
+/* Large touch targets (admin panel only) */
 button {
-  min-height: 56px;
   cursor: pointer;
+}
+
+/* Public pages — override dark theme for light backgrounds */
+.min-h-screen.bg-gray-50 {
+  --text-primary: #0f172a;
+  --text-secondary: #334155;
+  --text-muted: #64748b;
+  color: #1f2937;
+}
+.min-h-screen.bg-gray-50 input,
+.min-h-screen.bg-gray-50 select,
+.min-h-screen.bg-gray-50 textarea {
+  color: #1f2937;
+}
+.min-h-screen.bg-gray-50 button {
+  min-height: auto;
 }
 
 /* Modal overlay using CSS var */

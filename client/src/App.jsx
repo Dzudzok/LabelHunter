@@ -56,7 +56,7 @@ export default function App() {
         <Route path="/sledovani/:trackingToken" element={<TrackAndTrace />} />
         <Route path="/vraceni" element={<ReturnForm />} />
         <Route path="/vraceni/stav/:accessToken" element={<ReturnStatus />} />
-        <Route path="/vraceni/platba/:shipmentId/:accessToken" element={<PaymentReturn />} />
+        <Route path="/vraceni/platba/:status" element={<PaymentReturn />} />
 
         {/* All other routes require system login (JWT) + worker selection */}
         <Route path="/*" element={

@@ -47,46 +47,19 @@ class ReturnShippingService {
 
     if (error) throw error;
 
-    // If paid shipping (GLS, Zásilkovna) — don't generate label yet, wait for payment
+    // If paid shipping (GLS, Zásilkovna) — redirect to GoPay, generate label after payment
     if (carrier !== 'self') {
       const cost = this.getShippingCost(carrier, shippingMethod);
       if (cost > 0) {
-        // Build GoPay payment URL
-        const goId = process.env.GOPAY_GOID || '8387806526';
-        const goSecret = process.env.GOPAY_SECRET || '';
-        const frontendUrl = process.env.FRONTEND_URL || 'https://returo.mroautoapp.cz';
+        // Static GoPay payment button links (generated from GoPay admin)
+        const paymentUrl = process.env[`GOPAY_LINK_${carrier.toUpperCase()}`] || null;
 
-        // Fetch access token for success URL
-        const { data: ret } = await supabase
-          .from('returns')
-          .select('access_token')
-          .eq('id', returnId)
-          .single();
-
-        const successUrl = `${frontendUrl}/vraceni/platba/${shipment.id}/${ret?.access_token || ''}?status=ok`;
-        const failedUrl = `${frontendUrl}/vraceni/platba/${shipment.id}/${ret?.access_token || ''}?status=fail`;
-
-        // GoPay payment button URL (simple redirect, no API needed)
-        const paymentUrl = `https://gate.gopay.com/gw/pay-base-v2?` +
-          `paymentCommand.targetGoId=${goId}` +
-          `&paymentCommand.totalPrice=${cost * 100}` +
-          `&paymentCommand.currency=CZK` +
-          `&paymentCommand.productName=${encodeURIComponent('RETURO - zpětný štítek')}` +
-          `&paymentCommand.orderNumber=${encodeURIComponent(`RET-${shipment.id}`)}` +
-          `&paymentCommand.successURL=${encodeURIComponent(successUrl)}` +
-          `&paymentCommand.failedURL=${encodeURIComponent(failedUrl)}` +
-          (goSecret ? `&paymentCommand.encryptedSignature=${goSecret}` : '');
-
-        // Update shipment with payment info
-        await supabase
-          .from('return_shipments')
-          .update({
-            status: 'pending_payment',
-            payment_status: 'unpaid',
-            cost,
-            gopay_payment_url: paymentUrl,
-          })
-          .eq('id', shipment.id);
+        await supabase.from('return_shipments').update({
+          status: 'pending_payment',
+          payment_status: 'unpaid',
+          cost,
+          gopay_payment_url: paymentUrl,
+        }).eq('id', shipment.id);
 
         shipment.status = 'pending_payment';
         shipment.cost = cost;
