@@ -13,6 +13,7 @@ export default function AnalyticsTimeliness() {
   const [loading, setLoading] = useState(true)
   const [days, setDays] = useState('30')
   const [shipper, setShipper] = useState('')
+  const [country, setCountry] = useState('')
   const [eddConfig, setEddConfig] = useState([])
   const [editingConfig, setEditingConfig] = useState(null)
   const [savingConfig, setSavingConfig] = useState(false)
@@ -22,6 +23,7 @@ export default function AnalyticsTimeliness() {
     try {
       const params = { days }
       if (shipper) params.shipper = shipper
+      if (country) params.country = country
       const res = await api.get('/retino/analytics/timeliness', { params })
       setData(res.data)
     } catch (err) {
@@ -29,7 +31,7 @@ export default function AnalyticsTimeliness() {
     } finally {
       setLoading(false)
     }
-  }, [days, shipper])
+  }, [days, shipper, country])
 
   const fetchEddConfig = useCallback(async () => {
     try {
@@ -84,6 +86,18 @@ export default function AnalyticsTimeliness() {
           </p>
         </div>
         <div className="flex items-center gap-3">
+          {data.countries?.length > 1 && (
+            <select
+              value={country}
+              onChange={(e) => setCountry(e.target.value)}
+              className="bg-navy-800 border border-navy-600 text-theme-primary rounded-lg px-3 py-2 text-sm"
+            >
+              <option value="">Vsechny zeme</option>
+              {data.countries.map(c => (
+                <option key={c} value={c}>{c}</option>
+              ))}
+            </select>
+          )}
           <select
             value={shipper}
             onChange={(e) => setShipper(e.target.value)}

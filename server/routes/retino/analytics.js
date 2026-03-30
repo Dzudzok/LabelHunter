@@ -355,11 +355,11 @@ router.get('/problems', async (req, res, next) => {
   }
 });
 
-// GET /timeliness — timeliness analytics
+// GET /timeliness — timeliness analytics (with country filter)
 router.get('/timeliness', async (req, res, next) => {
   try {
-    const { days = '90', shipper } = req.query;
-    const cacheKey = getCacheKey('timeliness', { days, shipper });
+    const { days = '90', shipper, country } = req.query;
+    const cacheKey = getCacheKey('timeliness', { days, shipper, country: country || '' });
     const now = Date.now();
     if (analyticsCache[cacheKey] && (now - analyticsCache[cacheKey].time) < CACHE_TTL) {
       return res.json(analyticsCache[cacheKey].data);
@@ -370,7 +370,7 @@ router.get('/timeliness', async (req, res, next) => {
 
     let query = supabase
       .from('delivery_notes')
-      .select('id, timeliness, shipper_code, expected_delivery_date, last_tracking_update, unified_status')
+      .select('id, timeliness, shipper_code, expected_delivery_date, last_tracking_update, unified_status, delivery_country')
       .not('expected_delivery_date', 'is', null)
       .gte('date_issued', dateFrom);
 
@@ -389,16 +389,26 @@ router.get('/timeliness', async (req, res, next) => {
       // Re-create query for next page
       query = supabase
         .from('delivery_notes')
-        .select('id, timeliness, shipper_code, expected_delivery_date, last_tracking_update, unified_status')
+        .select('id, timeliness, shipper_code, expected_delivery_date, last_tracking_update, unified_status, delivery_country')
         .not('expected_delivery_date', 'is', null)
         .gte('date_issued', dateFrom);
       if (shipper) query = query.eq('shipper_code', shipper);
     }
 
+    // Collect unique countries
+    const countrySet = new Set();
+    for (const n of all) countrySet.add((n.delivery_country || 'CZ').toUpperCase());
+    const countries = [...countrySet].sort();
+
+    // Filter by country if specified
+    const filtered = country
+      ? all.filter(n => (n.delivery_country || 'CZ').toUpperCase() === country.toUpperCase())
+      : all;
+
     let onTime = 0, late = 0, early = 0, inProgressOnTime = 0, inProgressLate = 0;
     const byCarrier = {};
 
-    for (const note of all) {
+    for (const note of filtered) {
       const t = note.timeliness;
       if (!t) continue;
 
@@ -416,7 +426,7 @@ router.get('/timeliness', async (req, res, next) => {
       if (t === 'late') byCarrier[c].late++;
     }
 
-    const total = all.length;
+    const total = filtered.length;
     const onTimePercent = total > 0 ? Math.round(((onTime + early) / total) * 1000) / 10 : 0;
 
     const byCarrierResult = {};
@@ -439,6 +449,7 @@ router.get('/timeliness', async (req, res, next) => {
       total,
       onTimePercent,
       byCarrier: byCarrierResult,
+      countries,
       days: daysNum,
     };
 
