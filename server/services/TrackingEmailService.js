@@ -361,6 +361,12 @@ class TrackingEmailService {
   // ---- Main orchestrator ----
 
   async processStatusChange(deliveryNote, newStatus, oldStatus) {
+    // Global kill switch for all tracking emails
+    if (process.env.DISABLE_EMAIL_RETURO === 'true') {
+      console.log(`[TrackingEmailService] Emails disabled (DISABLE_EMAIL_RETURO=true), skipping ${newStatus}`);
+      return false;
+    }
+
     const config = TrackingEmailService.STATUS_CONFIG[newStatus];
     if (!config) {
       // No email configured for this status
