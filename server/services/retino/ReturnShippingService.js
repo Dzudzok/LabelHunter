@@ -47,24 +47,57 @@ class ReturnShippingService {
 
     if (error) throw error;
 
-    // If paid shipping (GLS, Zásilkovna) — redirect to GoPay, generate label after payment
-    if (carrier !== 'self') {
-      const cost = this.getShippingCost(carrier, shippingMethod);
-      if (cost > 0) {
-        // Static GoPay payment button links (generated from GoPay admin)
-        const paymentUrl = process.env[`GOPAY_LINK_${carrier.toUpperCase()}`] || null;
+    // GLS — generate label via GLS MyGLS API directly
+    if (carrier === 'gls') {
+      try {
+        const label = await this.generateGLSLabel(returnId, shipment.id);
+        const { data: updated } = await supabase
+          .from('return_shipments')
+          .update({
+            tracking_number: label.trackingNumber || null,
+            label_url: label.labelUrl || null,
+            label_data: { parcelId: label.parcelId, labelBase64: label.labelBase64 },
+            status: 'label_generated',
+            cost: this.getShippingCost(carrier, shippingMethod),
+            payment_status: 'paid',
+          })
+          .eq('id', shipment.id)
+          .select()
+          .single();
+        return updated || shipment;
+      } catch (labelErr) {
+        const errDetail = labelErr.response?.data || labelErr.message;
+        console.error('[ReturnShipping] GLS label error:', JSON.stringify(errDetail));
+        await supabase.from('return_shipments')
+          .update({ notes: `GLS label failed: ${typeof errDetail === 'object' ? JSON.stringify(errDetail) : errDetail}` })
+          .eq('id', shipment.id);
+      }
+    }
 
-        await supabase.from('return_shipments').update({
-          status: 'pending_payment',
-          payment_status: 'unpaid',
-          cost,
-          gopay_payment_url: paymentUrl,
-        }).eq('id', shipment.id);
-
-        shipment.status = 'pending_payment';
-        shipment.cost = cost;
-        shipment.gopay_payment_url = paymentUrl;
-        return shipment;
+    // Zásilkovna — generate label via Zásilkovna API
+    if (carrier === 'zasilkovna' && shippingMethod === 'drop_off') {
+      try {
+        console.log('[ReturnShipping] Zásilkovna label — pickupPoint:', JSON.stringify(pickupPoint));
+        const label = await this.createZasilkovnaPacket(returnId, shipment.id, pickupPoint, customerAddress);
+        const { data: updated } = await supabase
+          .from('return_shipments')
+          .update({
+            tracking_number: label.packetId,
+            label_url: label.labelUrl || null,
+            label_data: label,
+            status: 'label_generated',
+            cost: this.getShippingCost(carrier, shippingMethod),
+            payment_status: 'paid',
+          })
+          .eq('id', shipment.id)
+          .select()
+          .single();
+        return updated || shipment;
+      } catch (labelErr) {
+        console.error('[ReturnShipping] Zásilkovna label error:', labelErr.message);
+        await supabase.from('return_shipments')
+          .update({ notes: `Label generation failed: ${labelErr.message}` })
+          .eq('id', shipment.id);
       }
     }
 
@@ -229,7 +262,7 @@ class ReturnShippingService {
     const costs = {
       zasilkovna: { drop_off: 89 },
       ppl: { courier_pickup: 149 },
-      gls: { courier_pickup: 139 },
+      gls: { drop_off: 99, courier_pickup: 139 },
       cp: { drop_off: 99 },
       self: { self_ship: 0 },
     };

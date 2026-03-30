@@ -89,6 +89,10 @@ const translations = {
   'transport.glsInfo': { cs: 'Po odeslání žádosti obdržíte štítek k vytisknutí. Odevzdejte balík v libovolném bodě GLS ParcelShop.', en: 'After submitting your request, you will receive a label to print. Drop off the package at any GLS ParcelShop.' },
   'transport.selfInfo': { cs: 'Adresa pro zaslání:', en: 'Shipping address:' },
   'transport.selfAddress': { cs: 'Reklamační oddělení, Čs. armády 360, 735 51 Bohumín', en: 'Returns Department, Čs. armády 360, 735 51 Bohumín' },
+  'transport.payFirst': { cs: 'Pro pokračování je nutné zaplatit za přepravní štítek', en: 'Payment for shipping label is required to continue' },
+  'transport.payButton': { cs: 'Zaplatit', en: 'Pay' },
+  'transport.paid': { cs: 'Zaplaceno', en: 'Paid' },
+  'transport.paymentRequired': { cs: 'Nejprve zaplaťte za štítek', en: 'Please pay for the label first' },
 
   // === Step4Confirm ===
   'confirm.title': { cs: 'Shrnutí žádosti', en: 'Request summary' },

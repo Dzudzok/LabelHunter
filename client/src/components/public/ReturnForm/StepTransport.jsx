@@ -1,10 +1,33 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useLang } from './i18n'
+import axios from 'axios'
+
+const apiBase = import.meta.env.VITE_API_URL || '/api'
 
 export default function StepTransport({ formData, updateForm, onNext, onBack }) {
   const { t } = useLang()
   const [selected, setSelected] = useState(formData.shippingOption || null)
   const [pickupPoint, setPickupPoint] = useState(formData.shippingData?.pickupPoint || null)
+  const [paid, setPaid] = useState(formData.shippingPaid || false)
+  const [paymentLinks, setPaymentLinks] = useState(null)
+
+  // Fetch GoPay payment links from backend
+  useEffect(() => {
+    axios.get(`${apiBase}/retino/public/returns/payment-links`)
+      .then(res => setPaymentLinks(res.data))
+      .catch(() => {})
+  }, [])
+
+  // Check if returning from GoPay payment (URL has ?paid=1)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search)
+    if (params.get('paid') === '1') {
+      setPaid(true)
+      updateForm({ shippingPaid: true })
+      // Clean URL
+      window.history.replaceState({}, '', window.location.pathname)
+    }
+  }, [])
 
   const SHIPPING_OPTIONS = [
     { id: 'zasilkovna_drop_off', carrier: 'zasilkovna', method: 'drop_off',
@@ -15,7 +38,15 @@ export default function StepTransport({ formData, updateForm, onNext, onBack }) 
       label: t('transport.self'), description: t('transport.selfDesc'), cost: 0, icon: '✉️' },
   ]
 
-  const handleSelect = (option) => { setSelected(option); setPickupPoint(null) }
+  const handleSelect = (option) => {
+    setSelected(option)
+    setPickupPoint(null)
+    // Reset payment if switching carrier
+    if (formData.shippingOption?.id !== option.id) {
+      setPaid(false)
+      updateForm({ shippingPaid: false })
+    }
+  }
 
   const openZasilkovnaWidget = useCallback(() => {
     if (typeof window.Packeta === 'undefined') { alert('Zásilkovna widget error'); return }
@@ -32,16 +63,39 @@ export default function StepTransport({ formData, updateForm, onNext, onBack }) 
     )
   }, [])
 
+  const needsPayment = selected && selected.cost > 0
+  const isPaid = paid || !needsPayment
+
   const canProceed = () => {
     if (!selected) return false
     if (selected.carrier === 'zasilkovna' && !pickupPoint) return false
+    if (needsPayment && !paid) return false
     return true
+  }
+
+  const handlePay = () => {
+    if (!selected || !paymentLinks) return
+    // Save form state before redirect
+    updateForm({
+      shippingOption: selected,
+      shippingMethod: selected.method,
+      shippingData: { carrier: selected.carrier, shippingMethod: selected.method, cost: selected.cost, pickupPoint: pickupPoint || null },
+    })
+    // Get payment link for carrier
+    const link = paymentLinks[selected.carrier]
+    if (!link) {
+      alert('Platební odkaz není k dispozici')
+      return
+    }
+    // Redirect to GoPay — successURL will come back with ?paid=1
+    window.location.href = link
   }
 
   const handleNext = () => {
     updateForm({
       shippingOption: selected,
       shippingMethod: selected.method,
+      shippingPaid: paid,
       shippingData: { carrier: selected.carrier, shippingMethod: selected.method, cost: selected.cost, pickupPoint: pickupPoint || null },
     })
     onNext()
@@ -75,6 +129,7 @@ export default function StepTransport({ formData, updateForm, onNext, onBack }) 
         ))}
       </div>
 
+      {/* Zásilkovna pickup point */}
       {selected?.carrier === 'zasilkovna' && (
         <div className="bg-gray-50 rounded-lg p-4 mb-6">
           <div className="flex items-center justify-between mb-2">
@@ -93,18 +148,40 @@ export default function StepTransport({ formData, updateForm, onNext, onBack }) 
         </div>
       )}
 
+      {/* GLS info */}
       {selected?.carrier === 'gls' && (
         <div className="bg-orange-50 border border-orange-200 rounded-lg p-4 mb-6">
           <div className="text-sm text-orange-800"><strong>GLS:</strong> {t('transport.glsInfo')}</div>
         </div>
       )}
 
+      {/* Self-ship info */}
       {selected?.method === 'self_ship' && (
         <div className="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
           <div className="text-sm text-yellow-800">
             <strong>{t('transport.selfInfo')}</strong><br />
             MROAUTO AUTODÍLY s.r.o.<br />{t('transport.selfAddress')}
           </div>
+        </div>
+      )}
+
+      {/* Payment section */}
+      {needsPayment && (
+        <div className={`rounded-lg p-4 mb-6 border ${paid ? 'bg-green-50 border-green-200' : 'bg-orange-50 border-orange-200'}`}>
+          {paid ? (
+            <div className="flex items-center gap-2 text-green-700">
+              <span className="text-xl">✅</span>
+              <span className="font-semibold">{t('transport.paid')} — {selected.cost} Kč</span>
+            </div>
+          ) : (
+            <>
+              <p className="text-sm text-orange-800 mb-3">{t('transport.payFirst')}</p>
+              <button onClick={handlePay}
+                className="w-full bg-[#2ECC71] hover:bg-[#27ae60] text-white py-3 rounded-lg font-bold text-lg transition-colors">
+                {t('transport.payButton')} {selected.cost} Kč
+              </button>
+            </>
+          )}
         </div>
       )}
 

@@ -8,6 +8,14 @@ const crypto = require('crypto');
 const upload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 10 * 1024 * 1024 } });
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/gif', 'application/pdf'];
 
+// GET /payment-links — return GoPay payment links per carrier
+router.get('/payment-links', (req, res) => {
+  res.json({
+    gls: process.env.GOPAY_LINK_GLS || null,
+    zasilkovna: process.env.GOPAY_LINK_ZASILKOVNA || null,
+  });
+});
+
 // POST /verify — verify order by doc_number + email → return items
 router.post('/verify', async (req, res, next) => {
   try {
