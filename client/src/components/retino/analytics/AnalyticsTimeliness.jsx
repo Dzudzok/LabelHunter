@@ -234,7 +234,7 @@ export default function AnalyticsTimeliness() {
                             }}
                           />
                         </div>
-                        <span className="text-xs text-theme-secondary w-12 text-right">{stats.percent} %</span>
+                        <span className="text-xs text-theme-secondary w-12 text-right">{Math.round(stats.percent * 10) / 10} %</span>
                       </div>
                     </td>
                   </tr>

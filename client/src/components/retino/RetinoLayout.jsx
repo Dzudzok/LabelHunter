@@ -5,7 +5,7 @@ import { useThemeStore } from '../../store/themeStore'
 
 const NAV_SECTIONS = [
   {
-    title: 'Retino Returns',
+    title: 'RETURO Returns',
     icon: (
       <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 15L3 9m0 0l6-6M3 9h12a6 6 0 010 12h-3" />
@@ -35,7 +35,7 @@ const NAV_SECTIONS = [
     ],
   },
   {
-    title: 'Retino Tracking',
+    title: 'RETURO Tracking',
     icon: (
       <svg className="w-[18px] h-[18px]" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
         <path strokeLinecap="round" strokeLinejoin="round" d="M15 10.5a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -247,7 +247,7 @@ export default function RetinoLayout() {
               </svg>
             </div>
             <div>
-              <div className="text-white font-bold text-base leading-tight tracking-tight">retino</div>
+              <div className="text-white font-bold text-base leading-tight tracking-tight">RETURO</div>
               <div className="text-[11px] text-white/40 leading-tight">Mroauto.cz</div>
             </div>
           </div>
@@ -347,7 +347,7 @@ export default function RetinoLayout() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z" />
               </svg>
             </div>
-            <span className="text-white font-bold text-sm">retino</span>
+            <span className="text-white font-bold text-sm">RETURO</span>
           </div>
         </div>
         <Outlet />

@@ -133,7 +133,7 @@ export default function AnalyticsOverview() {
       <div className="bg-navy-800 rounded-xl p-5 border border-navy-700">
         <h2 className="text-lg font-semibold text-theme-primary mb-1">Počet zásilek za období</h2>
         <p className="text-xs text-theme-muted mb-4">
-          Zobrazuje počet zásilek importovaných do Retino Tracking v průběhu času.
+          Zobrazuje počet zásilek importovaných do RETURO Tracking v průběhu času.
         </p>
         <div className="min-w-0">
         <ResponsiveContainer width="100%" height={280}>

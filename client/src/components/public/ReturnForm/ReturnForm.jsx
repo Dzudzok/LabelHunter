@@ -4,9 +4,9 @@ import Step2Products from './Step2Products'
 import Step3Details from './Step3Details'
 import StepTransport from './StepTransport'
 import Step4Confirm from './Step4Confirm'
+import { LangProvider, useLang, LangSwitcher } from './i18n'
 
-const STEPS = ['Ověření', 'Produkty', 'Detaily', 'Doprava', 'Potvrzení']
-const STORAGE_KEY = 'retino_return_form'
+const STORAGE_KEY = 'returo_return_form'
 
 const defaultFormData = {
   deliveryNote: null,
@@ -16,10 +16,17 @@ const defaultFormData = {
   reasonCode: '',
   reasonDetail: '',
   vehicleInfo: '',
+  vin: '',
+  workshopName: '',
+  workshopAddress: '',
+  extraCostsDescription: '',
+  extraCostsAmount: '',
+  extraCostsReceipts: [],
   wasMounted: false,
   customerName: '',
   customerEmail: '',
   customerPhone: '',
+  bankAccount: '',
   uploadedImages: [],
   shippingOption: null,
   shippingMethod: null,
@@ -31,45 +38,46 @@ function loadSavedForm() {
     const saved = sessionStorage.getItem(STORAGE_KEY)
     if (!saved) return null
     const parsed = JSON.parse(saved)
-    // Don't restore uploaded images (binary data)
-    return { ...defaultFormData, ...parsed, uploadedImages: [] }
+    return { ...defaultFormData, ...parsed, uploadedImages: [], extraCostsReceipts: [] }
   } catch { return null }
 }
 
-export default function ReturnForm() {
+function ReturnFormInner() {
+  const { t } = useLang()
   const saved = loadSavedForm()
   const [step, setStep] = useState(saved ? saved._step || 1 : 1)
   const [formData, setFormData] = useState(saved || defaultFormData)
   const [result, setResult] = useState(null)
 
-  // Persist form to sessionStorage on changes
   useEffect(() => {
     if (result) {
       sessionStorage.removeItem(STORAGE_KEY)
       return
     }
     try {
-      const toSave = { ...formData, uploadedImages: [], _step: step }
+      const toSave = { ...formData, uploadedImages: [], extraCostsReceipts: [], _step: step }
       sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
-    } catch { /* quota exceeded — ignore */ }
+    } catch {}
   }, [formData, step, result])
 
   const updateForm = useCallback((updates) => {
     setFormData(prev => ({ ...prev, ...updates }))
   }, [])
 
+  const STEPS = [t('steps.verify'), t('steps.products'), t('steps.details'), t('steps.shipping'), t('steps.confirm')]
+
   if (result) {
     return (
       <PageWrapper>
         <div className="text-center py-12">
           <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">Žádost byla odeslána</h2>
-          <p className="text-gray-600 mb-4">Číslo žádosti: <strong>{result.returnNumber}</strong></p>
+          <h2 className="text-2xl font-bold text-gray-800 mb-2">{t('result.title')}</h2>
+          <p className="text-gray-600 mb-4">{t('result.number')}: <strong>{result.returnNumber}</strong></p>
           <a
             href={`/vraceni/stav/${result.accessToken}`}
             className="inline-block bg-[#1046A0] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
           >
-            Sledovat stav žádosti
+            {t('result.track')}
           </a>
         </div>
       </PageWrapper>
@@ -78,7 +86,6 @@ export default function ReturnForm() {
 
   return (
     <PageWrapper>
-      {/* Stepper */}
       <div className="flex items-center justify-center mb-8">
         {STEPS.map((label, i) => (
           <div key={i} className="flex items-center">
@@ -106,16 +113,28 @@ export default function ReturnForm() {
   )
 }
 
+export default function ReturnForm() {
+  return (
+    <LangProvider>
+      <ReturnFormInner />
+    </LangProvider>
+  )
+}
+
 function PageWrapper({ children }) {
+  const { t } = useLang()
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="bg-[#1046A0] text-white">
-        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center gap-3">
-          <img src="/Mroauto_1994.png" alt="MROAUTO" className="h-10 object-contain" onError={(e) => { e.target.style.display = 'none' }} />
-          <div>
-            <div className="font-bold text-lg">MROAUTO</div>
-            <div className="text-xs opacity-80">Vrácení a reklamace zboží</div>
+        <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
+          <div className="flex items-center gap-3">
+            <img src="/Mroauto_1994.png" alt="MROAUTO" className="h-10 object-contain" onError={(e) => { e.target.style.display = 'none' }} />
+            <div>
+              <div className="font-bold text-lg">MROAUTO</div>
+              <div className="text-xs opacity-80">{t('header.subtitle')}</div>
+            </div>
           </div>
+          <LangSwitcher />
         </div>
         <div className="h-1 bg-[#D8112A]" />
       </div>

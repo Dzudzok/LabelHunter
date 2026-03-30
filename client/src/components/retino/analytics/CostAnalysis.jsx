@@ -133,7 +133,7 @@ export default function CostAnalysis() {
     { label: 'Celkové příjmy', value: formatCZK(data.totalRevenue), bgColor: '#064e3b', valueColor: '#34d399', labelColor: '#6ee7b7' },
     { label: 'Celkové náklady', value: formatCZK(data.totalCost), bgColor: '#7f1d1d', valueColor: '#f87171', labelColor: '#fca5a5' },
     { label: 'Celková marže', value: formatCZK(data.totalMargin), bgColor: '#1e3a5f', valueColor: '#60a5fa', labelColor: '#93c5fd' },
-    { label: 'Marže %', value: `${data.marginPercent}%`, bgColor: '#4c1d95', valueColor: '#a78bfa', labelColor: '#c4b5fd' },
+    { label: 'Marže %', value: `${Math.round(data.marginPercent * 10) / 10}%`, bgColor: '#4c1d95', valueColor: '#a78bfa', labelColor: '#c4b5fd' },
   ] : []
 
   const carriers = data ? Object.entries(data.byCarrier).sort((a, b) => b[1].revenue - a[1].revenue) : []

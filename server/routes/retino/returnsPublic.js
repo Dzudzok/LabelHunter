@@ -119,13 +119,22 @@ router.post('/create', async (req, res, next) => {
   try {
     const {
       deliveryNoteId, type = 'return', reasonCode, reasonDetail,
-      vehicleInfo, wasMounted, customerName, customerEmail, customerPhone,
+      vehicleInfo, vin, workshopName, workshopAddress,
+      extraCostsDescription, extraCostsAmount,
+      wasMounted, customerName, customerEmail, customerPhone,
+      bankAccount,
       items, // array of { deliveryNoteItemId, qtyReturned, condition, itemNote, images }
       shippingMethod, shippingData, // transport zwrotny
     } = req.body;
 
     if (!deliveryNoteId || !reasonCode || !items || items.length === 0) {
       return res.status(400).json({ error: 'deliveryNoteId, reasonCode and items are required' });
+    }
+    if (!bankAccount || !String(bankAccount).trim()) {
+      return res.status(400).json({ error: 'Numer konta bankowego jest wymagany' });
+    }
+    if (type === 'complaint' && !vin?.trim()) {
+      return res.status(400).json({ error: 'VIN jest wymagany przy reklamacji' });
     }
 
     // Verify delivery note exists
@@ -160,10 +169,16 @@ router.post('/create', async (req, res, next) => {
         reason_code: reasonCode,
         reason_detail: reasonDetail || null,
         vehicle_info: vehicleInfo || null,
+        vin: vin || null,
+        workshop_name: workshopName || null,
+        workshop_address: workshopAddress || null,
+        extra_costs_description: extraCostsDescription || null,
+        extra_costs_amount: extraCostsAmount || null,
         was_mounted: wasMounted || false,
         customer_name: customerName || null,
         customer_email: customerEmail || note.customer_email || null,
         customer_phone: customerPhone || null,
+        refund_bank_account: bankAccount || null,
         status: 'new',
         created_by_type: 'customer',
       })

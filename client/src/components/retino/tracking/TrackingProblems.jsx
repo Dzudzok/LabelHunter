@@ -8,6 +8,7 @@ const PROBLEM_STATUSES = 'failed_delivery,returned_to_sender,problem'
 const TABS = [
   { label: 'Nedoručeno', status: 'failed_delivery', type: 'problem' },
   { label: 'Vráceno odesílateli', status: 'returned_to_sender', type: 'problem' },
+  { label: 'Depo 4+ dní', status: 'available_for_pickup', type: 'depot' },
   { label: 'Brzy se bude vracet', status: 'expiring', type: 'expiring' },
   { label: 'Problémy dopravce', status: 'problem', type: 'problem' },
   { label: 'Vše', status: PROBLEM_STATUSES, type: 'problem' },
@@ -29,7 +30,14 @@ export default function TrackingProblems() {
   const fetchData = useCallback(async () => {
     setLoading(true)
     try {
-      if (activeType === 'expiring') {
+      if (activeType === 'depot') {
+        // Shipments stuck at pickup point for 4+ days
+        const res = await api.get('/retino/tracking/depot-stuck', {
+          params: { minDays: 4, page, pageSize }
+        })
+        setShipments(res.data.shipments || [])
+        setTotal(res.data.total || 0)
+      } else if (activeType === 'expiring') {
         const res = await api.get('/retino/tracking/expiring', {
           params: { days: expiryDays, page, pageSize }
         })
@@ -164,7 +172,9 @@ export default function TrackingProblems() {
                   <th className="text-left py-3 px-3">Zákazník</th>
                   <th className="text-left py-3 px-3">Dopravce</th>
                   <th className="text-left py-3 px-3">Tracking</th>
-                  {activeType === 'expiring' ? (
+                  {activeType === 'depot' ? (
+                    <th className="text-left py-3 px-3">Dní na depu</th>
+                  ) : activeType === 'expiring' ? (
                     <th className="text-left py-3 px-3">Zbývá dní</th>
                   ) : (
                     <th className="text-left py-3 px-3">Stav</th>
@@ -186,7 +196,17 @@ export default function TrackingProblems() {
                     <td className="py-2.5 px-3 text-theme-secondary">{s.customer_name || '\u2014'}</td>
                     <td className="py-2.5 px-3 text-theme-secondary font-mono text-xs">{s.shipper_code}</td>
                     <td className="py-2.5 px-3 text-theme-muted font-mono text-xs">{s.tracking_number}</td>
-                    {activeType === 'expiring' ? (
+                    {activeType === 'depot' ? (
+                      <td className="py-2.5 px-3">
+                        <span className={`px-2 py-0.5 rounded-full text-xs font-semibold ${
+                          s.days_at_depot >= 7 ? 'bg-red-900/30 text-red-400' :
+                          s.days_at_depot >= 5 ? 'bg-orange-900/30 text-orange-400' :
+                          'bg-yellow-900/30 text-yellow-400'
+                        }`}>
+                          {s.days_at_depot} dní
+                        </span>
+                      </td>
+                    ) : activeType === 'expiring' ? (
                       <td className="py-2.5 px-3">
                         <ExpiryBadge daysLeft={s.days_left} />
                       </td>

@@ -204,6 +204,44 @@ router.get('/shipments/:id', async (req, res, next) => {
   }
 });
 
+// GET /depot-stuck — shipments sitting at pickup point for N+ days
+router.get('/depot-stuck', async (req, res, next) => {
+  try {
+    const minDays = parseInt(req.query.minDays) || 4;
+    const page = parseInt(req.query.page) || 1;
+    const pageSize = Math.min(parseInt(req.query.pageSize) || 50, 200);
+    const offset = (page - 1) * pageSize;
+
+    const cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - minDays);
+
+    const { data, error, count } = await supabase
+      .from('delivery_notes')
+      .select('id, doc_number, invoice_number, customer_name, shipper_code, tracking_number, unified_status, date_issued, pickup_at, last_tracking_update', { count: 'exact' })
+      .eq('unified_status', 'available_for_pickup')
+      .not('tracking_number', 'is', null)
+      .order('date_issued', { ascending: true })
+      .range(offset, offset + pageSize - 1);
+
+    if (error) throw error;
+
+    const now = new Date();
+    const shipments = (data || [])
+      .map(s => {
+        const pickupDate = s.pickup_at || s.last_tracking_update || s.date_issued;
+        const daysAtDepot = pickupDate
+          ? Math.floor((now - new Date(pickupDate)) / (1000 * 60 * 60 * 24))
+          : 0;
+        return { ...s, days_at_depot: daysAtDepot };
+      })
+      .filter(s => s.days_at_depot >= minDays);
+
+    res.json({ shipments, total: shipments.length });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // GET /expiring — shipments available_for_pickup nearing storage expiry ("brzy se bude vracet")
 router.get('/expiring', async (req, res, next) => {
   try {
@@ -382,6 +420,10 @@ router.post('/shipments/:id/send-email', async (req, res, next) => {
       .single();
     if (error || !note) {
       return res.status(404).json({ error: 'Zásilka nenalezena' });
+    }
+
+    if (process.env.DISABLE_EMAIL_RETURO === 'true') {
+      return res.status(400).json({ error: 'Odesílání e-mailů je vypnuto (DISABLE_EMAIL_RETURO=true)' });
     }
 
     const TrackingEmailService = require('../../services/TrackingEmailService');

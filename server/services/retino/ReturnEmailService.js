@@ -38,6 +38,10 @@ class ReturnEmailService {
    * @param {object} extraData - additional template data (new_status_label, message, note, etc.)
    */
   async enqueueEmail(templateCode, ret, extraData = {}) {
+    if (process.env.DISABLE_EMAIL_RETURO === 'true') {
+      console.log(`[ReturnEmail] Emails disabled (DISABLE_EMAIL_RETURO=true), skipping ${templateCode}`);
+      return null;
+    }
     try {
       // Fetch template
       const { data: tpl } = await supabase
@@ -98,6 +102,8 @@ class ReturnEmailService {
    * Process pending emails in queue.
    */
   async processQueue(limit = 20) {
+    if (process.env.DISABLE_EMAIL_RETURO === 'true') return 0;
+
     const { data: emails, error } = await supabase
       .from('email_queue')
       .select('*')

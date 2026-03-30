@@ -222,7 +222,7 @@ export default function Dashboard() {
               onClick={() => navigate('/retino/tracking')}
               className="bg-teal-700 hover:bg-teal-600 text-white font-bold px-4 py-2 rounded-lg text-sm transition-colors"
             >
-              RetinoHunter
+              RETURO
             </button>
             <button
               onClick={handleRefresh}
