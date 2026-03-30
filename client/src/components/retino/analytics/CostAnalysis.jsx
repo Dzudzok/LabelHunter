@@ -68,6 +68,7 @@ export default function CostAnalysis() {
 
       const res = await api.post(url, body, {
         headers: { 'Content-Type': contentType },
+        timeout: 120000,
       })
       setImportResult(res.data)
       fetchData()
@@ -211,9 +212,10 @@ export default function CostAnalysis() {
 
           {/* CSV import */}
           <div className="bg-navy-800 rounded-xl p-4 mb-6">
-            <h2 className="text-sm font-semibold text-theme-primary mb-3">Import CSV</h2>
+            <h2 className="text-sm font-semibold text-theme-primary mb-3">Import nákladů</h2>
             <p className="text-xs text-theme-muted mb-3">
-              Systém automaticky rozpozná formát CSV podle dopravce. Můžete také ručně vybrat dopravce.
+              Nahrajte CSV nebo XLSX soubor s fakturačními daty od dopravce. Systém automaticky rozpozná formát a namapuje sloupce
+              (tracking číslo, cena, váha). Podporované formáty: GLS Settlement XLSX, PPL, DPD, Zásilkovna, UPS, ČP.
             </p>
             <div className="flex items-center gap-3 flex-wrap">
               <select
@@ -230,7 +232,7 @@ export default function CostAnalysis() {
                 <option value="CP">Česká pošta</option>
               </select>
               <label className="cursor-pointer bg-navy-700 hover:bg-navy-600 text-theme-primary text-xs font-medium px-4 py-2 rounded-lg transition-colors">
-                {importing ? 'Importuji...' : 'Vybrat CSV soubor'}
+                {importing ? 'Importuji...' : 'Vybrat soubor (CSV/XLSX)'}
                 <input
                   type="file"
                   accept=".csv,.txt,.xlsx,.xls"
