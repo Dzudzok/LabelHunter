@@ -11,17 +11,24 @@ router.get('/analytics', async (req, res, next) => {
     dateFrom.setDate(dateFrom.getDate() - Number(days));
     const dateFromStr = dateFrom.toISOString().split('T')[0];
 
-    let query = supabase
-      .from('shipping_costs')
-      .select('*, delivery_notes(id, tracking_number, shipper_code, date_issued)')
-      .gte('created_at', dateFromStr);
-
-    if (shipper) {
-      query = query.eq('shipper_code', shipper);
+    // Paginated fetch to get ALL cost records (Supabase default limit is 1000)
+    let costs = [];
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      let query = supabase
+        .from('shipping_costs')
+        .select('id, shipper_code, cost_amount, revenue_amount, invoice_date, created_at, delivery_note_id')
+        .gte('created_at', dateFromStr)
+        .range(offset, offset + PAGE - 1);
+      if (shipper) query = query.eq('shipper_code', shipper);
+      const { data, error } = await query;
+      if (error) throw error;
+      if (!data || data.length === 0) break;
+      costs = costs.concat(data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
     }
-
-    const { data: costs, error } = await query;
-    if (error) throw error;
 
     let totalRevenue = 0;
     let totalCost = 0;
@@ -29,7 +36,7 @@ router.get('/analytics', async (req, res, next) => {
     const byMonthMap = {};
     let unmatchedInvoices = 0;
 
-    for (const row of costs || []) {
+    for (const row of costs) {
       const rev = Number(row.revenue_amount) || 0;
       const cost = Number(row.cost_amount) || 0;
       totalRevenue += rev;
@@ -282,7 +289,7 @@ router.post('/import', express.raw({ type: '*/*', limit: '20mb' }), async (req, 
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
       const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
-      const trackingNumber = cols[iTrack] || '';
+      const trackingNumber = String(cols[iTrack] || '').trim();
       if (!trackingNumber) continue;
 
       rows.push({
@@ -337,6 +344,9 @@ router.post('/import', express.raw({ type: '*/*', limit: '20mb' }), async (req, 
       if (insertErr) throw insertErr;
     }
 
+    // Sample tracking numbers for debugging matching issues
+    const sampleImported = rows.slice(0, 3).map(r => r.tracking_number);
+
     res.json({
       imported: toInsert.length,
       matched,
@@ -349,6 +359,162 @@ router.post('/import', express.raw({ type: '*/*', limit: '20mb' }), async (req, 
         invoice: iInvoice >= 0 ? headers[iInvoice] : null,
         date: iDate >= 0 ? headers[iDate] : null,
       },
+      sampleTrackingNumbers: sampleImported,
+    });
+  } catch (err) {
+    next(err);
+  }
+});
+
+// Keywords that identify a shipping/transport line item in Nextis CSV
+const SHIPPING_KEYWORDS = [
+  'gls', 'ppl', 'dpd', 'zasilkovna', 'zásilkovna', 'česká pošta', 'ceska posta',
+  'doprava', 'shipping', 'přeprava', 'preprava', 'poštovné', 'postovne',
+  'fofr', 'gopay', 'dobírka', 'dobirka', 'mezinárodní doprava',
+];
+
+function isShippingItem(description) {
+  if (!description) return false;
+  const lower = description.toLowerCase();
+  return SHIPPING_KEYWORDS.some(kw => lower.includes(kw));
+}
+
+// POST /import-revenue — import revenue from Nextis export (item-level CSV with shipping lines)
+// Format: Popis položky;Typ položky;Datum prodeje;Druh dokladu;Číslo dokladu;Název odběratele;Množství;PC
+router.post('/import-revenue', express.raw({ type: '*/*', limit: '20mb' }), async (req, res, next) => {
+  try {
+    const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+    let lines;
+
+    const isXlsx = buf.length > 4 && buf[0] === 0x50 && buf[1] === 0x4B;
+
+    if (isXlsx) {
+      const workbook = XLSX.read(buf, { type: 'buffer' });
+      const sheet = workbook.Sheets[workbook.SheetNames[0]];
+      const csv = XLSX.utils.sheet_to_csv(sheet, { FS: ';' });
+      lines = csv.split(/\r?\n/).filter(l => l.trim());
+    } else {
+      const raw = buf.toString('utf8');
+      lines = raw.split(/\r?\n/).filter(l => l.trim());
+    }
+
+    if (lines.length < 2) {
+      return res.status(400).json({ error: 'Soubor musí mít hlavičku a alespoň jeden řádek dat' });
+    }
+
+    const headerLine = lines[0];
+    const delimiter = headerLine.includes(';') ? ';' : headerLine.includes('\t') ? '\t' : ',';
+    const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase().replace(/['"]/g, '').replace(/^\uFEFF/, ''));
+
+    // Find columns — Nextis format
+    const iDescription = findColumn(headers, ['popis položky', 'popis polozky', 'popis', 'nazev', 'název']);
+    const iInvoice = findColumn(headers, ['číslo dokladu', 'cislo dokladu', 'číslo faktury', 'cislo faktury', 'doklad', 'faktura']);
+    const iPrice = findColumn(headers, ['pc', 'cena', 'částka', 'castka', 'price', 'amount']);
+
+    if (iInvoice === -1) {
+      return res.status(400).json({ error: 'Nepodařilo se najít sloupec s číslem dokladu', headers });
+    }
+    if (iPrice === -1) {
+      return res.status(400).json({ error: 'Nepodařilo se najít sloupec s cenou (PC)', headers });
+    }
+
+    // Parse rows — only keep shipping-related items
+    // Group by invoice number (one FV can have multiple shipping lines: balné + doprava)
+    const revenueByInvoice = {};
+    let totalRows = 0;
+    let shippingRows = 0;
+    let skippedRows = 0;
+
+    for (let i = 1; i < lines.length; i++) {
+      const cols = lines[i].split(delimiter).map(c => c.trim().replace(/^["']|["']$/g, ''));
+      totalRows++;
+
+      const description = iDescription >= 0 ? cols[iDescription] || '' : '';
+      const invoiceNumber = String(cols[iInvoice] || '').trim();
+      if (!invoiceNumber) continue;
+
+      // Filter: only shipping items (if description column exists)
+      if (iDescription >= 0 && !isShippingItem(description)) {
+        skippedRows++;
+        continue;
+      }
+
+      const price = parseAmount(cols[iPrice]);
+      if (price <= 0) continue;
+
+      shippingRows++;
+      // Sum multiple shipping lines per invoice (balné + doprava)
+      revenueByInvoice[invoiceNumber] = (revenueByInvoice[invoiceNumber] || 0) + price;
+    }
+
+    const invoiceNumbers = Object.keys(revenueByInvoice);
+    if (invoiceNumbers.length === 0) {
+      return res.status(400).json({ error: 'Žádné řádky s dopravou nalezeny' });
+    }
+
+    // Match invoice numbers to delivery_notes
+    const noteMap = {};
+    const MATCH_BATCH = 200;
+    for (let i = 0; i < invoiceNumbers.length; i += MATCH_BATCH) {
+      const batch = invoiceNumbers.slice(i, i + MATCH_BATCH);
+      const { data: notes, error } = await supabase
+        .from('delivery_notes')
+        .select('id, invoice_number, tracking_number')
+        .in('invoice_number', batch);
+      if (error) throw error;
+      for (const n of notes || []) {
+        noteMap[n.invoice_number] = n;
+      }
+    }
+
+    // Update/create shipping_costs with revenue
+    let updated = 0;
+    let created = 0;
+    let notFound = 0;
+
+    for (const [invoiceNumber, revenue] of Object.entries(revenueByInvoice)) {
+      const note = noteMap[invoiceNumber];
+      if (!note) {
+        notFound++;
+        continue;
+      }
+
+      if (note.tracking_number) {
+        const { data: existing } = await supabase
+          .from('shipping_costs')
+          .select('id')
+          .eq('tracking_number', note.tracking_number)
+          .limit(1)
+          .maybeSingle();
+
+        if (existing) {
+          await supabase
+            .from('shipping_costs')
+            .update({ revenue_amount: revenue })
+            .eq('id', existing.id);
+          updated++;
+        } else {
+          await supabase
+            .from('shipping_costs')
+            .insert({
+              delivery_note_id: note.id,
+              tracking_number: note.tracking_number,
+              revenue_amount: revenue,
+              cost_amount: 0,
+            });
+          created++;
+        }
+      }
+    }
+
+    res.json({
+      totalRows,
+      shippingRows,
+      skippedRows,
+      uniqueInvoices: invoiceNumbers.length,
+      updated,
+      created,
+      notFound,
     });
   } catch (err) {
     next(err);

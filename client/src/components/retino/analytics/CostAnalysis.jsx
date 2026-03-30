@@ -20,6 +20,8 @@ export default function CostAnalysis() {
   const [importResult, setImportResult] = useState(null)
   const [importing, setImporting] = useState(false)
   const [importCarrier, setImportCarrier] = useState('')
+  const [revenueResult, setRevenueResult] = useState(null)
+  const [importingRevenue, setImportingRevenue] = useState(false)
   const [showManual, setShowManual] = useState(false)
   const [manualForm, setManualForm] = useState({
     tracking_number: '',
@@ -76,6 +78,35 @@ export default function CostAnalysis() {
       setImportResult({ error: err.response?.data?.error || err.message })
     } finally {
       setImporting(false)
+      e.target.value = ''
+    }
+  }
+
+  const handleRevenueUpload = async (e) => {
+    const file = e.target.files?.[0]
+    if (!file) return
+    setImportingRevenue(true)
+    setRevenueResult(null)
+    try {
+      const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
+      let body, contentType
+      if (isXlsx) {
+        body = await file.arrayBuffer()
+        contentType = 'application/octet-stream'
+      } else {
+        body = await file.text()
+        contentType = 'text/plain'
+      }
+      const res = await api.post('/retino/costs/import-revenue', body, {
+        headers: { 'Content-Type': contentType },
+        timeout: 120000,
+      })
+      setRevenueResult(res.data)
+      fetchData()
+    } catch (err) {
+      setRevenueResult({ error: err.response?.data?.error || err.message })
+    } finally {
+      setImportingRevenue(false)
       e.target.value = ''
     }
   }
@@ -261,6 +292,38 @@ export default function CostAnalysis() {
                           Použité sloupce: tracking={importResult.columnsUsed.tracking || '—'}, cena={importResult.columnsUsed.cost || '—'}, váha={importResult.columnsUsed.weight || '—'}
                         </div>
                       )}
+                    </>
+                }
+              </div>
+            )}
+          </div>
+
+          {/* Revenue import */}
+          <div className="bg-navy-800 rounded-xl p-4 mb-6">
+            <h2 className="text-sm font-semibold text-theme-primary mb-3">Import příjmů (Nextis)</h2>
+            <p className="text-xs text-theme-muted mb-3">
+              Nahrajte export položek z Nextisu (CSV/XLSX). Systém automaticky vyfiltruje pouze dopravní položky (GLS, PPL, Zásilkovna, DPD...), sečte balné + doprava per faktura a spáruje s náklady.
+            </p>
+            <div className="flex items-center gap-3">
+              <label className="cursor-pointer bg-navy-700 hover:bg-navy-600 text-theme-primary text-xs font-medium px-4 py-2 rounded-lg transition-colors">
+                {importingRevenue ? 'Importuji...' : 'Vybrat soubor (CSV/XLSX)'}
+                <input
+                  type="file"
+                  accept=".csv,.txt,.xlsx,.xls"
+                  onChange={handleRevenueUpload}
+                  disabled={importingRevenue}
+                  className="hidden"
+                />
+              </label>
+            </div>
+            {revenueResult && (
+              <div className={`mt-3 text-xs p-3 rounded-lg ${revenueResult.error ? 'bg-red-900/30 text-red-300' : 'bg-green-900/30 text-green-300'}`}>
+                {revenueResult.error
+                  ? <>Chyba: {revenueResult.error}</>
+                  : <>
+                      Řádků celkem: {revenueResult.totalRows} | Dopravních: {revenueResult.shippingRows} | Přeskočeno: {revenueResult.skippedRows}
+                      <br />
+                      Unikátních faktur: {revenueResult.uniqueInvoices} | Aktualizováno: {revenueResult.updated} | Vytvořeno: {revenueResult.created} | Nenalezeno: {revenueResult.notFound}
                     </>
                 }
               </div>
