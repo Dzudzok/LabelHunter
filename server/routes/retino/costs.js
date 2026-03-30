@@ -79,38 +79,174 @@ router.get('/analytics', async (req, res, next) => {
   }
 });
 
-// POST /import — CSV import of cost data
+// Carrier CSV column mappings — maps known carrier CSV headers to our fields
+// Each carrier can have multiple possible header names (aliases)
+const CARRIER_MAPPINGS = {
+  GLS: {
+    shipper_code: 'GLS',
+    tracking: ['parcel number', 'parcel_number', 'trackingnumber', 'tracking', 'cislo baliku', 'číslo balíku', 'parcelno'],
+    cost: ['price', 'amount', 'total price', 'cena', 'castka', 'částka', 'total', 'price without vat', 'cena bez dph'],
+    weight: ['weight', 'weight (kg)', 'vaha', 'váha', 'hmotnost'],
+    invoice: ['invoice', 'invoice number', 'faktura', 'číslo faktury', 'cislo faktury'],
+    date: ['date', 'invoice date', 'datum', 'datum faktury'],
+  },
+  PPL: {
+    shipper_code: 'PPL',
+    tracking: ['shipment number', 'shipmentnumber', 'cislo zasilky', 'číslo zásilky', 'tracking', 'consignment number'],
+    cost: ['price', 'total price', 'amount', 'cena', 'cena celkem', 'castka', 'price czk', 'cena bez dph'],
+    weight: ['weight', 'weight kg', 'vaha', 'váha', 'hmotnost'],
+    invoice: ['invoice', 'invoice no', 'faktura', 'cislo faktury'],
+    date: ['date', 'invoice date', 'datum', 'datum faktury'],
+  },
+  DPD: {
+    shipper_code: 'DPD',
+    tracking: ['parcel no', 'parcel number', 'tracking number', 'cislo baliku', 'reference'],
+    cost: ['net amount', 'amount', 'price', 'total', 'cena', 'castka'],
+    weight: ['weight', 'actual weight', 'vaha', 'váha'],
+    invoice: ['invoice', 'invoice number', 'faktura'],
+    date: ['date', 'invoice date', 'datum'],
+  },
+  Zasilkovna: {
+    shipper_code: 'Zasilkovna',
+    tracking: ['barcode', 'cislo zasilky', 'číslo zásilky', 'tracking number', 'id zasilky', 'zásilka'],
+    cost: ['cena', 'castka', 'price', 'celkem', 'cena za dopravu'],
+    weight: ['hmotnost', 'vaha', 'váha', 'weight'],
+    invoice: ['faktura', 'cislo faktury', 'invoice'],
+    date: ['datum', 'date', 'datum faktury'],
+  },
+  UPS: {
+    shipper_code: 'UPS',
+    tracking: ['tracking number', 'shipment id', 'package id', 'tracking'],
+    cost: ['net charge', 'total charge', 'charge amount', 'amount', 'price'],
+    weight: ['billed weight', 'actual weight', 'weight'],
+    invoice: ['invoice number', 'invoice', 'invoice no'],
+    date: ['invoice date', 'date', 'ship date'],
+  },
+  CP: {
+    shipper_code: 'CP',
+    tracking: ['podaci cislo', 'podací číslo', 'cislo zasilky', 'číslo zásilky', 'tracking'],
+    cost: ['cena', 'castka', 'částka', 'poplatek', 'cena celkem'],
+    weight: ['hmotnost', 'vaha', 'váha', 'weight'],
+    invoice: ['faktura', 'cislo faktury', 'číslo faktury'],
+    date: ['datum', 'datum podani', 'datum podání', 'date'],
+  },
+};
+
+// Find best matching column index from CSV headers using aliases
+function findColumn(headers, aliases) {
+  if (!aliases) return -1;
+  for (const alias of aliases) {
+    const idx = headers.indexOf(alias);
+    if (idx >= 0) return idx;
+  }
+  // Fuzzy: try partial match
+  for (const alias of aliases) {
+    const idx = headers.findIndex(h => h.includes(alias) || alias.includes(h));
+    if (idx >= 0) return idx;
+  }
+  return -1;
+}
+
+// Auto-detect carrier from CSV headers
+function detectCarrier(headers) {
+  let bestCarrier = null;
+  let bestScore = 0;
+  for (const [carrier, mapping] of Object.entries(CARRIER_MAPPINGS)) {
+    let score = 0;
+    if (findColumn(headers, mapping.tracking) >= 0) score += 3;
+    if (findColumn(headers, mapping.cost) >= 0) score += 2;
+    if (findColumn(headers, mapping.weight) >= 0) score += 1;
+    if (score > bestScore) {
+      bestScore = score;
+      bestCarrier = carrier;
+    }
+  }
+  return bestCarrier;
+}
+
+// Parse number from various formats: "1 234,56" -> 1234.56, "1.234,56" -> 1234.56
+function parseAmount(str) {
+  if (!str) return 0;
+  let clean = String(str).trim();
+  // If has both dot and comma, determine which is decimal
+  if (clean.includes(',') && clean.includes('.')) {
+    if (clean.lastIndexOf(',') > clean.lastIndexOf('.')) {
+      // 1.234,56 format
+      clean = clean.replace(/\./g, '').replace(',', '.');
+    } else {
+      // 1,234.56 format
+      clean = clean.replace(/,/g, '');
+    }
+  } else if (clean.includes(',')) {
+    clean = clean.replace(/\s/g, '').replace(',', '.');
+  } else {
+    clean = clean.replace(/\s/g, '');
+  }
+  return parseFloat(clean) || 0;
+}
+
+// GET /carrier-mappings — return available carrier mappings for frontend
+router.get('/carrier-mappings', (req, res) => {
+  const mappings = Object.keys(CARRIER_MAPPINGS);
+  res.json(mappings);
+});
+
+// POST /import — CSV import with auto-detection or explicit carrier mapping
 router.post('/import', express.text({ type: '*/*', limit: '10mb' }), async (req, res, next) => {
   try {
+    const carrierParam = req.query.carrier; // optional: explicit carrier selection
     const raw = typeof req.body === 'string' ? req.body : String(req.body);
     const lines = raw.split(/\r?\n/).filter(l => l.trim());
 
     if (lines.length < 2) {
-      return res.status(400).json({ error: 'CSV must have a header row and at least one data row' });
+      return res.status(400).json({ error: 'CSV musí mít hlavičku a alespoň jeden řádek dat' });
     }
 
     // Detect delimiter
     const headerLine = lines[0];
-    const delimiter = headerLine.includes(';') ? ';' : ',';
+    const delimiter = headerLine.includes(';') ? ';' : headerLine.includes('\t') ? '\t' : ',';
 
     const headers = headerLine.split(delimiter).map(h => h.trim().toLowerCase().replace(/['"]/g, ''));
 
-    const colIndex = (name) => {
-      const idx = headers.indexOf(name);
-      return idx;
-    };
+    // Determine carrier mapping
+    let carrier = carrierParam || null;
+    let mapping = carrier ? CARRIER_MAPPINGS[carrier] : null;
 
-    const iTrack = colIndex('tracking_number');
-    const iShipper = colIndex('shipper_code');
-    const iCost = colIndex('cost_amount');
-    const iRevenue = colIndex('revenue_amount');
-    const iWeight = colIndex('weight_kg');
-    const iInvoice = colIndex('invoice_number');
-    const iDate = colIndex('invoice_date');
+    if (!mapping) {
+      // Auto-detect from headers
+      carrier = detectCarrier(headers);
+      mapping = carrier ? CARRIER_MAPPINGS[carrier] : null;
+    }
+
+    // Find column indices — use mapping aliases or fallback to standard names
+    let iTrack, iCost, iWeight, iInvoice, iDate, iShipper;
+
+    if (mapping) {
+      iTrack = findColumn(headers, mapping.tracking);
+      iCost = findColumn(headers, mapping.cost);
+      iWeight = findColumn(headers, mapping.weight);
+      iInvoice = findColumn(headers, mapping.invoice);
+      iDate = findColumn(headers, mapping.date);
+      iShipper = -1; // carrier is known from mapping
+    } else {
+      // Fallback: standard column names
+      iTrack = findColumn(headers, ['tracking_number', 'tracking', 'trackingnumber']);
+      iCost = findColumn(headers, ['cost_amount', 'cost', 'price', 'amount', 'cena']);
+      iWeight = findColumn(headers, ['weight_kg', 'weight', 'vaha']);
+      iInvoice = findColumn(headers, ['invoice_number', 'invoice', 'faktura']);
+      iDate = findColumn(headers, ['invoice_date', 'date', 'datum']);
+      iShipper = findColumn(headers, ['shipper_code', 'shipper', 'carrier', 'dopravce']);
+    }
 
     if (iTrack === -1) {
-      return res.status(400).json({ error: 'CSV must contain a tracking_number column' });
+      return res.status(400).json({
+        error: 'Nepodařilo se najít sloupec s tracking číslem',
+        detectedCarrier: carrier,
+        headers,
+      });
     }
+
+    const shipperCode = mapping?.shipper_code || null;
 
     const rows = [];
     for (let i = 1; i < lines.length; i++) {
@@ -120,27 +256,29 @@ router.post('/import', express.text({ type: '*/*', limit: '10mb' }), async (req,
 
       rows.push({
         tracking_number: trackingNumber,
-        shipper_code: iShipper >= 0 ? cols[iShipper] || null : null,
-        cost_amount: iCost >= 0 ? parseFloat(cols[iCost]) || 0 : 0,
-        revenue_amount: iRevenue >= 0 ? parseFloat(cols[iRevenue]) || 0 : 0,
-        weight_kg: iWeight >= 0 ? parseFloat(cols[iWeight]) || null : null,
+        shipper_code: shipperCode || (iShipper >= 0 ? cols[iShipper] || null : null),
+        cost_amount: iCost >= 0 ? parseAmount(cols[iCost]) : 0,
+        revenue_amount: 0,
+        weight_kg: iWeight >= 0 ? parseAmount(cols[iWeight]) || null : null,
         invoice_number: iInvoice >= 0 ? cols[iInvoice] || null : null,
         invoice_date: iDate >= 0 ? cols[iDate] || null : null,
       });
     }
 
-    // Match tracking numbers to delivery_notes
-    const trackingNumbers = rows.map(r => r.tracking_number);
-    const { data: notes, error: notesErr } = await supabase
-      .from('delivery_notes')
-      .select('id, tracking_number, shipper_code')
-      .in('tracking_number', trackingNumbers);
-
-    if (notesErr) throw notesErr;
-
+    // Match tracking numbers to delivery_notes (in batches to avoid URL length limits)
     const noteMap = {};
-    for (const n of notes || []) {
-      noteMap[n.tracking_number] = n;
+    const trackingNumbers = rows.map(r => r.tracking_number);
+    const MATCH_BATCH = 200;
+    for (let i = 0; i < trackingNumbers.length; i += MATCH_BATCH) {
+      const batch = trackingNumbers.slice(i, i + MATCH_BATCH);
+      const { data: notes, error: notesErr } = await supabase
+        .from('delivery_notes')
+        .select('id, tracking_number, shipper_code')
+        .in('tracking_number', batch);
+      if (notesErr) throw notesErr;
+      for (const n of notes || []) {
+        noteMap[n.tracking_number] = n;
+      }
     }
 
     let matched = 0;
@@ -168,7 +306,19 @@ router.post('/import', express.text({ type: '*/*', limit: '10mb' }), async (req,
       if (insertErr) throw insertErr;
     }
 
-    res.json({ imported: toInsert.length, matched, unmatched });
+    res.json({
+      imported: toInsert.length,
+      matched,
+      unmatched,
+      detectedCarrier: carrier,
+      columnsUsed: {
+        tracking: iTrack >= 0 ? headers[iTrack] : null,
+        cost: iCost >= 0 ? headers[iCost] : null,
+        weight: iWeight >= 0 ? headers[iWeight] : null,
+        invoice: iInvoice >= 0 ? headers[iInvoice] : null,
+        date: iDate >= 0 ? headers[iDate] : null,
+      },
+    });
   } catch (err) {
     next(err);
   }

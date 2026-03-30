@@ -19,6 +19,7 @@ export default function CostAnalysis() {
   const [days, setDays] = useState('30')
   const [importResult, setImportResult] = useState(null)
   const [importing, setImporting] = useState(false)
+  const [importCarrier, setImportCarrier] = useState('')
   const [showManual, setShowManual] = useState(false)
   const [manualForm, setManualForm] = useState({
     tracking_number: '',
@@ -52,7 +53,10 @@ export default function CostAnalysis() {
     setImportResult(null)
     try {
       const text = await file.text()
-      const res = await api.post('/retino/costs/import', text, {
+      const url = importCarrier
+        ? `/retino/costs/import?carrier=${encodeURIComponent(importCarrier)}`
+        : '/retino/costs/import'
+      const res = await api.post(url, text, {
         headers: { 'Content-Type': 'text/plain' },
       })
       setImportResult(res.data)
@@ -199,9 +203,22 @@ export default function CostAnalysis() {
           <div className="bg-navy-800 rounded-xl p-4 mb-6">
             <h2 className="text-sm font-semibold text-theme-primary mb-3">Import CSV</h2>
             <p className="text-xs text-theme-muted mb-3">
-              Sloupce: tracking_number, shipper_code, cost_amount, revenue_amount, weight_kg, invoice_number, invoice_date
+              Systém automaticky rozpozná formát CSV podle dopravce. Můžete také ručně vybrat dopravce.
             </p>
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-3 flex-wrap">
+              <select
+                value={importCarrier}
+                onChange={e => setImportCarrier(e.target.value)}
+                className="bg-navy-700 border border-navy-600 text-theme-primary rounded-lg px-3 py-2 text-xs"
+              >
+                <option value="">Auto-detekce dopravce</option>
+                <option value="GLS">GLS</option>
+                <option value="PPL">PPL</option>
+                <option value="DPD">DPD</option>
+                <option value="UPS">UPS</option>
+                <option value="Zasilkovna">Zásilkovna</option>
+                <option value="CP">Česká pošta</option>
+              </select>
               <label className="cursor-pointer bg-navy-700 hover:bg-navy-600 text-theme-primary text-xs font-medium px-4 py-2 rounded-lg transition-colors">
                 {importing ? 'Importuji...' : 'Vybrat CSV soubor'}
                 <input
@@ -216,8 +233,23 @@ export default function CostAnalysis() {
             {importResult && (
               <div className={`mt-3 text-xs p-3 rounded-lg ${importResult.error ? 'bg-red-900/30 text-red-300' : 'bg-green-900/30 text-green-300'}`}>
                 {importResult.error
-                  ? `Chyba: ${importResult.error}`
-                  : `Importováno: ${importResult.imported} | Spárováno: ${importResult.matched} | Nespárováno: ${importResult.unmatched}`
+                  ? <>
+                      Chyba: {importResult.error}
+                      {importResult.headers && (
+                        <div className="mt-1 text-[10px] opacity-70">Nalezené sloupce: {importResult.headers.join(', ')}</div>
+                      )}
+                    </>
+                  : <>
+                      Importováno: {importResult.imported} | Spárováno: {importResult.matched} | Nespárováno: {importResult.unmatched}
+                      {importResult.detectedCarrier && (
+                        <span className="ml-2 opacity-70">| Dopravce: {importResult.detectedCarrier}</span>
+                      )}
+                      {importResult.columnsUsed && (
+                        <div className="mt-1 text-[10px] opacity-70">
+                          Použité sloupce: tracking={importResult.columnsUsed.tracking || '—'}, cena={importResult.columnsUsed.cost || '—'}, váha={importResult.columnsUsed.weight || '—'}
+                        </div>
+                      )}
+                    </>
                 }
               </div>
             )}
