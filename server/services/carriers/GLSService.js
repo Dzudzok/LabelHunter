@@ -9,9 +9,9 @@ const axios = require('axios');
 class GLSService {
   constructor() {
     this.baseUrl = 'https://api.mygls.cz';
-    this.username = process.env.GLS_USERNAME || 'pavel@mroauto.cz';
-    this.password = process.env.GLS_PASSWORD || 'Mrozek120';
-    this.clientNumber = process.env.GLS_CLIENT_NUMBER || '50018867';
+    this.username = process.env.GLS_USERNAME || '';
+    this.password = process.env.GLS_PASSWORD || '';
+    this.clientNumber = process.env.GLS_CLIENT_NUMBER || '';
   }
 
   _getPasswordHash() {

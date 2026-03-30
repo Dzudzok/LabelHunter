@@ -11,7 +11,7 @@ class ZasilkovnaService {
   constructor() {
     this.baseUrl = 'https://www.zasilkovna.cz/api/rest';
     // API key = first 16 chars of API password. For packetTracking, API password is needed.
-    this.apiPassword = process.env.ZASILKOVNA_API_PASSWORD || '952a8476660123c8';
+    this.apiPassword = process.env.ZASILKOVNA_API_PASSWORD || '';
   }
 
   isConfigured() {

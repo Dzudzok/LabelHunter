@@ -7,7 +7,7 @@ const supabase = require('../db/supabase');
  */
 class StorageExtensionService {
   constructor() {
-    this.zasilkovnaPassword = process.env.ZASILKOVNA_API_PASSWORD || '952a8476660123c8';
+    this.zasilkovnaPassword = process.env.ZASILKOVNA_API_PASSWORD || '';
     this.zasilkovnaUrl = 'https://www.zasilkovna.cz/api/rest';
   }
 

@@ -10,8 +10,8 @@ const axios = require('axios');
 class UPSService {
   constructor() {
     this.baseUrl = 'https://onlinetools.ups.com/api';
-    this.clientId = process.env.UPS_CLIENT_ID || 'w2xyYdb8qvkKQQLgFnsx13Gxr0ZMsscoYARFGgffdityaWix';
-    this.clientSecret = process.env.UPS_CLIENT_SECRET || 'Trv2u0lkoWXw53ox84WZBEB2kKpv7gypS566GTZMyu6BnIGlroNVX07fGvtDG1dx';
+    this.clientId = process.env.UPS_CLIENT_ID || '';
+    this.clientSecret = process.env.UPS_CLIENT_SECRET || '';
     this.token = null;
     this.tokenExpiry = 0;
   }

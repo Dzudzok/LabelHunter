@@ -13,8 +13,8 @@ const axios = require('axios');
 class PPLService {
   constructor() {
     this.baseUrl = 'https://api.dhl.com/ecs/ppl/myapi2';
-    this.clientId = process.env.PPL_CLIENT_ID || 'MAA1993002';
-    this.clientSecret = process.env.PPL_CLIENT_SECRET || 'F5gW0InHaVcqmLFg27EBmsPAOxaGICbC';
+    this.clientId = process.env.PPL_CLIENT_ID || '';
+    this.clientSecret = process.env.PPL_CLIENT_SECRET || '';
     this.token = null;
     this.tokenExpiry = 0;
   }
