@@ -216,8 +216,9 @@ class ReturnShippingService {
 
     const trackingNumber = result.parcelNumber ? String(result.parcelNumber) : null;
 
-    // Store label base64 in DB, serve via API endpoint (Render filesystem is ephemeral)
-    const labelUrl = result.labels ? `/api/retino/return-shipments/${shipmentId}/label.pdf` : null;
+    // Store label base64 in DB, serve via API endpoint with full backend URL
+    const apiBase = process.env.API_PUBLIC_URL || 'https://labelhunter-server.onrender.com';
+    const labelUrl = result.labels ? `${apiBase}/api/retino/return-shipments/${shipmentId}/label.pdf` : null;
 
     return { trackingNumber, labelUrl, labelBase64: result.labels || null, parcelId: result.parcelId };
   }
