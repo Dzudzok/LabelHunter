@@ -105,7 +105,7 @@ router.post('/:id/generate-label', async (req, res, next) => {
       .update({
         tracking_number: label.trackingNumber || null,
         label_url: label.labelUrl || null,
-        label_data: { parcelId: label.parcelId },
+        label_data: { parcelId: label.parcelId, labelBase64: label.labelBase64 },
         status: 'label_generated',
       })
       .eq('id', shipment.id)
@@ -113,6 +113,33 @@ router.post('/:id/generate-label', async (req, res, next) => {
       .single();
 
     res.json(updated || shipment);
+  } catch (err) {
+    next(err);
+  }
+});
+
+// GET /api/retino/return-shipments/:id/label.pdf — serve label PDF from DB
+router.get('/:id/label.pdf', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { data: shipment, error } = await supabase
+      .from('return_shipments')
+      .select('label_data')
+      .eq('id', id)
+      .single();
+
+    if (error || !shipment) return res.status(404).json({ error: 'Shipment not found' });
+
+    const base64 = shipment.label_data?.labelBase64;
+    if (!base64) return res.status(404).json({ error: 'Label not available' });
+
+    const buffer = Buffer.from(base64, 'base64');
+    res.set({
+      'Content-Type': 'application/pdf',
+      'Content-Length': buffer.length,
+      'Content-Disposition': `inline; filename="label_${id}.pdf"`,
+    });
+    res.send(buffer);
   } catch (err) {
     next(err);
   }

@@ -56,7 +56,7 @@ class ReturnShippingService {
           .update({
             tracking_number: label.trackingNumber || null,
             label_url: label.labelUrl || null,
-            label_data: label,
+            label_data: { parcelId: label.parcelId, labelBase64: label.labelBase64 },
             status: 'label_generated',
           })
           .eq('id', shipment.id)
@@ -214,19 +214,12 @@ class ReturnShippingService {
       count: 1,
     });
 
-    let labelUrl = null;
     const trackingNumber = result.parcelNumber ? String(result.parcelNumber) : null;
 
-    // Save label PDF from base64
-    if (result.labels) {
-      const labelsDir = path.join(__dirname, '..', '..', 'labels');
-      if (!fs.existsSync(labelsDir)) fs.mkdirSync(labelsDir, { recursive: true });
-      const filename = `return_${shipmentId}_GLS.pdf`;
-      fs.writeFileSync(path.join(labelsDir, filename), Buffer.from(result.labels, 'base64'));
-      labelUrl = `/labels/${filename}`;
-    }
+    // Store label base64 in DB, serve via API endpoint (Render filesystem is ephemeral)
+    const labelUrl = result.labels ? `/api/retino/return-shipments/${shipmentId}/label.pdf` : null;
 
-    return { trackingNumber, labelUrl, parcelId: result.parcelId };
+    return { trackingNumber, labelUrl, labelBase64: result.labels || null, parcelId: result.parcelId };
   }
 
   /**
