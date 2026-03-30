@@ -54,28 +54,32 @@ export default function ReturnStatus() {
 
   return (
     <PageWrapper>
-      {/* Hero status */}
-      <div className="text-center mb-6">
-        <p className="text-sm text-gray-400 font-medium mb-1">Žádost č.</p>
-        <h1 className="text-3xl font-black text-gray-900 mb-3 tracking-tight">{data.return_number}</h1>
-        <span className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold text-white shadow-md"
+      {/* Hero status — full width */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between mb-6 gap-3">
+        <div>
+          <p className="text-sm text-gray-400 font-medium">Žádost č.</p>
+          <h1 className="text-3xl font-black text-gray-900 tracking-tight">{data.return_number}</h1>
+        </div>
+        <span className="inline-flex items-center gap-1.5 px-5 py-2 rounded-full text-sm font-bold text-white shadow-md self-start"
           style={{ backgroundColor: statusColor }}>
           <span className="w-2 h-2 rounded-full bg-white/40" />
           {data.statusLabel}
         </span>
       </div>
 
-      {/* Label download — prominent */}
+      {/* Label download — prominent full width */}
       {hasLabel && (
-        <div className="mb-5 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm text-center">
+        <div className="mb-6 p-6 bg-white rounded-2xl border border-gray-100 shadow-sm flex flex-col sm:flex-row items-center gap-5">
           <div className="w-14 h-14 mx-auto mb-3 bg-gradient-to-br from-red-500 to-red-600 rounded-2xl flex items-center justify-center shadow-lg shadow-red-500/20 rotate-2">
             <svg className="w-7 h-7 text-white -rotate-2" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z" /></svg>
           </div>
-          <h3 className="text-lg font-bold text-gray-900 mb-1">Přepravní štítek je připraven!</h3>
-          <p className="text-sm text-gray-500 mb-4">Vytiskněte štítek, nalepte jej na balík a odevzdejte u dopravce.</p>
+          <div className="flex-1 sm:text-left text-center">
+            <h3 className="text-lg font-bold text-gray-900 mb-1">Přepravní štítek je připraven!</h3>
+            <p className="text-sm text-gray-500">Vytiskněte štítek, nalepte jej na balík a odevzdejte u dopravce.</p>
+          </div>
           {data.shipments.filter(s => s.label_url).map(s => (
             <a key={s.id} href={s.label_url} target="_blank" rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 bg-[#D8112A] text-white px-8 py-3.5 rounded-2xl font-bold text-lg shadow-lg shadow-red-500/20 hover:shadow-red-500/30 hover:-translate-y-0.5 transition-all">
+              className="inline-flex items-center gap-2 bg-[#D8112A] text-white px-8 py-3.5 rounded-2xl font-bold shadow-lg shadow-red-500/20 hover:shadow-red-500/30 hover:-translate-y-0.5 transition-all shrink-0">
               <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
               Stáhnout štítek (PDF)
             </a>
@@ -83,7 +87,11 @@ export default function ReturnStatus() {
         </div>
       )}
 
-      {/* Info card */}
+      {/* Two column layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+
+      {/* Left column */}
+      <div>
       <Card>
         <InfoRow label="Typ" value={data.type === 'return' ? 'Vrácení' : data.type === 'complaint' ? 'Reklamace' : 'Záruka'} />
         <InfoRow label="Důvod" value={data.reasonLabel} />
@@ -104,6 +112,22 @@ export default function ReturnStatus() {
         </Card>
       )}
 
+      {/* Resolution — left column */}
+      {data.resolution_type && (
+        <Card title="Výsledek" accent="green">
+          <div className="font-semibold text-gray-800">
+            {data.resolution_type === 'refund' ? 'Vrácení peněz' :
+             data.resolution_type === 'replacement' ? 'Výměna zboží' :
+             data.resolution_type === 'repair' ? 'Oprava' : data.resolution_type}
+          </div>
+          {data.resolution_amount && <div className="text-sm text-green-700 mt-1">Částka: {data.resolution_amount} {data.currency || 'CZK'}</div>}
+          {data.resolution_note && <div className="text-sm text-gray-600 mt-1">{data.resolution_note}</div>}
+        </Card>
+      )}
+      </div>
+
+      {/* Right column */}
+      <div>
       {/* Shipping */}
       {data.shipments?.length > 0 && (
         <Card title="Zpětná doprava" accent="blue">
@@ -137,19 +161,6 @@ export default function ReturnStatus() {
         </Card>
       )}
 
-      {/* Resolution */}
-      {data.resolution_type && (
-        <Card title="Výsledek" accent="green">
-          <div className="font-semibold text-gray-800">
-            {data.resolution_type === 'refund' ? 'Vrácení peněz' :
-             data.resolution_type === 'replacement' ? 'Výměna zboží' :
-             data.resolution_type === 'repair' ? 'Oprava' : data.resolution_type}
-          </div>
-          {data.resolution_amount && <div className="text-sm text-green-700 mt-1">Částka: {data.resolution_amount} {data.currency || 'CZK'}</div>}
-          {data.resolution_note && <div className="text-sm text-gray-600 mt-1">{data.resolution_note}</div>}
-        </Card>
-      )}
-
       {/* Timeline */}
       {data.timeline?.length > 0 && (
         <Card title="Historie">
@@ -172,7 +183,10 @@ export default function ReturnStatus() {
         </Card>
       )}
 
-      {/* Messages */}
+      </div>
+      </div>{/* end grid */}
+
+      {/* Messages — full width */}
       <Card title="Zprávy">
         {data.messages?.length > 0 ? (
           <div className="space-y-3 mb-4">
@@ -223,7 +237,7 @@ function PageWrapper({ children }) {
       <header className="relative overflow-hidden">
         <div className="absolute inset-0 bg-gradient-to-r from-[#0a2d6e] via-[#1046A0] to-[#1a56b8]" />
         <div className="absolute inset-0 opacity-10" style={{ backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'60\' height=\'60\' viewBox=\'0 0 60 60\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'none\' fill-rule=\'evenodd\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\'%3E%3Cpath d=\'M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z\'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")' }} />
-        <div className="relative max-w-lg mx-auto px-4 py-5 flex items-center gap-3">
+        <div className="relative max-w-3xl mx-auto px-4 py-5 flex items-center gap-3">
           <img src="/Mroauto_1994.png" alt="MROAUTO" className="h-12 object-contain drop-shadow-lg" onError={(e) => { e.target.style.display = 'none' }} />
           <div>
             <div className="font-black text-xl text-white tracking-tight">MROAUTO</div>
@@ -232,7 +246,7 @@ function PageWrapper({ children }) {
         </div>
         <div className="h-1.5 bg-gradient-to-r from-[#D8112A] via-[#ff3333] to-[#D8112A]" />
       </header>
-      <main className="max-w-lg mx-auto px-4 py-8">{children}</main>
+      <main className="max-w-3xl mx-auto px-4 py-8">{children}</main>
       <footer className="mt-16 py-6 text-center border-t border-gray-200/50">
         <p className="text-xs text-gray-400 font-medium">MROAUTO AUTODÍLY s.r.o. · www.mroauto.cz</p>
         <p className="text-[10px] text-gray-300 mt-1 font-semibold tracking-widest uppercase">Powered by RETURO</p>
