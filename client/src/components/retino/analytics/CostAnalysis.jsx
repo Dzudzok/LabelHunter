@@ -52,12 +52,22 @@ export default function CostAnalysis() {
     setImporting(true)
     setImportResult(null)
     try {
-      const text = await file.text()
+      const isXlsx = file.name.endsWith('.xlsx') || file.name.endsWith('.xls')
       const url = importCarrier
         ? `/retino/costs/import?carrier=${encodeURIComponent(importCarrier)}`
         : '/retino/costs/import'
-      const res = await api.post(url, text, {
-        headers: { 'Content-Type': 'text/plain' },
+
+      let body, contentType
+      if (isXlsx) {
+        body = await file.arrayBuffer()
+        contentType = 'application/octet-stream'
+      } else {
+        body = await file.text()
+        contentType = 'text/plain'
+      }
+
+      const res = await api.post(url, body, {
+        headers: { 'Content-Type': contentType },
       })
       setImportResult(res.data)
       fetchData()
@@ -223,7 +233,7 @@ export default function CostAnalysis() {
                 {importing ? 'Importuji...' : 'Vybrat CSV soubor'}
                 <input
                   type="file"
-                  accept=".csv,.txt"
+                  accept=".csv,.txt,.xlsx,.xls"
                   onChange={handleCSVUpload}
                   disabled={importing}
                   className="hidden"

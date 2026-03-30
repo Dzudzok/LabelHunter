@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../../db/supabase');
+const XLSX = require('xlsx');
 
 // GET /analytics — aggregate cost analytics
 router.get('/analytics', async (req, res, next) => {
@@ -84,11 +85,13 @@ router.get('/analytics', async (req, res, next) => {
 const CARRIER_MAPPINGS = {
   GLS: {
     shipper_code: 'GLS',
-    tracking: ['parcel number', 'parcel_number', 'trackingnumber', 'tracking', 'cislo baliku', 'číslo balíku', 'parcelno'],
-    cost: ['price', 'amount', 'total price', 'cena', 'castka', 'částka', 'total', 'price without vat', 'cena bez dph'],
-    weight: ['weight', 'weight (kg)', 'vaha', 'váha', 'hmotnost'],
-    invoice: ['invoice', 'invoice number', 'faktura', 'číslo faktury', 'cislo faktury'],
-    date: ['date', 'invoice date', 'datum', 'datum faktury'],
+    tracking: ['číslo balíku / parcel number', 'číslo balíku', 'parcel number', 'parcel_number', 'cislo baliku', 'parcelno'],
+    cost: ['celková cena / total amount', 'celková cena', 'total amount', 'cena přepravy / transport fee', 'cena přepravy', 'price', 'cena', 'cena bez dph'],
+    weight: ['váha / weight / size', 'váha / weight', 'váha', 'weight', 'vaha', 'hmotnost'],
+    invoice: ['číslo faktury / invoice number', 'číslo faktury', 'invoice number', 'invoice', 'faktura', 'cislo faktury'],
+    date: ['datum vystavení faktury / invoice date', 'datum vystavení faktury', 'invoice date', 'date', 'datum', 'datum faktury'],
+    // Extra GLS-specific fields
+    sheetName: 'rozpis k doručení',
   },
   PPL: {
     shipper_code: 'PPL',
@@ -191,12 +194,40 @@ router.get('/carrier-mappings', (req, res) => {
   res.json(mappings);
 });
 
-// POST /import — CSV import with auto-detection or explicit carrier mapping
-router.post('/import', express.text({ type: '*/*', limit: '10mb' }), async (req, res, next) => {
+// POST /import — CSV/XLSX import with auto-detection or explicit carrier mapping
+router.post('/import', express.raw({ type: '*/*', limit: '20mb' }), async (req, res, next) => {
   try {
     const carrierParam = req.query.carrier; // optional: explicit carrier selection
-    const raw = typeof req.body === 'string' ? req.body : String(req.body);
-    const lines = raw.split(/\r?\n/).filter(l => l.trim());
+    const sheetParam = req.query.sheet; // optional: sheet name/index for XLSX
+
+    // Detect if binary XLSX or text CSV
+    const buf = Buffer.isBuffer(req.body) ? req.body : Buffer.from(req.body);
+    let lines;
+
+    // Check for XLSX magic bytes (PK zip header)
+    const isXlsx = buf.length > 4 && buf[0] === 0x50 && buf[1] === 0x4B;
+
+    if (isXlsx) {
+      const workbook = XLSX.read(buf, { type: 'buffer' });
+
+      // Pick sheet: explicit param > carrier-specific sheet > first sheet
+      let sheetName;
+      if (sheetParam) {
+        sheetName = workbook.SheetNames.find(s => s.toLowerCase() === sheetParam.toLowerCase()) || workbook.SheetNames[0];
+      } else if (carrierParam && CARRIER_MAPPINGS[carrierParam]?.sheetName) {
+        const preferred = CARRIER_MAPPINGS[carrierParam].sheetName;
+        sheetName = workbook.SheetNames.find(s => s.toLowerCase() === preferred) || workbook.SheetNames[0];
+      } else {
+        sheetName = workbook.SheetNames[0];
+      }
+
+      const sheet = workbook.Sheets[sheetName];
+      const csv = XLSX.utils.sheet_to_csv(sheet, { FS: ';' });
+      lines = csv.split(/\r?\n/).filter(l => l.trim());
+    } else {
+      const raw = buf.toString('utf8');
+      lines = raw.split(/\r?\n/).filter(l => l.trim());
+    }
 
     if (lines.length < 2) {
       return res.status(400).json({ error: 'CSV musí mít hlavičku a alespoň jeden řádek dat' });
