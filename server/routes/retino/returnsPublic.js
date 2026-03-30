@@ -251,6 +251,8 @@ router.post('/create', async (req, res, next) => {
           labelUrl: shipment.label_url || null,
           paymentUrl: shipment.gopay_payment_url || null,
           cost,
+          status: shipment.status || null,
+          notes: shipment.notes || null,
         };
       } catch (shipErr) {
         console.error('[Returns] Shipment creation error:', shipErr.message);

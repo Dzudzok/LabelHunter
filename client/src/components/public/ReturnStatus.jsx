@@ -95,7 +95,22 @@ export default function ReturnStatus() {
         </div>
       )}
 
-      {/* Shipping */}
+      {/* Shipping — label download prominent */}
+      {data.shipments?.length > 0 && data.shipments.some(s => s.label_url) && (
+        <div className="bg-green-50 border-2 border-green-300 rounded-xl p-5 mb-4 text-center">
+          <div className="text-3xl mb-2">🏷️</div>
+          <h3 className="text-lg font-bold text-green-800 mb-1">Přepravní štítek je připraven!</h3>
+          <p className="text-sm text-green-700 mb-3">Vytiskněte štítek, nalepte jej na balík a odevzdejte u dopravce.</p>
+          {data.shipments.filter(s => s.label_url).map(s => (
+            <a key={s.id} href={s.label_url} target="_blank" rel="noopener noreferrer"
+              className="inline-block bg-[#D8112A] text-white px-6 py-3 rounded-lg font-bold text-lg hover:opacity-90 transition-opacity">
+              Stáhnout štítek (PDF)
+            </a>
+          ))}
+        </div>
+      )}
+
+      {/* Shipping details */}
       {data.shipments?.length > 0 && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-4">
           <h3 className="text-sm font-semibold text-blue-700 uppercase mb-2">Zpětná doprava</h3>
@@ -107,19 +122,11 @@ export default function ReturnStatus() {
               {s.pickup_point_name && <InfoRow label="Výdejní místo" value={`${s.pickup_point_name} — ${s.pickup_point_address || ''}`} />}
               {s.tracking_number && <InfoRow label="Tracking" value={s.tracking_number} />}
               {s.cost > 0 && <InfoRow label="Cena" value={`${s.cost} ${s.currency || 'CZK'}`} />}
-              {s.label_url && (
-                <div className="mt-2">
-                  <a href={s.label_url} target="_blank" rel="noopener noreferrer"
-                    className="inline-block bg-[#1046A0] text-white px-4 py-2 rounded-lg text-sm font-semibold hover:opacity-90">
-                    Stáhnout štítek (PDF)
-                  </a>
-                </div>
-              )}
               {s.status === 'pending_payment' && s.gopay_payment_url && (
-                <div className="mt-2">
-                  <p className="text-sm text-orange-700 mb-2">Štítek bude vygenerován po zaplacení.</p>
+                <div className="mt-3 p-3 bg-orange-50 border border-orange-200 rounded-lg text-center">
+                  <p className="text-sm text-orange-800 font-semibold mb-2">Štítek bude vygenerován po zaplacení</p>
                   <a href={s.gopay_payment_url}
-                    className="inline-block bg-[#2ECC71] text-white px-4 py-2 rounded-lg text-sm font-bold hover:opacity-90">
+                    className="inline-block bg-[#2ECC71] text-white px-5 py-2.5 rounded-lg font-bold hover:opacity-90">
                     Zaplatit {s.cost} Kč
                   </a>
                 </div>

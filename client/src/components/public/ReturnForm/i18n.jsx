@@ -158,23 +158,15 @@ export function useLang() {
 export function LangSwitcher() {
   const { lang, setLang } = useLang()
   return (
-    <div className="flex gap-1 bg-white/20 rounded-lg p-0.5">
-      <button
-        onClick={() => setLang('cs')}
-        className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors ${
-          lang === 'cs' ? 'bg-white text-[#1046A0]' : 'text-white/80 hover:text-white'
-        }`}
-      >
-        CZ
-      </button>
-      <button
-        onClick={() => setLang('en')}
-        className={`px-2 py-0.5 rounded text-xs font-semibold transition-colors ${
-          lang === 'en' ? 'bg-white text-[#1046A0]' : 'text-white/80 hover:text-white'
-        }`}
-      >
-        EN
-      </button>
+    <div className="flex gap-0.5 bg-white/15 backdrop-blur-sm rounded-xl p-1">
+      <button onClick={() => setLang('cs')}
+        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+          lang === 'cs' ? 'bg-white text-[#1046A0] shadow-sm' : 'text-white/70 hover:text-white hover:bg-white/10'
+        }`}>CZ</button>
+      <button onClick={() => setLang('en')}
+        className={`px-3 py-1 rounded-lg text-xs font-bold transition-all ${
+          lang === 'en' ? 'bg-white text-[#1046A0] shadow-sm' : 'text-white/70 hover:text-white hover:bg-white/10'
+        }`}>EN</button>
     </div>
   )
 }

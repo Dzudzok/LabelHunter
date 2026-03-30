@@ -9,28 +9,12 @@ import { LangProvider, useLang, LangSwitcher } from './i18n'
 const STORAGE_KEY = 'returo_return_form'
 
 const defaultFormData = {
-  deliveryNote: null,
-  items: [],
-  selectedItems: [],
-  type: 'return',
-  reasonCode: '',
-  reasonDetail: '',
-  vehicleInfo: '',
-  vin: '',
-  workshopName: '',
-  workshopAddress: '',
-  extraCostsDescription: '',
-  extraCostsAmount: '',
-  extraCostsReceipts: [],
-  wasMounted: false,
-  customerName: '',
-  customerEmail: '',
-  customerPhone: '',
-  bankAccount: '',
-  uploadedImages: [],
-  shippingOption: null,
-  shippingMethod: null,
-  shippingData: null,
+  deliveryNote: null, items: [], selectedItems: [], type: 'return',
+  reasonCode: '', reasonDetail: '', vehicleInfo: '', vin: '',
+  workshopName: '', workshopAddress: '', extraCostsDescription: '', extraCostsAmount: '',
+  extraCostsReceipts: [], wasMounted: false,
+  customerName: '', customerEmail: '', customerPhone: '', bankAccount: '',
+  uploadedImages: [], shippingOption: null, shippingMethod: null, shippingData: null,
 }
 
 function loadSavedForm() {
@@ -50,66 +34,61 @@ function ReturnFormInner() {
   const [result, setResult] = useState(null)
 
   useEffect(() => {
-    if (result) {
-      sessionStorage.removeItem(STORAGE_KEY)
-      return
-    }
+    if (result) { sessionStorage.removeItem(STORAGE_KEY); return }
     try {
-      const toSave = { ...formData, uploadedImages: [], extraCostsReceipts: [], _step: step }
-      sessionStorage.setItem(STORAGE_KEY, JSON.stringify(toSave))
+      sessionStorage.setItem(STORAGE_KEY, JSON.stringify({ ...formData, uploadedImages: [], extraCostsReceipts: [], _step: step }))
     } catch {}
   }, [formData, step, result])
 
-  const updateForm = useCallback((updates) => {
-    setFormData(prev => ({ ...prev, ...updates }))
-  }, [])
+  const updateForm = useCallback((updates) => setFormData(prev => ({ ...prev, ...updates })), [])
 
-  const STEPS = [t('steps.verify'), t('steps.products'), t('steps.details'), t('steps.shipping'), t('steps.confirm')]
+  const STEPS = [
+    { label: t('steps.verify'), icon: '🔍' },
+    { label: t('steps.products'), icon: '📦' },
+    { label: t('steps.details'), icon: '📝' },
+    { label: t('steps.shipping'), icon: '🚚' },
+    { label: t('steps.confirm'), icon: '✅' },
+  ]
 
   if (result) {
     return (
       <PageWrapper>
-        <div className="text-center py-12">
-          <div className="text-5xl mb-4">✅</div>
-          <h2 className="text-2xl font-bold text-gray-800 mb-2">{t('result.title')}</h2>
-          <p className="text-gray-600 mb-4">{t('result.number')}: <strong>{result.returnNumber}</strong></p>
+        <div className="max-w-md mx-auto text-center py-8">
+          <div className="w-20 h-20 mx-auto mb-6 bg-gradient-to-br from-green-400 to-emerald-600 rounded-full flex items-center justify-center shadow-lg shadow-green-200">
+            <svg className="w-10 h-10 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}>
+              <path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" />
+            </svg>
+          </div>
+          <h2 className="text-2xl font-extrabold text-gray-900 mb-1">{t('result.title')}</h2>
+          <p className="text-gray-500 mb-2">{t('result.number')}</p>
+          <p className="text-xl font-mono font-bold text-[#1046A0] mb-6 tracking-wide">{result.returnNumber}</p>
 
           {result.shipment?.labelUrl && (
-            <div className="mb-6">
-              <a
-                href={result.shipment.labelUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-block bg-[#D8112A] text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mb-2"
-              >
+            <div className="mb-5 p-5 bg-gradient-to-r from-red-50 to-orange-50 border border-red-200 rounded-2xl">
+              <p className="text-sm text-gray-600 mb-3">{t('result.labelInfo')}</p>
+              <a href={result.shipment.labelUrl} target="_blank" rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-[#D8112A] to-[#B50E23] text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-red-200 hover:shadow-red-300 hover:scale-[1.02] transition-all">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                 {t('result.downloadLabel')}
               </a>
-              <p className="text-sm text-gray-500">{t('result.labelInfo')}</p>
             </div>
           )}
 
           {result.shipment?.paymentUrl && !result.shipment?.labelUrl && (
-            <div className="mb-6">
-              <p className="text-sm text-gray-600 mb-2">
-                {t('result.payInfo')}
-              </p>
-              <p className="text-lg font-bold text-gray-800 mb-3">
-                {t('result.payAmount')}: {result.shipment.cost} Kč
-              </p>
-              <a
-                href={result.shipment.paymentUrl}
-                className="inline-block bg-[#2ECC71] text-white px-6 py-3 rounded-lg font-bold hover:opacity-90 transition-opacity mb-2"
-              >
+            <div className="mb-5 p-5 bg-gradient-to-r from-green-50 to-emerald-50 border border-green-200 rounded-2xl">
+              <p className="text-sm text-gray-600 mb-2">{t('result.payInfo')}</p>
+              <p className="text-2xl font-bold text-gray-900 mb-3">{result.shipment.cost} Kč</p>
+              <a href={result.shipment.paymentUrl}
+                className="inline-flex items-center gap-2 bg-gradient-to-r from-emerald-500 to-green-600 text-white px-6 py-3 rounded-xl font-bold shadow-lg shadow-green-200 hover:shadow-green-300 hover:scale-[1.02] transition-all">
                 {t('result.payForLabel')}
               </a>
             </div>
           )}
 
-          <a
-            href={`/vraceni/stav/${result.accessToken}`}
-            className="inline-block bg-[#1046A0] text-white px-6 py-3 rounded-lg font-semibold hover:opacity-90 transition-opacity"
-          >
+          <a href={`/vraceni/stav/${result.accessToken}`}
+            className="inline-flex items-center gap-2 bg-[#1046A0] text-white px-6 py-3 rounded-xl font-semibold hover:bg-[#0d3a85] transition-colors">
             {t('result.track')}
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
           </a>
         </div>
       </PageWrapper>
@@ -118,61 +97,80 @@ function ReturnFormInner() {
 
   return (
     <PageWrapper>
-      <div className="flex items-center justify-center mb-8">
-        {STEPS.map((label, i) => (
-          <div key={i} className="flex items-center">
-            <div className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold ${
-              step > i + 1 ? 'bg-green-500 text-white' :
-              step === i + 1 ? 'bg-[#1046A0] text-white' :
-              'bg-gray-200 text-gray-400'
-            }`}>
-              {step > i + 1 ? '✓' : i + 1}
+      {/* Modern stepper */}
+      <div className="mb-8">
+        <div className="flex items-center justify-between max-w-lg mx-auto">
+          {STEPS.map((s, i) => (
+            <div key={i} className="flex flex-col items-center relative" style={{ flex: 1 }}>
+              {i > 0 && (
+                <div className={`absolute top-5 right-1/2 w-full h-0.5 -translate-y-1/2 ${
+                  step > i ? 'bg-gradient-to-r from-green-400 to-green-500' : 'bg-gray-200'
+                }`} style={{ zIndex: 0 }} />
+              )}
+              <div className={`relative z-10 w-10 h-10 rounded-full flex items-center justify-center text-sm font-bold transition-all duration-300 ${
+                step > i + 1
+                  ? 'bg-gradient-to-br from-green-400 to-emerald-500 text-white shadow-md shadow-green-200'
+                  : step === i + 1
+                    ? 'bg-gradient-to-br from-[#1046A0] to-[#0d3a85] text-white shadow-lg shadow-blue-200 scale-110'
+                    : 'bg-gray-100 text-gray-400 border-2 border-gray-200'
+              }`}>
+                {step > i + 1 ? (
+                  <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={3}><path strokeLinecap="round" strokeLinejoin="round" d="M5 13l4 4L19 7" /></svg>
+                ) : (
+                  <span>{i + 1}</span>
+                )}
+              </div>
+              <span className={`mt-1.5 text-[11px] font-medium hidden sm:block ${
+                step === i + 1 ? 'text-[#1046A0] font-bold' : step > i + 1 ? 'text-green-600' : 'text-gray-400'
+              }`}>{s.label}</span>
             </div>
-            <span className={`ml-1.5 text-sm ${step === i + 1 ? 'text-gray-800 font-semibold' : 'text-gray-400'} hidden sm:inline`}>
-              {label}
-            </span>
-            {i < STEPS.length - 1 && <div className="w-8 sm:w-12 h-0.5 mx-2 bg-gray-200" />}
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
-      {step === 1 && <Step1Verify formData={formData} updateForm={updateForm} onNext={() => setStep(2)} />}
-      {step === 2 && <Step2Products formData={formData} updateForm={updateForm} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
-      {step === 3 && <Step3Details formData={formData} updateForm={updateForm} onNext={() => setStep(4)} onBack={() => setStep(2)} />}
-      {step === 4 && <StepTransport formData={formData} updateForm={updateForm} onNext={() => setStep(5)} onBack={() => setStep(3)} />}
-      {step === 5 && <Step4Confirm formData={formData} onBack={() => setStep(4)} onResult={setResult} />}
+      <div className="transition-all duration-300">
+        {step === 1 && <Step1Verify formData={formData} updateForm={updateForm} onNext={() => setStep(2)} />}
+        {step === 2 && <Step2Products formData={formData} updateForm={updateForm} onNext={() => setStep(3)} onBack={() => setStep(1)} />}
+        {step === 3 && <Step3Details formData={formData} updateForm={updateForm} onNext={() => setStep(4)} onBack={() => setStep(2)} />}
+        {step === 4 && <StepTransport formData={formData} updateForm={updateForm} onNext={() => setStep(5)} onBack={() => setStep(3)} />}
+        {step === 5 && <Step4Confirm formData={formData} onBack={() => setStep(4)} onResult={setResult} />}
+      </div>
     </PageWrapper>
   )
 }
 
 export default function ReturnForm() {
-  return (
-    <LangProvider>
-      <ReturnFormInner />
-    </LangProvider>
-  )
+  return <LangProvider><ReturnFormInner /></LangProvider>
 }
 
 function PageWrapper({ children }) {
   const { t } = useLang()
   return (
-    <div className="min-h-screen bg-gray-50">
-      <div className="bg-[#1046A0] text-white">
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-gray-100">
+      {/* Header */}
+      <div className="bg-gradient-to-r from-[#0d3a85] to-[#1046A0] text-white shadow-lg">
         <div className="max-w-2xl mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-            <img src="/Mroauto_1994.png" alt="MROAUTO" className="h-10 object-contain" onError={(e) => { e.target.style.display = 'none' }} />
+            <img src="/Mroauto_1994.png" alt="MROAUTO" className="h-11 object-contain drop-shadow-md" onError={(e) => { e.target.style.display = 'none' }} />
             <div>
-              <div className="font-bold text-lg">MROAUTO</div>
-              <div className="text-xs opacity-80">{t('header.subtitle')}</div>
+              <div className="font-extrabold text-lg tracking-tight">MROAUTO</div>
+              <div className="text-[11px] text-blue-200">{t('header.subtitle')}</div>
             </div>
           </div>
           <LangSwitcher />
         </div>
-        <div className="h-1 bg-[#D8112A]" />
+        <div className="h-1 bg-gradient-to-r from-[#D8112A] via-[#ff4444] to-[#D8112A]" />
       </div>
-      <div className="max-w-2xl mx-auto px-4 py-6">{children}</div>
-      <div className="bg-gray-100 border-t mt-8 py-4 text-center text-xs text-gray-400">
-        MROAUTO AUTODÍLY s.r.o. | www.mroauto.cz
+
+      {/* Content */}
+      <div className="max-w-2xl mx-auto px-4 py-8">
+        {children}
+      </div>
+
+      {/* Footer */}
+      <div className="border-t border-gray-200 mt-12 py-5 text-center">
+        <p className="text-xs text-gray-400">MROAUTO AUTODÍLY s.r.o. | www.mroauto.cz</p>
+        <p className="text-[10px] text-gray-300 mt-1">Powered by RETURO</p>
       </div>
     </div>
   )
