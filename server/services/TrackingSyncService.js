@@ -172,6 +172,9 @@ class TrackingSyncService {
           });
 
           // Update unified_status + timestamps
+          if (unifiedStatus !== shipment.unified_status) {
+            console.log(`[TrackingSync] ${shipment.doc_number}: ${shipment.unified_status} → ${unifiedStatus} (${lastDescription?.substring(0, 40)})`);
+          }
           const updates = {
             unified_status: unifiedStatus,
             last_tracking_update: new Date().toISOString(),
