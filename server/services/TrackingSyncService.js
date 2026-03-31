@@ -419,19 +419,21 @@ class TrackingSyncService {
    */
   mapPPLStatus(code, desc) {
     const c = String(code || '').toLowerCase();
-    // PPL event codes — order matters! Check specific before generic
+    // PPL CPL API event codes (e.g. "Delivered", "ShipmentInTransport.TakeOverFromSender")
     if (c.includes('notdelivered') || c.includes('undeliverable')) return 'failed_delivery';
-    if (c.includes('backshipment') || c.includes('return')) return 'returned_to_sender';
-    if (c.includes('deliveryfinished') || c === 'delivered') return 'delivered';
+    if (c.includes('backshipment') || c.includes('backtosender') || (c.includes('return') && !c.includes('returnch'))) return 'returned_to_sender';
+    if (c === 'delivered' || c.includes('deliveryfinished')) return 'delivered';
     if (c.includes('waitingforshipment') || c === 'dataaccepted') return 'label_created';
-    if (c.includes('outfordelivery') || c.includes('readyfordelivery')) return 'out_for_delivery';
-    if (c.includes('accesspoint')) return 'available_for_pickup';
-    if (c.includes('pickedup') || c.includes('pickedupfromsender') || c.includes('accepted')) return 'handed_to_carrier';
-    if (c.includes('intransit') || c.includes('transit')) return 'in_transit';
-    // Fallback to description (but check negatives first)
+    if (c.includes('loadingfordelivery') || c.includes('outfordelivery') || c.includes('readyfordelivery')) return 'out_for_delivery';
+    if (c.includes('accesspoint') || c.includes('parcelshop') || c.includes('storedforpickup')) return 'available_for_pickup';
+    if (c.includes('takeover') || c.includes('pickedup') || c.includes('accepted')) return 'handed_to_carrier';
+    if (c.includes('shipmentintransport') || c.includes('intransit') || c.includes('preparingfordelivery') || c.includes('transit')) return 'in_transit';
+    // Fallback to description
     const d = (desc || '').toLowerCase();
     if (d.includes('nedoručen') || d.includes('not deliver')) return 'failed_delivery';
-    if (d.includes('vrácen') || d.includes('return') || d.includes('zpět')) return 'returned_to_sender';
+    if (d.includes('vrácen') || d.includes('return') || d.includes('zpět') || d.includes('back to sender')) return 'returned_to_sender';
+    if (d.includes('delivered') || d.includes('doručen')) return 'delivered';
+    if (d.includes('being delivered today') || d.includes('doručován')) return 'out_for_delivery';
     return this.mapFromDescription(desc) || 'in_transit';
   }
 

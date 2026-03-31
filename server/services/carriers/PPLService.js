@@ -61,14 +61,29 @@ class PPLService {
    * @returns {object} { trackingNumber, jjdNumber, statuses[] }
    */
   async getParcelStatuses(shipmentNumber) {
-    // Domestic PPL CZ (707/457/407) → myAPI SOAP
-    if (!this.isPPLDHL(shipmentNumber)) {
-      return this._getDomesticTracking(shipmentNumber);
-    }
-
     if (!this.isConfigured()) {
       throw new Error('PPL API not configured (PPL_CLIENT_ID/PPL_CLIENT_SECRET missing)');
     }
+
+    // Try CPL API first for ALL numbers (DHL + domestic are both there)
+    try {
+      const result = await this._getCPLTracking(shipmentNumber);
+      if (result && result.statuses && result.statuses.length > 0) {
+        return result;
+      }
+    } catch (e) {
+      // CPL failed — try SOAP for domestic
+    }
+
+    // Fallback: myAPI SOAP for domestic numbers not in CPL
+    try {
+      return await this._getDomesticTracking(shipmentNumber);
+    } catch (e) {
+      return { trackingNumber: shipmentNumber, statuses: [] };
+    }
+  }
+
+  async _getCPLTracking(shipmentNumber) {
 
     const token = await this._getToken();
 
