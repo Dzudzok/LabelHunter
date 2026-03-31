@@ -166,7 +166,7 @@ class TrackingSyncService {
           // Save to tracking_sync_log
           await supabase.from('tracking_sync_log').insert({
             delivery_note_id: shipment.id,
-            lp_state_code: lastStatus.statusCode,
+            lp_state_code: sorted[0]?.statusCode || null,
             lp_state_name: lastDescription,
             tracking_data: trackingData,
           });
