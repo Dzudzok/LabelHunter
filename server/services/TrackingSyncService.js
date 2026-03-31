@@ -122,8 +122,13 @@ class TrackingSyncService {
           const result = await carrierRouter.getTracking(carrier, shipment.tracking_number);
           if (!result || !result.statuses || result.statuses.length === 0) continue;
 
-          // Last status = first in array (most recent)
-          const lastStatus = result.statuses[0];
+          // Find most recent status by date (carrier APIs have different ordering)
+          const sorted = [...result.statuses].sort((a, b) => {
+            const da = a.date ? new Date(a.date).getTime() : 0;
+            const db = b.date ? new Date(b.date).getTime() : 0;
+            return db - da; // newest first
+          });
+          const lastStatus = sorted[0] || result.statuses[result.statuses.length - 1];
           const unifiedStatus = this.mapCarrierStatus(carrier, lastStatus);
           const lastDescription = lastStatus.description;
 
@@ -248,6 +253,11 @@ class TrackingSyncService {
     // PPL — event code mapping
     if (carrier === 'PPL') {
       return this.mapPPLStatus(code, desc);
+    }
+
+    // InTime — description-based (Czech texts)
+    if (carrier === 'INTIME' || carrier === 'InTime') {
+      return this.mapFromDescription(desc) || 'in_transit';
     }
 
     // Generic: try to classify from description text
@@ -383,12 +393,20 @@ class TrackingSyncService {
   mapFromDescription(desc) {
     if (!desc) return null;
     const d = desc.toLowerCase();
-    if (d.includes('doručen') || d.includes('deliver') || d.includes('zugestellt')) return 'delivered';
-    if (d.includes('vrácen') || d.includes('return') || d.includes('zpět')) return 'returned_to_sender';
-    if (d.includes('nedoručen') || d.includes('not deliver') || d.includes('nezastiž')) return 'failed_delivery';
-    if (d.includes('k vyzvednutí') || d.includes('pickup') || d.includes('uložen') || d.includes('výdejn')) return 'available_for_pickup';
-    if (d.includes('doručován') || d.includes('out for') || d.includes('v doručení')) return 'out_for_delivery';
-    if (d.includes('přijat') || d.includes('podán') || d.includes('picked up')) return 'handed_to_carrier';
+    // Delivered
+    if (d.includes('doručen') || d.includes('deliver') || d.includes('zugestellt') || d.includes('the parcel is delivered')) return 'delivered';
+    // Returned
+    if (d.includes('vrácen') || d.includes('return') || d.includes('zpět') || d.includes('back to sender')) return 'returned_to_sender';
+    // Failed delivery
+    if (d.includes('nedoručen') || d.includes('not deliver') || d.includes('nezastiž') || d.includes('undeliverable') || d.includes('neúspěšný pokus')) return 'failed_delivery';
+    // Available for pickup
+    if (d.includes('k vyzvednutí') || d.includes('pickup') || d.includes('uložen') || d.includes('výdejn') || d.includes('parcelshop') || d.includes('depo') || d.includes('pobočk')) return 'available_for_pickup';
+    // Out for delivery
+    if (d.includes('doručován') || d.includes('out for') || d.includes('v doručení') || d.includes('on the way') || d.includes('na cestě k příjemci')) return 'out_for_delivery';
+    // Handed to carrier
+    if (d.includes('přijat') || d.includes('podán') || d.includes('picked up') || d.includes('převzat') || d.includes('předán') || d.includes('scan') || d.includes('přepravě')) return 'handed_to_carrier';
+    // In transit
+    if (d.includes('in transit') || d.includes('přeprav') || d.includes('na cestě') || d.includes('transport') || d.includes('sorting') || d.includes('třídění')) return 'in_transit';
     return null;
   }
 
