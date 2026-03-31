@@ -57,6 +57,7 @@ class DPDService {
     </tem:GetTrackingByParcelno>`);
 
     // Parse tracking events from SOAP XML
+    // DPD GeoAPI fields: SCANCODE, SCANTEXT, SCANDATETIME, DEPOT, RNAME
     const events = [];
     const regex = /<a:TrackingDetailVO>([\s\S]*?)<\/a:TrackingDetailVO>/g;
     let match;
@@ -64,14 +65,21 @@ class DPDService {
       const block = match[1];
       const get = (tag) => {
         const m = block.match(new RegExp(`<a:${tag}>([^<]*)<\\/a:${tag}>`));
-        return m ? m[1] : null;
+        return m ? m[1]?.trim() : null;
       };
 
+      const scanText = get('SCANTEXT') || '';
+      const scanCode = get('SCANCODE') || '';
+      const scanDate = get('SCANDATETIME') || '';
+      const depot = get('DEPOT') || '';
+
+      if (!scanText && !scanCode) continue;
+
       events.push({
-        statusCode: get('StatusCode') || get('EventCode') || null,
-        description: get('StatusText') || get('EventText') || get('Description') || '',
-        date: get('Date') || get('EventDate') || null,
-        location: get('DepotName') || get('City') || get('Location') || null,
+        statusCode: scanCode,
+        description: scanText,
+        date: scanDate || null,
+        location: depot || null,
       });
     }
 

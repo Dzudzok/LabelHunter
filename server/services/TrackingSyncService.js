@@ -122,15 +122,25 @@ class TrackingSyncService {
           const result = await carrierRouter.getTracking(carrier, shipment.tracking_number);
           if (!result || !result.statuses || result.statuses.length === 0) continue;
 
-          // Find most recent status by date (carrier APIs have different ordering)
+          // Find most recent meaningful status by date (skip infoscans etc.)
           const sorted = [...result.statuses].sort((a, b) => {
             const da = a.date ? new Date(a.date).getTime() : 0;
             const db = b.date ? new Date(b.date).getTime() : 0;
             return db - da; // newest first
           });
-          const lastStatus = sorted[0] || result.statuses[result.statuses.length - 1];
-          const unifiedStatus = this.mapCarrierStatus(carrier, lastStatus);
-          const lastDescription = lastStatus.description;
+
+          // Find first status that maps to something meaningful
+          let unifiedStatus = null;
+          let lastDescription = sorted[0]?.description || '';
+          for (const st of sorted) {
+            const mapped = this.mapCarrierStatus(carrier, st);
+            if (mapped) {
+              unifiedStatus = mapped;
+              lastDescription = st.description || lastDescription;
+              break;
+            }
+          }
+          if (!unifiedStatus) unifiedStatus = 'in_transit'; // fallback
 
           // Build tracking data
           const trackingData = {
@@ -318,13 +328,41 @@ class TrackingSyncService {
     return 'in_transit';
   }
 
+  /**
+   * DPD SCANCODE mapping.
+   * 01=data received, 02=at depot, 03=out for delivery, 05=picked up from sender,
+   * 07=control scan, 10=on way to depot, 13=delivered, 14=not delivered,
+   * 15=parcelshop, 17=returned, 18=infoscan (ignore), 20=customs
+   */
   mapDPDStatus(code, desc) {
-    if (desc.includes('deliver') || desc.includes('doručen')) return 'delivered';
-    if (desc.includes('pickup') || desc.includes('výdejn') || desc.includes('parcelshop')) return 'available_for_pickup';
-    if (desc.includes('return') || desc.includes('vrác')) return 'returned_to_sender';
-    if (desc.includes('not delivered') || desc.includes('nedoruč')) return 'failed_delivery';
-    if (desc.includes('out for') || desc.includes('doručován')) return 'out_for_delivery';
-    if (desc.includes('picked up') || desc.includes('přijat') || desc.includes('scan')) return 'handed_to_carrier';
+    const c = String(code).trim();
+    const scanMap = {
+      '01': 'label_created',
+      '02': 'in_transit',            // at depot
+      '03': 'out_for_delivery',      // with courier
+      '05': 'handed_to_carrier',     // picked up from sender
+      '06': 'in_transit',            // sorting
+      '07': 'in_transit',            // control scan
+      '10': 'in_transit',            // on way to depot
+      '13': 'delivered',             // successfully delivered
+      '14': 'failed_delivery',       // not delivered
+      '15': 'available_for_pickup',  // at parcelshop
+      '17': 'returned_to_sender',    // returned
+      '20': 'in_transit',            // customs
+    };
+    if (scanMap[c]) return scanMap[c];
+    // Infoscan (18) — don't change status, fallback to description
+    if (c === '18') {
+      const d = (desc || '').toLowerCase();
+      if (d.includes('deliver') || d.includes('doručen')) return 'delivered';
+      return null; // null = don't update status
+    }
+    // Fallback to description
+    const d = (desc || '').toLowerCase();
+    if (d.includes('deliver') || d.includes('doručen')) return 'delivered';
+    if (d.includes('pickup') || d.includes('parcelshop')) return 'available_for_pickup';
+    if (d.includes('return') || d.includes('vrác')) return 'returned_to_sender';
+    if (d.includes('not delivered') || d.includes('nedoruč')) return 'failed_delivery';
     return 'in_transit';
   }
 
