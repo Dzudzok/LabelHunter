@@ -15,8 +15,8 @@ class TrackingSyncService {
 
   _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  async syncAll() {
-    console.log('[TrackingSync] Starting sync...');
+  async syncAll(carrierFilter = null) {
+    console.log(`[TrackingSync] Starting sync...${carrierFilter ? ` (carrier: ${carrierFilter})` : ''}`);
 
     // Log which carriers have direct API configured
     const configured = carrierRouter.getConfiguredCarriers();
@@ -30,13 +30,19 @@ class TrackingSyncService {
     let allShipments = [];
 
     while (true) {
-      const { data: batch, error } = await supabase
+      let query = supabase
         .from('delivery_notes')
         .select('*')
         .not('unified_status', 'in', `(${SKIP_UNIFIED.join(',')})`)
         .not('status', 'eq', 'cancelled')
         .not('lp_shipment_id', 'is', null)
         .range(offset, offset + PAGE_SIZE - 1);
+
+      if (carrierFilter) {
+        query = query.eq('shipper_code', carrierFilter);
+      }
+
+      const { data: batch, error } = await query;
 
       if (error) {
         console.error('[TrackingSync] Error fetching shipments:', error);

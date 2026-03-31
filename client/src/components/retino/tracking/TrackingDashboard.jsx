@@ -100,12 +100,45 @@ export default function TrackingDashboard() {
   ]
 
   const carriers = dashboard?.carrierStats ? Object.keys(dashboard.carrierStats).sort() : []
+  const allCarriers = ['GLS', 'PPL', 'DPD', 'UPS', 'Zasilkovna', 'CP', 'INTIME', 'FOFR']
+  const [syncing, setSyncing] = useState(false)
+  const [syncCarrier, setSyncCarrier] = useState('')
+
+  const handleForceSync = async () => {
+    setSyncing(true)
+    try {
+      const body = syncCarrier ? { carrier: syncCarrier } : {}
+      await api.post('/retino/tracking/force-sync', body)
+      alert(`Sync spuštěn${syncCarrier ? ` pro ${syncCarrier}` : ''}. Zkontrolujte logy.`)
+      // Refresh after 5s
+      setTimeout(() => { fetchDashboard(); fetchShipments() }, 5000)
+    } catch (err) {
+      alert('Chyba: ' + (err.response?.data?.error || err.message))
+    } finally {
+      setSyncing(false)
+    }
+  }
 
   return (
     <div className="bg-navy-900 text-theme-primary p-3 sm:p-6">
       {/* Header */}
       <div className="flex items-center justify-between mb-4 sm:mb-6">
         <h1 className="text-xl sm:text-2xl font-bold">Tracking Dashboard</h1>
+        <div className="flex items-center gap-2">
+          <select value={syncCarrier} onChange={e => setSyncCarrier(e.target.value)}
+            className="bg-navy-800 border border-navy-600 text-theme-primary rounded-lg px-2 py-1.5 text-xs">
+            <option value="">Všichni dopravci</option>
+            {allCarriers.map(c => <option key={c} value={c}>{c}</option>)}
+          </select>
+          <button onClick={handleForceSync} disabled={syncing}
+            className="bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+            {syncing ? (
+              <><svg className="w-3.5 h-3.5 animate-spin" fill="none" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"/><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"/></svg>Syncing...</>
+            ) : (
+              <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Sync</>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Stats */}
