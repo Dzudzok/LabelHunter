@@ -1,58 +1,83 @@
 const axios = require('axios');
 
 /**
- * DPD CZ GeoAPI v2.
- * Docs: https://geoapi.dpd.cz/v2/swagger/
- * Auth: API key in x-api-key header
+ * DPD CZ GeoAPI v1 (SOAP).
+ * Endpoint: https://reg-prijemce.dpd.cz/GeoAPI_v1_4_0/GeoAPI.svc
+ * Auth: login + password in SOAP body
  *
- * Env vars: DPD_API_KEY
+ * Env vars: DPD_USERNAME, DPD_PASSWORD
  */
 class DPDService {
   constructor() {
-    this.baseUrl = 'https://geoapi.dpd.cz/v2';
-    // DPD GeoAPI — might use username as API key, or separate key
-    this.apiKey = process.env.DPD_API_KEY || '';
+    this.baseUrl = 'https://reg-prijemce.dpd.cz/GeoAPI_v1_4_0/GeoAPI.svc';
+    this.username = process.env.DPD_USERNAME || '';
+    this.password = process.env.DPD_PASSWORD || '';
   }
 
   isConfigured() {
-    return !!this.apiKey;
+    return !!(this.username && this.password);
+  }
+
+  async _soapCall(action, bodyXml) {
+    const envelope = `<?xml version="1.0" encoding="utf-8"?>
+<soap:Envelope xmlns:soap="http://schemas.xmlsoap.org/soap/envelope/" xmlns:tem="http://tempuri.org/" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+  <soap:Body>
+    ${bodyXml}
+  </soap:Body>
+</soap:Envelope>`;
+
+    const res = await axios.post(this.baseUrl, envelope, {
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': `http://tempuri.org/IGeoAPI/${action}`,
+      },
+      timeout: 15000,
+    });
+
+    return res.data;
   }
 
   /**
-   * Get tracking for a single parcel.
-   * @param {string} parcelNumber - 14-digit DPD parcel number
+   * Get tracking for parcels.
+   * @param {string} parcelNumber - DPD parcel number
    * @returns {object} { trackingNumber, statuses[] }
    */
   async getParcelStatuses(parcelNumber) {
     if (!this.isConfigured()) {
-      throw new Error('DPD API not configured (DPD_API_KEY missing)');
+      throw new Error('DPD API not configured (DPD_USERNAME/DPD_PASSWORD missing)');
     }
 
-    const res = await axios.get(
-      `${this.baseUrl}/parcels/${parcelNumber}/tracking`,
-      {
-        headers: {
-          'x-api-key': this.apiKey,
-          Accept: 'application/json',
-        },
-        timeout: 15000,
-      }
-    );
+    const xml = await this._soapCall('GetTrackingByParcelno', `
+    <tem:GetTrackingByParcelno>
+      <tem:login>${this.username}</tem:login>
+      <tem:password>${this.password}</tem:password>
+      <tem:parcelno>
+        <arr:string>${parcelNumber}</arr:string>
+      </tem:parcelno>
+    </tem:GetTrackingByParcelno>`);
 
-    const data = res.data;
-    const events = data?.parcelEvents || data?.events || [];
+    // Parse tracking events from SOAP XML
+    const events = [];
+    const regex = /<a:TrackingDetailVO>([\s\S]*?)<\/a:TrackingDetailVO>/g;
+    let match;
+    while ((match = regex.exec(xml)) !== null) {
+      const block = match[1];
+      const get = (tag) => {
+        const m = block.match(new RegExp(`<a:${tag}>([^<]*)<\\/a:${tag}>`));
+        return m ? m[1] : null;
+      };
 
-    const statuses = (Array.isArray(events) ? events : [])
-      .map(e => ({
-        statusCode: e.status?.statusCode || e.statusCode || null,
-        description: e.status?.description || e.description || '',
-        date: e.createdAt || e.date ? new Date(e.createdAt || e.date).toISOString() : null,
-        location: e.additionalInfo?.city || e.location || null,
-      }));
+      events.push({
+        statusCode: get('StatusCode') || get('EventCode') || null,
+        description: get('StatusText') || get('EventText') || get('Description') || '',
+        date: get('Date') || get('EventDate') || null,
+        location: get('DepotName') || get('City') || get('Location') || null,
+      });
+    }
 
     return {
       trackingNumber: parcelNumber,
-      statuses,
+      statuses: events,
     };
   }
 }
