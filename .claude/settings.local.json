@@ -4,7 +4,11 @@
       "Bash(find /c/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server -name *.js -type f)",
       "Bash(find /c/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/db -name *.sql -type f)",
       "Bash(node -e \":*)",
-      "Bash(node -c server/services/carriers/DPDService.js)"
+      "Bash(node -c server/services/carriers/DPDService.js)",
+      "Bash(node -c server/services/carriers/PPLService.js)",
+      "Bash(node -c server/services/carriers/CarrierRouter.js)",
+      "Bash(node -c server/services/carriers/FOFRService.js)",
+      "Bash(node -c server/services/TrackingSyncService.js)"
     ]
   }
 }

@@ -61,12 +61,13 @@ class PPLService {
    * @returns {object} { trackingNumber, jjdNumber, statuses[] }
    */
   async getParcelStatuses(shipmentNumber) {
-    if (!this.isConfigured()) {
-      throw new Error('PPL API not configured (PPL_CLIENT_ID/PPL_CLIENT_SECRET missing)');
+    // Domestic PPL CZ (707/457/407) → myAPI SOAP
+    if (!this.isPPLDHL(shipmentNumber)) {
+      return this._getDomesticTracking(shipmentNumber);
     }
 
-    if (!this.isPPLDHL(shipmentNumber)) {
-      throw new Error(`PPL CZ domestic (${shipmentNumber}) not supported via CPL API — use LP API`);
+    if (!this.isConfigured()) {
+      throw new Error('PPL API not configured (PPL_CLIENT_ID/PPL_CLIENT_SECRET missing)');
     }
 
     const token = await this._getToken();
@@ -120,6 +121,85 @@ class PPLService {
         country: shipment.recipient.country,
       } : null,
       shipmentState: shipment.shipmentState,
+      statuses,
+    };
+  }
+
+  /**
+   * Get tracking for PPL CZ domestic shipments via myAPI SOAP.
+   * @param {string} packNumber - PPL domestic tracking number (707/457/407...)
+   */
+  async _getDomesticTracking(packNumber) {
+    const soapUser = process.env.PPL_SOAP_USERNAME || 'Mroauto';
+    const soapPass = process.env.PPL_SOAP_PASSWORD || '1993002';
+    const soapCustId = process.env.PPL_SOAP_CUSTID || '1993002';
+
+    const soap = `<?xml version="1.0" encoding="utf-8"?>
+<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/" xmlns:v1="http://myapi.ppl.cz/v1" xmlns:arr="http://schemas.microsoft.com/2003/10/Serialization/Arrays">
+  <soapenv:Body>
+    <v1:GetPackages>
+      <v1:Auth>
+        <v1:CustId>${soapCustId}</v1:CustId>
+        <v1:Password>${soapPass}</v1:Password>
+        <v1:UserName>${soapUser}</v1:UserName>
+      </v1:Auth>
+      <v1:Filter>
+        <v1:PackNumbers>
+          <arr:string>${packNumber}</arr:string>
+        </v1:PackNumbers>
+      </v1:Filter>
+    </v1:GetPackages>
+  </soapenv:Body>
+</soapenv:Envelope>`;
+
+    const res = await axios.post('https://myapi.ppl.cz/MyAPI.svc', soap, {
+      headers: {
+        'Content-Type': 'text/xml; charset=utf-8',
+        'SOAPAction': 'http://myapi.ppl.cz/v1/IMyApi2/GetPackages',
+      },
+      timeout: 15000,
+    });
+
+    const xml = res.data;
+
+    // Parse tracking events
+    const statuses = [];
+    const eventRegex = /<a:StatusInfo>([\s\S]*?)<\/a:StatusInfo>/g;
+    let match;
+    while ((match = eventRegex.exec(xml)) !== null) {
+      const block = match[1];
+      const get = (tag) => {
+        const m = block.match(new RegExp(`<a:${tag}>([^<]*)<\\/a:${tag}>`));
+        return m ? m[1] : null;
+      };
+      statuses.push({
+        statusCode: get('ID') || get('Code') || null,
+        description: get('Name') || get('Text') || get('Description') || '',
+        date: get('Date') ? new Date(get('Date')).toISOString() : null,
+        location: get('DepotName') || get('Location') || null,
+      });
+    }
+
+    // If no StatusInfo, try PackageStatusInfo pattern
+    if (statuses.length === 0) {
+      const altRegex = /<a:PackStatusInfo>([\s\S]*?)<\/a:PackStatusInfo>/g;
+      while ((match = altRegex.exec(xml)) !== null) {
+        const block = match[1];
+        const get = (tag) => {
+          const m = block.match(new RegExp(`<a:${tag}>([^<]*)<\\/a:${tag}>`));
+          return m ? m[1] : null;
+        };
+        statuses.push({
+          statusCode: get('StatusCode') || get('ID') || null,
+          description: get('StatusText') || get('Name') || '',
+          date: get('Date') ? new Date(get('Date')).toISOString() : null,
+          location: get('DepotName') || get('DepotCode') || null,
+        });
+      }
+    }
+
+    return {
+      trackingNumber: packNumber,
       statuses,
     };
   }

@@ -225,6 +225,11 @@ class TrackingSyncService {
       return this.mapCPStatus(code, desc);
     }
 
+    // FOFR — status text mapping
+    if (carrier === 'FOFR' || carrier === 'Fofr') {
+      return this.mapFOFRStatus(code, desc);
+    }
+
     // DPD — status code mapping
     if (carrier === 'DPD') {
       return this.mapDPDStatus(code, desc);
@@ -287,6 +292,22 @@ class TrackingSyncService {
   /**
    * DPD status mapping.
    */
+  /**
+   * FOFR status mapping.
+   * FOFR statuses: doručená, ve skladu, na cestě, vrácená, pořízená
+   */
+  mapFOFRStatus(code, desc) {
+    const d = String(desc).toLowerCase();
+    if (d.includes('doručen')) return 'delivered';
+    if (d.includes('vrácen')) return 'returned_to_sender';
+    if (d.includes('na cestě') || d.includes('přeprav')) return 'in_transit';
+    if (d.includes('ve skladu') || d.includes('sklad')) return 'in_transit';
+    if (d.includes('připraven') || d.includes('k vyzvednutí')) return 'available_for_pickup';
+    if (d.includes('nedoručen')) return 'failed_delivery';
+    if (d.includes('pořízená') || d.includes('exportovaná')) return 'handed_to_carrier';
+    return 'in_transit';
+  }
+
   mapDPDStatus(code, desc) {
     if (desc.includes('deliver') || desc.includes('doručen')) return 'delivered';
     if (desc.includes('pickup') || desc.includes('výdejn') || desc.includes('parcelshop')) return 'available_for_pickup';

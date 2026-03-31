@@ -9,6 +9,7 @@ const dpdService = require('./DPDService');
 const upsService = require('./UPSService');
 const inTimeService = require('./InTimeService');
 const ceskaPostaService = require('./CeskaPostaService');
+const fofrService = require('./FOFRService');
 
 // Map shipper_code → carrier service
 const CARRIER_MAP = {
@@ -21,6 +22,8 @@ const CARRIER_MAP = {
   INTIME: inTimeService,
   InTime: inTimeService,
   CP: ceskaPostaService,
+  FOFR: fofrService,
+  Fofr: fofrService,
 };
 
 class CarrierRouter {
@@ -38,10 +41,7 @@ class CarrierRouter {
     const service = CARRIER_MAP[shipperCode];
     if (!service) return null;
 
-    // PPL: only PPL DHL (207...) works via CPL API. Domestic (707/457/407) needs LP API.
-    if (shipperCode === 'PPL' && trackingNumber && !pplService.isPPLDHL(trackingNumber)) {
-      return null;
-    }
+    // PPL: DHL (207...) via CPL API, domestic (707/457/407) via myAPI SOAP — both handled in PPLService
 
     // GLS and CP don't have isConfigured() — always available
     if (typeof service.isConfigured === 'function' && !service.isConfigured()) {
