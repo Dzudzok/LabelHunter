@@ -483,4 +483,21 @@ router.post('/shipments/:id/send-email', async (req, res, next) => {
   }
 });
 
+// POST /force-sync — force tracking sync now (admin trigger)
+router.post('/force-sync', async (req, res, next) => {
+  try {
+    const trackingSyncService = require('../../services/TrackingSyncService');
+    console.log('[TrackingSync] Manual sync triggered by admin');
+
+    // Run async — don't wait for completion
+    trackingSyncService.syncAll()
+      .then(() => console.log('[TrackingSync] Manual sync completed'))
+      .catch(err => console.error('[TrackingSync] Manual sync error:', err.message));
+
+    res.json({ message: 'Sync started. Check logs for progress.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
