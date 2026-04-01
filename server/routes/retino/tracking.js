@@ -483,51 +483,67 @@ router.post('/shipments/:id/send-email', async (req, res, next) => {
   }
 });
 
-// POST /re-evaluate — re-evaluate unified_status from existing tracking_sync_log data
+// POST /re-evaluate — re-evaluate unified_status from existing tracking_sync_log data (async)
 router.post('/re-evaluate', async (req, res, next) => {
   try {
     const { carrier } = req.body;
+    console.log(`[ReEvaluate] Started${carrier ? ` for ${carrier}` : ''}...`);
+
+    // Respond immediately, run in background
+    res.json({ message: `Re-evaluate started${carrier ? ` for ${carrier}` : ''}. Check logs.` });
+
     const { getUnifiedStatus } = require('../../services/retino/tracking-status-mapper');
 
-    // Get non-final shipments
-    let query = supabase
-      .from('delivery_notes')
-      .select('id, doc_number, unified_status, shipper_code')
-      .not('unified_status', 'in', '(delivered,returned_to_sender)')
-      .not('tracking_number', 'is', null);
+    let allShipments = [];
+    let offset = 0;
+    const PAGE = 1000;
+    while (true) {
+      let query = supabase
+        .from('delivery_notes')
+        .select('id, doc_number, unified_status, shipper_code, pickup_at')
+        .not('unified_status', 'in', '(delivered,returned_to_sender)')
+        .not('tracking_number', 'is', null)
+        .range(offset, offset + PAGE - 1);
+      if (carrier) query = query.eq('shipper_code', carrier);
+      const { data, error } = await query;
+      if (error || !data?.length) break;
+      allShipments = allShipments.concat(data);
+      if (data.length < PAGE) break;
+      offset += PAGE;
+    }
 
-    if (carrier) query = query.eq('shipper_code', carrier);
-
-    const { data: shipments, error } = await query;
-    if (error) throw error;
-
+    console.log(`[ReEvaluate] Processing ${allShipments.length} shipments...`);
     let updated = 0;
-    for (const ship of (shipments || [])) {
-      // Get latest tracking_sync_log
-      const { data: logs } = await supabase
-        .from('tracking_sync_log')
-        .select('tracking_data')
-        .eq('delivery_note_id', ship.id)
-        .order('synced_at', { ascending: false })
-        .limit(1);
 
-      if (!logs?.[0]?.tracking_data) continue;
+    for (const ship of allShipments) {
+      try {
+        const { data: logs } = await supabase
+          .from('tracking_sync_log')
+          .select('tracking_data')
+          .eq('delivery_note_id', ship.id)
+          .order('synced_at', { ascending: false })
+          .limit(1);
 
-      const { status: newStatus, lastDescription } = getUnifiedStatus(logs[0].tracking_data);
-      if (newStatus && newStatus !== 'unknown' && newStatus !== ship.unified_status) {
-        const updates = { unified_status: newStatus, last_tracking_description: lastDescription };
-        if (newStatus === 'delivered') updates.delivered_at = new Date().toISOString();
-        if (newStatus === 'available_for_pickup' && !ship.pickup_at) updates.pickup_at = new Date().toISOString();
+        if (!logs?.[0]?.tracking_data) continue;
 
-        await supabase.from('delivery_notes').update(updates).eq('id', ship.id);
-        console.log(`[ReEvaluate] ${ship.doc_number}: ${ship.unified_status} → ${newStatus}`);
-        updated++;
+        const { status: newStatus, lastDescription } = getUnifiedStatus(logs[0].tracking_data);
+        if (newStatus && newStatus !== 'unknown' && newStatus !== ship.unified_status) {
+          const updates = { unified_status: newStatus, last_tracking_description: lastDescription };
+          if (newStatus === 'delivered') updates.delivered_at = new Date().toISOString();
+          if (newStatus === 'available_for_pickup' && !ship.pickup_at) updates.pickup_at = new Date().toISOString();
+
+          await supabase.from('delivery_notes').update(updates).eq('id', ship.id);
+          console.log(`[ReEvaluate] ${ship.doc_number}: ${ship.unified_status} → ${newStatus}`);
+          updated++;
+        }
+      } catch (shipErr) {
+        // skip individual errors
       }
     }
 
-    res.json({ total: shipments?.length || 0, updated });
+    console.log(`[ReEvaluate] Done. Updated: ${updated} / ${allShipments.length}`);
   } catch (err) {
-    next(err);
+    console.error('[ReEvaluate] Error:', err.message);
   }
 });
 
