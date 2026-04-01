@@ -11,6 +11,8 @@ class TrackingSyncService {
   constructor() {
     // Rate limit for LP API: 1 request per 2 seconds to avoid overloading
     this.LP_DELAY_MS = 2000;
+    // Track unmapped events per sync run (carrier -> Set of "code|description")
+    this.unmappedEvents = new Map();
   }
 
   _sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
@@ -249,58 +251,122 @@ class TrackingSyncService {
 
       console.log(`[TrackingSync/${carrier}] Done. Synced: ${synced}, Errors: ${errors}, Total: ${carrierShipments.length}`);
     }
+
+    // Log unmapped events summary
+    const unmapped = this.getUnmappedSummary(true);
+    if (Object.keys(unmapped).length > 0) {
+      console.log('[TrackingSync] ⚠ Unmapped events (fell to in_transit fallback):');
+      for (const [carrier, items] of Object.entries(unmapped)) {
+        for (const item of items.slice(0, 10)) {
+          console.log(`  ${carrier} | code:${item.code} | "${item.description}" (x${item.count})`);
+        }
+      }
+      // Save to DB for dashboard access
+      try {
+        await supabase.from('tracking_unmapped_log').upsert({
+          id: 1,
+          data: unmapped,
+          updated_at: new Date().toISOString(),
+        });
+      } catch (e) {
+        // Table may not exist yet — just log
+      }
+    }
   }
 
   /**
    * Map carrier-specific status to unified status.
    * Uses carrier-specific mapping when available, falls back to description classification.
+   * Tracks unmapped/fallback events for diagnostics.
    */
   mapCarrierStatus(carrier, statusEvent) {
     const code = statusEvent.statusCode;
     const desc = (statusEvent.description || '').toLowerCase();
+    let result;
 
-    // GLS — well-defined numeric codes
+    // GLS — well-defined numeric codes, but some events come without code
     if (carrier === 'GLS') {
-      return this.mapGLSStatus(code);
+      result = this.mapGLSStatus(code, desc);
+    } else if (carrier === 'CP') {
+      result = this.mapCPStatus(code, desc);
+    } else if (carrier === 'FOFR' || carrier === 'Fofr') {
+      result = this.mapFOFRStatus(code, desc);
+    } else if (carrier === 'DPD') {
+      result = this.mapDPDStatus(code, desc);
+    } else if (carrier === 'UPS') {
+      result = this.mapUPSStatus(code, desc);
+    } else if (carrier === 'Zasilkovna' || carrier === 'ZASILKOVNA') {
+      result = this.mapZasilkovnaStatus(code, desc);
+    } else if (carrier === 'PPL') {
+      result = this.mapPPLStatus(code, desc);
+    } else if (carrier === 'INTIME' || carrier === 'InTime') {
+      result = this.mapFromDescription(desc) || 'in_transit';
+    } else {
+      result = this.mapFromDescription(desc) || 'in_transit';
     }
 
-    // Česká Pošta — code-based mapping
-    if (carrier === 'CP') {
-      return this.mapCPStatus(code, desc);
-    }
+    // Track unmapped events (result is in_transit but not from a known code)
+    this._trackUnmapped(carrier, code, statusEvent.description, result);
 
-    // FOFR — status text mapping
-    if (carrier === 'FOFR' || carrier === 'Fofr') {
-      return this.mapFOFRStatus(code, desc);
-    }
+    return result;
+  }
 
-    // DPD — status code mapping
-    if (carrier === 'DPD') {
-      return this.mapDPDStatus(code, desc);
-    }
+  // Codes that are EXPLICITLY mapped to in_transit (not fallback) — don't log these
+  static KNOWN_TRANSIT_CODES = new Set([
+    // GLS
+    'GLS:02', 'GLS:03', 'GLS:09',
+    // DPD
+    'DPD:02', 'DPD:06', 'DPD:07', 'DPD:08', 'DPD:10', 'DPD:16', 'DPD:20',
+    // UPS
+    'UPS:I', 'UPS:AR', 'UPS:DP', 'UPS:EP', 'UPS:IP', 'UPS:DS', 'UPS:WH',
+    'UPS:YP', 'UPS:HL', 'UPS:HM', 'UPS:DQ', 'UPS:SR', 'UPS:M', 'UPS:MF',
+    'UPS:08', 'UPS:C5', 'UPS:C6', 'UPS:17', 'UPS:34', 'UPS:5R', 'UPS:ZA', 'UPS:ZB', 'UPS:XA',
+    // Zásilkovna
+    'Zasilkovna:2', 'Zasilkovna:3', 'Zasilkovna:4', 'Zasilkovna:27', 'Zasilkovna:30',
+    // ČP
+    'CP:-I', 'CP:-B', 'CP:-F', 'CP:41', 'CP:51', 'CP:52',
+    // PPL — no fixed codes, all string-based
+    // FOFR
+    'FOFR:3', 'FOFR:4',
+  ]);
 
-    // UPS — status code mapping
-    if (carrier === 'UPS') {
-      return this.mapUPSStatus(code, desc);
+  /**
+   * Track events that fell through to fallback/generic mapping.
+   * Helps identify new carrier codes or descriptions we should handle explicitly.
+   */
+  _trackUnmapped(carrier, code, description, result) {
+    if (!description) return;
+    if (result === null) return;
+    if (result !== 'in_transit') return;
+    // Skip codes explicitly mapped to in_transit
+    const codeKey = `${carrier}:${code}`;
+    if (code != null && TrackingSyncService.KNOWN_TRANSIT_CODES.has(codeKey)) return;
+    const key = `${code || 'NULL'}|${(description || '').substring(0, 80)}`;
+    if (!this.unmappedEvents.has(carrier)) {
+      this.unmappedEvents.set(carrier, new Map());
     }
+    const carrierMap = this.unmappedEvents.get(carrier);
+    carrierMap.set(key, (carrierMap.get(key) || 0) + 1);
+  }
 
-    // Zásilkovna — numeric status codes
-    if (carrier === 'Zasilkovna' || carrier === 'ZASILKOVNA') {
-      return this.mapZasilkovnaStatus(code, desc);
+  /**
+   * Get unmapped events summary and reset.
+   * Called after sync to log and expose via API.
+   */
+  getUnmappedSummary(reset = true) {
+    const summary = {};
+    for (const [carrier, events] of this.unmappedEvents) {
+      const items = [];
+      for (const [key, count] of events) {
+        const [code, desc] = key.split('|', 2);
+        items.push({ code, description: desc, count });
+      }
+      // Sort by count desc
+      items.sort((a, b) => b.count - a.count);
+      if (items.length > 0) summary[carrier] = items;
     }
-
-    // PPL — event code mapping
-    if (carrier === 'PPL') {
-      return this.mapPPLStatus(code, desc);
-    }
-
-    // InTime — description-based (Czech texts)
-    if (carrier === 'INTIME' || carrier === 'InTime') {
-      return this.mapFromDescription(desc) || 'in_transit';
-    }
-
-    // Generic: try to classify from description text
-    return this.mapFromDescription(desc) || 'in_transit';
+    if (reset) this.unmappedEvents.clear();
+    return summary;
   }
 
   /**
@@ -309,21 +375,28 @@ class TrackingSyncService {
   /**
    * GLS StatusCode mapping (01-09, 51).
    */
-  mapGLSStatus(code) {
-    const c = String(code).padStart(2, '0');
-    const map = {
-      '51': 'label_created',          // Data přijata
-      '01': 'handed_to_carrier',      // Převzato do přepravy
-      '02': 'in_transit',             // V přepravě (třídění)
-      '03': 'in_transit',             // V přepravě (mezidepo)
-      '04': 'out_for_delivery',       // Na doručení
-      '05': 'delivered',              // Doručeno
-      '06': 'returned_to_sender',     // Vráceno odesílateli
-      '07': 'available_for_pickup',   // K vyzvednutí v ParcelShopu
-      '08': 'failed_delivery',        // Nedoručeno
-      '09': 'in_transit',             // Speciální událost
-    };
-    return map[c] || 'in_transit';
+  mapGLSStatus(code, desc) {
+    if (code != null) {
+      const c = String(code).padStart(2, '0');
+      const map = {
+        '51': 'label_created',          // Data přijata
+        '01': 'handed_to_carrier',      // Převzato do přepravy
+        '02': 'in_transit',             // V přepravě (třídění)
+        '03': 'in_transit',             // V přepravě (mezidepo)
+        '04': 'out_for_delivery',       // Na doručení
+        '05': 'delivered',              // Doručeno
+        '06': 'returned_to_sender',     // Vráceno odesílateli
+        '07': 'available_for_pickup',   // K vyzvednutí v ParcelShopu
+        '08': 'failed_delivery',        // Nedoručeno
+        '09': 'in_transit',             // Speciální událost
+      };
+      if (map[c]) return map[c];
+    }
+    // NULL code — fallback to description (GLS sometimes sends events without code)
+    if (desc) {
+      return this.mapFromDescription(desc) || 'in_transit';
+    }
+    return 'in_transit';
   }
 
   /**
@@ -336,27 +409,53 @@ class TrackingSyncService {
   mapCPStatus(code, desc) {
     const c = String(code);
     const d = (desc || '').toLowerCase();
-    // Code-based first
+    // Code-based mapping — ČP has numeric (11-99), letter (-B,-F,-I,-L,-M,-3) and special (P2,QB,9V)
     const codeMap = {
-      '91': 'delivered',              // Doručeno
-      '53': 'available_for_pickup',   // Uloženo na poště
+      // Delivered
+      '91': 'delivered',              // Dodání zásilky / Zásilka vyzvednuta
+      // Available for pickup
+      '53': 'available_for_pickup',   // Doručování zásilky (at post office)
+      '82': 'available_for_pickup',   // Uložení zásilky — adresát nezastižen
+      '86': 'available_for_pickup',   // Uložení zásilky na žádost adresáta
+      'P2': 'available_for_pickup',   // Zásilka uložena v Balíkovně
+      // Returned to sender
       '72': 'returned_to_sender',     // Vráceno odesílateli
       '73': 'returned_to_sender',     // Vrácení
+      '95': 'returned_to_sender',     // Odeslání zpět — adresát odmítl
+      '9V': 'returned_to_sender',     // Vrácení zásilky odesílateli
+      // Failed delivery
       '99': 'failed_delivery',        // Nedoručitelné
+      // Handed to carrier
       '11': 'handed_to_carrier',      // Podáno
-      '21': 'handed_to_carrier',      // Podáno na poště
+      '21': 'handed_to_carrier',      // Zásilka převzata do přepravy
+      '22': 'handed_to_carrier',      // Zásilka převzata do přepravy (alt)
+      // In transit
       '41': 'in_transit',             // V přepravě
-      '51': 'in_transit',             // Přeprava
+      '51': 'in_transit',             // Příprava zásilky k doručení
       '52': 'in_transit',             // V přepravě
+      // Label created
+      '-M': 'label_created',          // Obdrženy údaje k zásilce
+      '-L': 'label_created',          // Obdrženy údaje zásilce
+      // In transit (sorting/transport)
+      '-I': 'in_transit',             // Zásilka vypravena z třídícího centra
+      '-B': 'in_transit',             // Přeprava zásilky k dodací poště
+      '-F': 'in_transit',             // Zásilka v přepravě
+      // Notifications (SMS/email) — informational only, don't change status
+      '42': null,                     // SMS zpráva adresátovi (info only)
+      '43': null,                     // E-mail adresátovi (info only)
+      // Other
+      'QB': null,                     // Geografická data z pokusu o doručení (info)
+      '-3': null,                     // Zásilka není v evidenci (info/error)
     };
-    if (codeMap[c]) return codeMap[c];
-    // Description fallback (order: negatives first!)
+    if (c in codeMap) return codeMap[c]; // null = skip (notifications)
+    // Description fallback for unknown codes — negatives BEFORE positives
     if (d.includes('nedoručen') || d.includes('nezastiž') || d.includes('not deliver')) return 'failed_delivery';
-    if (d.includes('vrácen') || d.includes('return')) return 'returned_to_sender';
-    if (d.includes('doručen') || d.includes('delivered')) return 'delivered';
-    if (d.includes('uložen') || d.includes('k vyzvednutí')) return 'available_for_pickup';
-    if (d.includes('podán') || d.includes('přijat')) return 'handed_to_carrier';
-    if (d.includes('doručován') || d.includes('výdejn')) return 'out_for_delivery';
+    if (d.includes('vrácen') || d.includes('zpět odesílateli') || d.includes('odmítl')) return 'returned_to_sender';
+    if (d.includes('uložen') || d.includes('balíkovn') || d.includes('k vyzvednutí')) return 'available_for_pickup';
+    if (d.includes('dodání zásilky') || d.includes('vyzvednuta')) return 'delivered';
+    if (d.includes('doručování') || (d.includes('příprava') && d.includes('doručení'))) return 'out_for_delivery';
+    if (d.includes('podán') || d.includes('převzat')) return 'handed_to_carrier';
+    if (d.includes('obdrženy údaje')) return 'label_created';
     return 'in_transit';
   }
 
@@ -368,15 +467,31 @@ class TrackingSyncService {
    * FOFR statuses: doručená, ve skladu, na cestě, vrácená, pořízená
    */
   mapFOFRStatus(code, desc) {
+    // FOFR has numeric codes + Czech descriptions
+    const c = String(code || '');
+    const codeMap = {
+      '1': 'label_created',          // pořízená (data received)
+      '2': 'handed_to_carrier',      // exportovaná (handed to FOFR)
+      '3': 'in_transit',             // ve skladu
+      '4': 'in_transit',             // na cestě
+      '5': 'out_for_delivery',       // rozvážená (being delivered)
+      '6': 'delivered',              // doručená
+      '7': 'returned_to_sender',     // vrácená
+      '8': 'failed_delivery',        // nedoručená
+      '71': 'handed_to_carrier',     // řidič - převzatá
+      '72': 'delivered',             // řidič - doručená
+    };
+    if (codeMap[c]) return codeMap[c];
+    // Description fallback — negatives BEFORE positives
     const d = String(desc).toLowerCase();
-    // IMPORTANT: check negatives BEFORE positives (nedoručen contains doručen)
     if (d.includes('nedoručen')) return 'failed_delivery';
     if (d.includes('vrácen')) return 'returned_to_sender';
     if (d.includes('doručen')) return 'delivered';
+    if (d.includes('rozváž')) return 'out_for_delivery';
     if (d.includes('na cestě') || d.includes('přeprav')) return 'in_transit';
     if (d.includes('ve skladu') || d.includes('sklad')) return 'in_transit';
     if (d.includes('připraven') || d.includes('k vyzvednutí')) return 'available_for_pickup';
-    if (d.includes('pořízená') || d.includes('exportovaná')) return 'handed_to_carrier';
+    if (d.includes('pořízená') || d.includes('exportovaná') || d.includes('převzat')) return 'handed_to_carrier';
     return 'in_transit';
   }
 
@@ -593,7 +708,7 @@ class TrackingSyncService {
     // Failed delivery
     if (d.includes('nedoručen') || d.includes('nebyla doručen') || d.includes('not deliver') || d.includes('nezastiž') || d.includes('undeliverable') || d.includes('neúspěšný pokus') || d.includes('nicht zugestellt')) return 'failed_delivery';
     // Returned
-    if (d.includes('vrácen') || d.includes('return') || d.includes('zpět') || d.includes('back to sender') || d.includes('zurück')) return 'returned_to_sender';
+    if (d.includes('vrácen') || d.includes('return') || d.includes('zpět') || d.includes('back to sender') || d.includes('back to the shipper') || d.includes('zurück')) return 'returned_to_sender';
     // Delivered (after failed/returned checks)
     if (d.includes('doručen') || d.includes('delivered') || d.includes('zugestellt') || d.includes('the parcel is delivered')) return 'delivered';
     // Available for pickup

@@ -38,6 +38,7 @@ const STATUS_RULES = [
       /returned to sender/i,
       /vráceno odesílateli/i,
       /back to sender/i,
+      /back to the shipper/i,
     ],
   },
   {
@@ -79,6 +80,8 @@ const STATUS_RULES = [
     status: 'problem',
     patterns: [
       /^damaged$/i,
+      /poškozená zásilka/i,
+      /balík.*poškozen/i,
     ],
   },
   {
@@ -90,7 +93,7 @@ const STATUS_RULES = [
       /zásilka se doručuje/i,
       /příprava zásilky k doručení/i,
       /doručování zásilky/i,
-      /termín doručení/i,
+      /^termín doručení/i,
       /předali kurýrovi.*dnes/i,
       /predikovaný stop/i,
       /doručován.*do výdejního místa/i,

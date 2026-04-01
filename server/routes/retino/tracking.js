@@ -632,4 +632,25 @@ router.post('/force-sync', async (req, res, next) => {
   }
 });
 
+// GET /unmapped — show unmapped tracking events (codes/descriptions not explicitly handled)
+router.get('/unmapped', async (req, res, next) => {
+  try {
+    // Try DB first (saved after last sync)
+    const { data } = await supabase
+      .from('tracking_unmapped_log')
+      .select('data, updated_at')
+      .eq('id', 1)
+      .single();
+
+    if (data) {
+      return res.json({ unmapped: data.data, lastSync: data.updated_at });
+    }
+
+    // Fallback: scan latest tracking_sync_log entries for in_transit fallbacks
+    res.json({ unmapped: {}, lastSync: null, note: 'No unmapped data yet. Run a sync first.' });
+  } catch (err) {
+    next(err);
+  }
+});
+
 module.exports = router;
