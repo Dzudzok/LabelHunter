@@ -198,9 +198,25 @@ router.get('/delivery-time', async (req, res, next) => {
       const start = new Date(startDate);
       const end = new Date(endDate);
       const diffMs = end - start;
-      if (diffMs < 0) continue; // skip invalid
+      if (diffMs < 0) continue;
 
-      const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      // Determine delivery type: pickup (parcel shop) vs address (courier)
+      const isPickup = !!note.pickup_at;
+
+      // Transit time = start → pickup_at (if pickup) or start → delivered_at (if address)
+      let transitDays;
+      if (isPickup && note.pickup_at) {
+        // For pickups: transit = label → arrived at branch
+        const transitMs = new Date(note.pickup_at) - start;
+        transitDays = transitMs >= 0 ? Math.floor(transitMs / (1000 * 60 * 60 * 24)) : null;
+      } else {
+        // For address delivery: transit = label → delivered
+        transitDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      }
+
+      // Total days (including customer pickup wait) = start → delivered_at
+      const totalDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
+      const days = transitDays != null ? transitDays : totalDays;
       const bucket = days >= 7 ? '7+' : String(days);
 
       // Order-to-delivery: date_issued → delivered_at
@@ -210,7 +226,7 @@ router.get('/delivery-time', async (req, res, next) => {
         if (otdMs >= 0) orderToDelivery = Math.floor(otdMs / (1000 * 60 * 60 * 24));
       }
 
-      // Days at destination branch: pickup_at → delivered_at
+      // Days at destination branch: pickup_at → delivered_at (customer wait time)
       let daysAtBranch = null;
       if (note.pickup_at && endDate) {
         const brMs = new Date(endDate) - new Date(note.pickup_at);
@@ -219,7 +235,8 @@ router.get('/delivery-time', async (req, res, next) => {
 
       const deliveredDate = (endDate || '').substring(0, 10); // YYYY-MM-DD for daily grouping
 
-      deliveryDays.push({ days, bucket, carrier: note.shipper_code || 'Neznámý', orderToDelivery, daysAtBranch, deliveredDate });
+      const deliveryType = isPickup ? 'pickup' : 'address';
+      deliveryDays.push({ days, totalDays, bucket, carrier: note.shipper_code || 'Neznámý', orderToDelivery, daysAtBranch, deliveredDate, deliveryType });
 
       const c = note.shipper_code || 'Neznámý';
       if (!byCarrier[c]) byCarrier[c] = { totalDays: 0, count: 0, buckets: {} };
@@ -293,6 +310,27 @@ router.get('/delivery-time', async (req, res, next) => {
         avgBranch: d.cntBranch > 0 ? Math.round((d.totalBranch / d.cntBranch) * 10) / 10 : 0,
       }));
 
+    // Split by delivery type
+    const addressShipments = deliveryDays.filter(d => d.deliveryType === 'address');
+    const pickupShipments = deliveryDays.filter(d => d.deliveryType === 'pickup');
+
+    const calcStats = (arr) => {
+      if (arr.length === 0) return { count: 0, avg: null, p95: null, median: null };
+      const sorted = arr.map(d => d.days).sort((a, b) => a - b);
+      return {
+        count: arr.length,
+        avg: Math.round((sorted.reduce((s, v) => s + v, 0) / sorted.length) * 10) / 10,
+        p95: sorted[Math.floor(sorted.length * 0.95)],
+        median: sorted[Math.floor(sorted.length * 0.5)],
+      };
+    };
+
+    const byType = {
+      address: calcStats(addressShipments),
+      pickup: calcStats(pickupShipments),
+      all: calcStats(deliveryDays),
+    };
+
     const result = {
       totalMeasured,
       avgDays,
@@ -306,6 +344,7 @@ router.get('/delivery-time', async (req, res, next) => {
       avgBranch,
       dailyTrend,
       carrierAvg,
+      byType,
       countries,
       days: daysNum,
     };

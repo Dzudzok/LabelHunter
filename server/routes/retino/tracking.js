@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../../db/supabase');
-const { getUnifiedStatus, getStatusLabel, getStatusColor, STATUS_LABELS } = require('../../services/retino/tracking-status-mapper');
+const { getUnifiedStatus, getStatusLabel, getStatusColor, STATUS_LABELS, translateDescription } = require('../../services/retino/tracking-status-mapper');
 
 // Dashboard cache — refreshes max every 2 minutes
 let dashboardCache = null;
@@ -181,7 +181,7 @@ router.get('/shipments/:id', async (req, res, next) => {
         for (const item of (s?.trackingItems || [])) {
           trackingTimeline.push({
             date: item.date,
-            description: item.description,
+            description: translateDescription(item.description),
             location: item.location || item.placeOfEvent || null,
             postalCode: item.postalCode || null,
             unifiedStatus: getUnifiedStatus({ data: [{ trackingItems: [item] }] }).status,
@@ -539,7 +539,7 @@ router.post('/shipments/:id/sync', async (req, res, next) => {
     });
 
     // Update delivery_notes
-    const updates = { unified_status: unifiedStatus, last_tracking_update: new Date().toISOString(), last_tracking_description: lastDescription };
+    const updates = { unified_status: unifiedStatus, last_tracking_update: new Date().toISOString(), last_tracking_description: translateDescription(lastDescription) };
     if (unifiedStatus === 'delivered' && !shipment.delivered_at) updates.delivered_at = new Date().toISOString();
     if (unifiedStatus === 'available_for_pickup' && !shipment.pickup_at) updates.pickup_at = new Date().toISOString();
 
@@ -596,7 +596,7 @@ router.post('/re-evaluate', async (req, res, next) => {
 
         const { status: newStatus, lastDescription } = getUnifiedStatus(logs[0].tracking_data);
         if (newStatus && newStatus !== 'unknown' && newStatus !== ship.unified_status) {
-          const updates = { unified_status: newStatus, last_tracking_description: lastDescription };
+          const updates = { unified_status: newStatus, last_tracking_description: translateDescription(lastDescription) };
           if (newStatus === 'delivered') updates.delivered_at = new Date().toISOString();
           if (newStatus === 'available_for_pickup' && !ship.pickup_at) updates.pickup_at = new Date().toISOString();
 

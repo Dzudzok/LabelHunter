@@ -307,12 +307,93 @@ function getSubStatus(carrierCode, statusCode, description) {
   return null;
 }
 
+/**
+ * Translate carrier tracking descriptions to Czech.
+ * Keeps already-Czech descriptions unchanged.
+ */
+const DESCRIPTION_TRANSLATIONS = {
+  // GLS
+  'apl-registration': 'Registrace zásilky',
+  'arrived': 'Dorazila na depo',
+  'change of delivery address': 'Změna doručovací adresy',
+  'cod data sent': 'COD data odeslána',
+  'control scan': 'Kontrolní sken',
+  'customer service order': 'Požadavek zákaznického servisu',
+  'damaged': 'Poškozená zásilka',
+  'data sent': 'Data odeslána',
+  'delivered': 'Doručeno',
+  'delivery list scan': 'Sken dodacího listu',
+  'departed': 'Odesláno z depa',
+  'depot entry': 'Příjem na depo',
+  'depot storage': 'Uloženo na depu',
+  'fixed delivey day': 'Pevný den doručení',
+  'infoscan': 'Informační sken',
+  'prepared for departure': 'Připraveno k odeslání',
+  'ready for pickup': 'Připraveno k vyzvednutí',
+  'received data': 'Data přijata',
+  'rollcarte check': 'Kontrola rollkontejneru',
+  'small parcel': 'Malý balík',
+  'statuskey_st130': 'Registrace',
+
+  // DPD
+  'parcel has been pickup up at sender.': 'Balík převzat od odesílatele',
+  'parcel has finished consolidation.': 'Balík zkompletován',
+  'parcel is at our depot.': 'Balík je v doručovacím depu',
+  'parcel is on the way to delivery depot.': 'Balík je na cestě do depa',
+  'parcel is with our courier. you can expect it today.': 'Balík je u kurýra — doručení dnes',
+  'parcel was successfully delivered.': 'Balík byl úspěšně doručen',
+  'parcel was not delivered.': 'Balík nebyl doručen',
+
+  // PPL / DHL
+  'the parcel is delivered.': 'Zásilka byla doručena',
+  'the parcel is located at the delivery depot.': 'Zásilka je v doručovacím depu',
+  'the parcel is on the way to the delivery depot.': 'Zásilka je na cestě do depa',
+  'the shipment is being delivered today.': 'Zásilka se dnes doručuje',
+  'we received the parcel for delivery.': 'Přijali jsme zásilku k doručení',
+  'we received the parcel from the sender.': 'Převzali jsme zásilku od odesílatele',
+  'we delivered the parcel to the pick-up point.': 'Doručeno do výdejního místa',
+  'we have delivered the shipment to a drop-off point abroad.': 'Doručeno do výdejního místa v zahraničí',
+  'the recipient has informed about his/her presence at the address.': 'Příjemce potvrdil přítomnost na adrese',
+  'the shipment is currently being delivered to the consignee at the destination.': 'Zásilka se doručuje příjemci',
+  'the shipment is at the delivery depot at the destination.': 'Zásilka je v cílovém depu',
+  'the shipment is located in the entry gateway abroad.': 'Zásilka je v zahraničním vstupním bodu',
+  'the parcel forwarded to foreign partner for delivery with number': 'Předáno zahraničnímu partnerovi',
+  'delay in parcel delivery.': 'Zpoždění doručení zásilky',
+  'the parcel was not delivered because of not availability of the recipient.': 'Nedoručeno — příjemce nezastižen',
+  'the parcel was not delivered because of damaged a parcel.': 'Nedoručeno — poškozená zásilka',
+  'the parcel will be delivered on another day.': 'Zásilka bude doručena jiný den',
+
+  // UPS
+  'odesílatel vytvořil štítek, společnost ups balík dosud neobdržela.': 'Štítek vytvořen — UPS balík dosud nepřevzal',
+  'dorazil/a do zařízení': 'Dorazila do zařízení',
+  'opustil/a zařízení': 'Opustila zařízení',
+
+  // Zásilkovna
+  'line': 'V přepravě',
+  'ine': 'V přepravě',
+};
+
+function translateDescription(description) {
+  if (!description) return description;
+  const trimmed = description.trim();
+  // Check exact match (case-insensitive)
+  const lower = trimmed.toLowerCase();
+  if (DESCRIPTION_TRANSLATIONS[lower]) return DESCRIPTION_TRANSLATIONS[lower];
+  // Check startsWith for longer descriptions (e.g. "The parcel forwarded to foreign partner...")
+  for (const [key, value] of Object.entries(DESCRIPTION_TRANSLATIONS)) {
+    if (lower.startsWith(key)) return value;
+  }
+  // Remove trailing whitespace/newlines
+  return trimmed.replace(/\r?\n/g, ' ').trim();
+}
+
 module.exports = {
   getUnifiedStatus,
   classifyDescription,
   getStatusLabel,
   getStatusColor,
   getSubStatus,
+  translateDescription,
   STATUS_PRIORITY,
   STATUS_LABELS,
   STATUS_COLORS,

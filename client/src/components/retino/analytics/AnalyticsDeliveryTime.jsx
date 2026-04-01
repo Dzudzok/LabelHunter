@@ -98,9 +98,9 @@ export default function AnalyticsDeliveryTime() {
       {/* KPI Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
         <KpiCard label="Průměrná doba doručení" value={data.avgDays != null ? `${data.avgDays}` : '—'} unit="D" />
-        <KpiCard label="P95 dnů doručení" value={data.p95Days != null ? `${data.p95Days}` : '—'} unit="D" />
-        <KpiCard label="Medián dnů doručení" value={data.medianDays != null ? `${data.medianDays}` : '—'} unit="D" />
-        <KpiCard label="Míra doručení" value={`${data.totalMeasured}`} unit="" sub="zásilek" />
+        <KpiCard label="95% zásilek do" value={data.p95Days != null ? `${data.p95Days}` : '—'} unit="D" sub="pouze 5% trvá déle" />
+        <KpiCard label="Medián doručení" value={data.medianDays != null ? `${data.medianDays}` : '—'} unit="D" sub="polovina zásilek do" />
+        <KpiCard label="Doručených zásilek" value={`${data.totalMeasured}`} unit="" sub="za období" />
       </div>
 
       {/* Chart 1: Počet zásilek za období (line) */}
@@ -162,6 +162,17 @@ export default function AnalyticsDeliveryTime() {
           </ChartCard>
         )}
       </div>
+
+      {/* Delivery type split */}
+      {data.byType && (
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+          <TypeCard label="Všechny zásilky" icon="📊" stats={data.byType.all} />
+          <TypeCard label="Na adresu (kurýr)" icon="🏠" stats={data.byType.address}
+            subtitle="Čas přepravy = štítek → doručeno na adresu" />
+          <TypeCard label="Na pobočku (pickup)" icon="🏪" stats={data.byType.pickup}
+            subtitle="Čas přepravy = štítek → dorazilo na pobočku (bez čekání klienta)" />
+        </div>
+      )}
 
       {/* Charts row: 3 distribution bar charts */}
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
@@ -259,6 +270,44 @@ export default function AnalyticsDeliveryTime() {
           </div>
         </div>
       )}
+    </div>
+  )
+}
+
+function TypeCard({ label, icon, stats, subtitle }) {
+  if (!stats || stats.count === 0) {
+    return (
+      <div className="bg-navy-800 rounded-xl p-5 border border-navy-700">
+        <div className="flex items-center gap-2 mb-2">
+          <span className="text-xl">{icon}</span>
+          <span className="text-sm font-bold text-theme-primary">{label}</span>
+        </div>
+        <div className="text-sm text-theme-muted">Žádná data</div>
+      </div>
+    )
+  }
+  return (
+    <div className="bg-navy-800 rounded-xl p-5 border border-navy-700">
+      <div className="flex items-center gap-2 mb-1">
+        <span className="text-xl">{icon}</span>
+        <span className="text-sm font-bold text-theme-primary">{label}</span>
+      </div>
+      {subtitle && <p className="text-[10px] text-theme-muted mb-3">{subtitle}</p>}
+      <div className="grid grid-cols-3 gap-3">
+        <div>
+          <div className="text-2xl font-black text-theme-primary">{stats.avg}<span className="text-sm text-theme-muted ml-0.5">D</span></div>
+          <div className="text-[10px] text-theme-muted">Průměr</div>
+        </div>
+        <div>
+          <div className="text-2xl font-black text-theme-primary">{stats.median}<span className="text-sm text-theme-muted ml-0.5">D</span></div>
+          <div className="text-[10px] text-theme-muted">Medián</div>
+        </div>
+        <div>
+          <div className="text-2xl font-black text-theme-primary">{stats.p95}<span className="text-sm text-theme-muted ml-0.5">D</span></div>
+          <div className="text-[10px] text-theme-muted">95%</div>
+        </div>
+      </div>
+      <div className="text-xs text-theme-muted mt-2">{stats.count} zásilek</div>
     </div>
   )
 }

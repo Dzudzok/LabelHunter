@@ -4,7 +4,7 @@ const emailService = require('./EmailService');
 const trackingEmailService = require('./TrackingEmailService');
 const automationEngine = require('./AutomationEngine');
 const carrierRouter = require('./carriers/CarrierRouter');
-const { classifyDescription } = require('./retino/tracking-status-mapper');
+const { classifyDescription, translateDescription } = require('./retino/tracking-status-mapper');
 const eddService = require('./EDDService');
 
 class TrackingSyncService {
@@ -185,7 +185,7 @@ class TrackingSyncService {
           const updates = {
             unified_status: unifiedStatus,
             last_tracking_update: new Date().toISOString(),
-            last_tracking_description: lastDescription,
+            last_tracking_description: translateDescription(lastDescription),
           };
 
           // Set timestamp fields on status transitions
