@@ -152,6 +152,19 @@ class TrackingSyncService {
           }
           if (!unifiedStatus) unifiedStatus = 'in_transit'; // fallback
 
+          // Post-processing: if "delivered" but timeline contains returned_to_sender,
+          // it means the parcel was "delivered" back to sender, not to customer.
+          // Same for failed_delivery — if parcel was damaged/refused and then "delivered" back.
+          if (unifiedStatus === 'delivered') {
+            const allMapped = sorted.map(st => this.mapCarrierStatus(carrier, st)).filter(Boolean);
+            if (allMapped.includes('returned_to_sender')) {
+              unifiedStatus = 'returned_to_sender';
+              // Find the return event description
+              const returnEvent = sorted.find(st => this.mapCarrierStatus(carrier, st) === 'returned_to_sender');
+              if (returnEvent) lastDescription = returnEvent.description || lastDescription;
+            }
+          }
+
           // Build tracking data
           const trackingData = {
             source: `${carrier.toLowerCase()}_direct`,

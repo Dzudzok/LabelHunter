@@ -184,6 +184,8 @@ function getUnifiedStatus(trackingData) {
   let bestPriority = 0;
   let lastDescription = null;
   let lastUpdate = null;
+  let hasReturnedToSender = false;
+  let returnDescription = null;
 
   for (const shipment of items) {
     const trackingItems = shipment.trackingItems || [];
@@ -194,12 +196,24 @@ function getUnifiedStatus(trackingData) {
         bestPriority = priority;
         bestStatus = status;
       }
+      // Track if returned_to_sender appears anywhere in timeline
+      if (status === 'returned_to_sender') {
+        hasReturnedToSender = true;
+        returnDescription = item.description;
+      }
       // Track the chronologically last event
       if (!lastUpdate || (item.date && item.date > lastUpdate)) {
         lastUpdate = item.date || null;
         lastDescription = item.description || null;
       }
     }
+  }
+
+  // Post-processing: "delivered" after "returned_to_sender" means
+  // the parcel was delivered BACK to sender, not to customer
+  if (bestStatus === 'delivered' && hasReturnedToSender) {
+    bestStatus = 'returned_to_sender';
+    if (returnDescription) lastDescription = returnDescription;
   }
 
   return { status: bestStatus, lastDescription, lastUpdate };
