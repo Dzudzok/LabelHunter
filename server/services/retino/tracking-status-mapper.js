@@ -359,6 +359,17 @@ const DESCRIPTION_TRANSLATIONS = {
   'parcel is with our courier. you can expect it today.': 'Balík je u kurýra — doručení dnes',
   'parcel was successfully delivered.': 'Balík byl úspěšně doručen',
   'parcel was not delivered.': 'Balík nebyl doručen',
+  'parcel could not be delivered.': 'Balík nemohl být doručen',
+  'parcel could not be delivered and we returned it to our depot.': 'Balík nemohl být doručen — vrácen do depa',
+  'parcel has finished consolidation.': 'Balík zkompletován',
+  'parcel was stored at out depot.': 'Balík uložen v depu',
+  'parcel was redirected.': 'Balík přesměrován',
+  'parcel is delivered to dpd parcelshop': 'Doručeno do DPD ParcelShopu',
+  'control scan': 'Kontrolní sken',
+  'infoscan': 'Informační sken',
+  'delivered to dpd parcelshop': 'Doručeno do DPD ParcelShopu',
+  'picked up by consignee': 'Vyzvednuto příjemcem',
+  'parcel handed over to driver': 'Předáno řidiči',
 
   // PPL / DHL
   'the parcel is delivered.': 'Zásilka byla doručena',
@@ -378,6 +389,9 @@ const DESCRIPTION_TRANSLATIONS = {
   'the parcel was not delivered because of not availability of the recipient.': 'Nedoručeno — příjemce nezastižen',
   'the parcel was not delivered because of damaged a parcel.': 'Nedoručeno — poškozená zásilka',
   'the parcel will be delivered on another day.': 'Zásilka bude doručena jiný den',
+  'the parcel will be delivered to a new address.': 'Zásilka bude doručena na novou adresu',
+  'the parcel was not delivered due to late arrival  of parcels to the delivery depot.': 'Nedoručeno — pozdní příjezd zásilek do depa',
+  'the recipient has informed about his/her absence from the address.': 'Příjemce oznámil nepřítomnost na adrese',
 
   // UPS
   'odesílatel vytvořil štítek, společnost ups balík dosud neobdržela.': 'Štítek vytvořen — UPS balík dosud nepřevzal',

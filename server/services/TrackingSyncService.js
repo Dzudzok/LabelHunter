@@ -392,39 +392,47 @@ class TrackingSyncService {
   mapDPDStatus(code, desc) {
     const c = String(code).trim();
     const scanMap = {
-      '01': 'label_created',          // Data přijata
-      '02': 'in_transit',             // V doručovacím depu
-      '03': 'out_for_delivery',       // Balík k doručení
-      '04': 'failed_delivery',        // Nezastižen (1. pokus)
-      '05': 'handed_to_carrier',      // Balík předán DPD
-      '06': 'in_transit',             // Třídění
-      '07': 'in_transit',             // Kontrolní sken
-      '08': 'in_transit',             // Přeplánováno
-      '09': 'failed_delivery',        // Nezastižen (2. pokus)
-      '10': 'in_transit',             // Na cestě do depa
+      '01': 'label_created',          // Parcel has finished consolidation
+      '02': 'in_transit',             // Parcel is at our depot
+      '03': 'out_for_delivery',       // Parcel is with our courier
+      '04': 'failed_delivery',        // Could not be delivered, returned to depot
+      '05': 'handed_to_carrier',      // Parcel has been picked up at sender
+      '06': 'in_transit',             // Parcel was redirected
+      '07': 'in_transit',             // Control scan
+      '08': 'in_transit',             // Parcel was stored at depot (waiting)
+      '09': 'in_transit',             // Parcel was stored at depot (2nd attempt prep)
+      '10': 'in_transit',             // On the way to delivery depot
       '11': 'available_for_pickup',   // V parcelshop
       '12': 'returned_to_sender',     // Vráceno
-      '13': 'delivered',              // Doručeno
-      '14': 'failed_delivery',        // Nedoručeno
+      '13': 'delivered',              // Parcel was successfully delivered
+      '14': 'failed_delivery',        // Parcel could not be delivered
       '15': 'available_for_pickup',   // V parcelshop k vyzvednutí
       '16': 'in_transit',             // Celnice
       '17': 'returned_to_sender',     // Vrácení odesílateli
       '19': 'delivered',              // Platba dobírky (= doručeno)
       '20': 'in_transit',             // Proclení
+      '23': 'available_for_pickup',   // Parcel is delivered to DPD ParcelShop
     };
     if (scanMap[c]) return scanMap[c];
-    // Infoscan (18) — don't change status, fallback to description
+    // Infoscan (18) — multi-purpose code, must check description
     if (c === '18') {
       const d = (desc || '').toLowerCase();
+      // IMPORTANT: negatives/parcelshop BEFORE generic deliver
+      if (d.includes('not deliver') || d.includes('nedoruč')) return 'failed_delivery';
+      if (d.includes('return') || d.includes('vrác')) return 'returned_to_sender';
+      if (d.includes('parcelshop') || d.includes('pickup point')) return 'available_for_pickup';
+      if (d.includes('picked up by consignee')) return 'delivered';
+      if (d.includes('handed over to driver')) return 'out_for_delivery';
       if (d.includes('deliver') || d.includes('doručen')) return 'delivered';
-      return null; // null = don't update status
+      return null; // pure infoscan = don't update status
     }
-    // Fallback to description
+    // Fallback for NULL codes — negatives and parcelshop BEFORE positives
     const d = (desc || '').toLowerCase();
-    if (d.includes('deliver') || d.includes('doručen')) return 'delivered';
-    if (d.includes('pickup') || d.includes('parcelshop')) return 'available_for_pickup';
-    if (d.includes('return') || d.includes('vrác')) return 'returned_to_sender';
-    if (d.includes('not delivered') || d.includes('nedoruč')) return 'failed_delivery';
+    if (d.includes('not deliver') || d.includes('nedoruč') || d.includes('could not')) return 'failed_delivery';
+    if (d.includes('return') || d.includes('vrác') || d.includes('back to sender')) return 'returned_to_sender';
+    if (d.includes('parcelshop') || d.includes('pickup point') || d.includes('k vyzvednutí')) return 'available_for_pickup';
+    if (d.includes('úspěšně doručili') || d.includes('doručili') || d.includes('delivered') || d.includes('doručen')) return 'delivered';
+    if (d.includes('courier') || d.includes('dnes doručuje') || d.includes('doručován')) return 'out_for_delivery';
     return 'in_transit';
   }
 
@@ -495,19 +503,23 @@ class TrackingSyncService {
   mapPPLStatus(code, desc) {
     const c = String(code || '').toLowerCase();
     // PPL CPL API event codes (e.g. "Delivered", "ShipmentInTransport.TakeOverFromSender")
-    if (c.includes('notdelivered') || c.includes('undeliverable')) return 'failed_delivery';
+    // IMPORTANT: negatives BEFORE positives, parcelshop BEFORE delivered
+    if (c.includes('notdelivered') || c.includes('undeliverable') || c.includes('undelivered')) return 'failed_delivery';
     if (c.includes('backshipment') || c.includes('backtosender') || (c.includes('return') && !c.includes('returnch'))) return 'returned_to_sender';
+    // Delivered.Parcelshop = delivered to pickup point, NOT to customer
+    if (c.includes('delivered') && c.includes('parcelshop')) return 'available_for_pickup';
     if (c.startsWith('delivered') || c.includes('deliveryfinished')) return 'delivered';
     if (c.includes('delivering') || c === 'delivery') return 'out_for_delivery';
-    if (c.includes('waitingforshipment') || c === 'dataaccepted') return 'label_created';
+    if (c.includes('waitingforshipment') || c === 'dataaccepted') return 'handed_to_carrier';
     if (c.includes('loadingfordelivery') || c.includes('outfordelivery') || c.includes('readyfordelivery')) return 'out_for_delivery';
     if (c.includes('accesspoint') || c.includes('parcelshop') || c.includes('storedforpickup')) return 'available_for_pickup';
     if (c.includes('takeover') || c.includes('pickedup') || c.includes('accepted') || c.includes('handedoverto')) return 'handed_to_carrier';
     if (c.includes('shipmentintransport') || c.includes('intransit') || c.includes('preparingfordelivery') || c.includes('transit') || c.includes('otherdepot') || c.includes('inputdepot') || c.includes('deliverydepot')) return 'in_transit';
-    // Fallback to description
+    // Fallback to description — negatives BEFORE positives
     const d = (desc || '').toLowerCase();
     if (d.includes('nedoručen') || d.includes('not deliver')) return 'failed_delivery';
     if (d.includes('vrácen') || d.includes('return') || d.includes('zpět') || d.includes('back to sender')) return 'returned_to_sender';
+    if (d.includes('pick-up point') || d.includes('výdejní místo') || d.includes('parcelshop')) return 'available_for_pickup';
     if (d.includes('delivered') || d.includes('doručen')) return 'delivered';
     if (d.includes('being delivered today') || d.includes('doručován') || d.includes('se dnes doručuje') || d.includes('dnes doručuje')) return 'out_for_delivery';
     return this.mapFromDescription(desc) || 'in_transit';
