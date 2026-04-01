@@ -483,6 +483,74 @@ router.post('/shipments/:id/send-email', async (req, res, next) => {
   }
 });
 
+// POST /shipments/:id/sync — live sync single shipment from carrier API
+router.post('/shipments/:id/sync', async (req, res, next) => {
+  try {
+    const id = parseInt(req.params.id, 10);
+    const { data: shipment, error } = await supabase
+      .from('delivery_notes')
+      .select('*')
+      .eq('id', id)
+      .single();
+
+    if (error || !shipment) return res.status(404).json({ error: 'Zásilka nenalezena' });
+    if (!shipment.tracking_number) return res.status(400).json({ error: 'Zásilka nemá tracking číslo' });
+
+    const carrierRouter = require('../../services/carriers/CarrierRouter');
+    const carrier = shipment.shipper_code;
+    const result = await carrierRouter.getTracking(carrier, shipment.tracking_number);
+
+    if (!result || !result.statuses || result.statuses.length === 0) {
+      return res.json({ message: 'Žádná nová data od dopravce', statuses: 0 });
+    }
+
+    // Sort by date (newest first) and find meaningful status
+    const sorted = [...result.statuses].sort((a, b) => {
+      const da = a.date ? new Date(a.date).getTime() : 0;
+      const db = b.date ? new Date(b.date).getTime() : 0;
+      return db - da;
+    });
+
+    const trackingSyncService = require('../../services/TrackingSyncService');
+    let unifiedStatus = null;
+    let lastDescription = sorted[0]?.description || '';
+    for (const st of sorted) {
+      const mapped = trackingSyncService.mapCarrierStatus(carrier, st);
+      if (mapped) { unifiedStatus = mapped; lastDescription = st.description || lastDescription; break; }
+    }
+    if (!unifiedStatus) unifiedStatus = shipment.unified_status || 'in_transit';
+
+    // Build tracking data
+    const trackingData = {
+      source: `${carrier.toLowerCase()}_direct`,
+      data: [{ trackingNumber: shipment.tracking_number, shipperCode: carrier,
+        trackingItems: result.statuses.map(s => ({ description: s.description, date: s.date, location: s.location || null, statusCode: s.statusCode })),
+      }],
+    };
+
+    // Save to tracking_sync_log
+    const stateCode = sorted[0]?.statusCode;
+    const stateCodeInt = stateCode && !isNaN(Number(stateCode)) ? Number(stateCode) : null;
+    await supabase.from('tracking_sync_log').insert({
+      delivery_note_id: shipment.id,
+      lp_state_code: stateCodeInt,
+      lp_state_name: (lastDescription || '').substring(0, 50),
+      tracking_data: trackingData,
+    });
+
+    // Update delivery_notes
+    const updates = { unified_status: unifiedStatus, last_tracking_update: new Date().toISOString(), last_tracking_description: lastDescription };
+    if (unifiedStatus === 'delivered' && !shipment.delivered_at) updates.delivered_at = new Date().toISOString();
+    if (unifiedStatus === 'available_for_pickup' && !shipment.pickup_at) updates.pickup_at = new Date().toISOString();
+
+    await supabase.from('delivery_notes').update(updates).eq('id', shipment.id);
+
+    res.json({ success: true, unified_status: unifiedStatus, statuses: result.statuses.length, description: lastDescription });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /re-evaluate — re-evaluate unified_status from existing tracking_sync_log data (async)
 router.post('/re-evaluate', async (req, res, next) => {
   try {

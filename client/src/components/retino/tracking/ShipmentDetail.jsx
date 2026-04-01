@@ -24,6 +24,9 @@ export default function ShipmentDetail() {
   // Email log state
   const [emails, setEmails] = useState([])
 
+  // Live sync state
+  const [syncing, setSyncing] = useState(false)
+
   // Storage extension state
   const [extendingStorage, setExtendingStorage] = useState(false)
   const [extendResult, setExtendResult] = useState(null)
@@ -131,6 +134,20 @@ export default function ShipmentDetail() {
     }
   }
 
+  async function handleLiveSync() {
+    setSyncing(true)
+    try {
+      await api.post(`/retino/tracking/shipments/${id}/sync`)
+      // Re-fetch shipment with fresh data
+      const res = await api.get(`/retino/tracking/shipments/${id}`)
+      setShipment(res.data)
+    } catch (err) {
+      alert(err.response?.data?.error || 'Chyba při aktualizaci')
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   async function handleSendEmail(e) {
     e.preventDefault()
     if (!emailSubject.trim() || !emailMessage.trim()) return
@@ -179,6 +196,13 @@ export default function ShipmentDetail() {
         </button>
         <h1 className="text-2xl font-bold">{shipment.doc_number || shipment.invoice_number}</h1>
         <StatusBadge status={shipment.unified_status} />
+        <button onClick={handleLiveSync} disabled={syncing}
+          className="ml-auto bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors flex items-center gap-1.5">
+          <svg className={`w-3.5 h-3.5 ${syncing ? 'animate-spin' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+          </svg>
+          {syncing ? 'Aktualizuji...' : 'Aktualizovat'}
+        </button>
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
