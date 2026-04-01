@@ -286,36 +286,57 @@ class TrackingSyncService {
   /**
    * GLS StatusCode mapping.
    */
+  /**
+   * GLS StatusCode mapping (01-09, 51).
+   */
   mapGLSStatus(code) {
-    const codeStr = String(code).padStart(2, '0');
+    const c = String(code).padStart(2, '0');
     const map = {
-      '51': 'label_created',
-      '01': 'handed_to_carrier',
-      '02': 'in_transit',
-      '03': 'in_transit',
-      '04': 'out_for_delivery',
-      '05': 'delivered',
-      '06': 'returned_to_sender',
-      '07': 'available_for_pickup',
-      '08': 'failed_delivery',
-      '09': 'in_transit',
+      '51': 'label_created',          // Data přijata
+      '01': 'handed_to_carrier',      // Převzato do přepravy
+      '02': 'in_transit',             // V přepravě (třídění)
+      '03': 'in_transit',             // V přepravě (mezidepo)
+      '04': 'out_for_delivery',       // Na doručení
+      '05': 'delivered',              // Doručeno
+      '06': 'returned_to_sender',     // Vráceno odesílateli
+      '07': 'available_for_pickup',   // K vyzvednutí v ParcelShopu
+      '08': 'failed_delivery',        // Nedoručeno
+      '09': 'in_transit',             // Speciální událost
     };
-    return map[codeStr] || 'in_transit';
+    return map[c] || 'in_transit';
   }
 
   /**
    * Česká Pošta status mapping.
    * Common codes: 91=delivered, 51/52=in transit, 53=available for pickup
    */
+  /**
+   * ČP status code mapping (11, 21, 41, 51-53, 72-73, 91, 99).
+   */
   mapCPStatus(code, desc) {
-    const codeStr = String(code);
-    // Check description first for more specific matches (order matters!)
-    if (desc.includes('nedoručen') || desc.includes('nezastiž') || desc.includes('not deliver')) return 'failed_delivery';
-    if (desc.includes('vrácen') || desc.includes('return') || codeStr === '73') return 'returned_to_sender';
-    if (codeStr === '91' || desc.includes('doručen') || desc.includes('delivered')) return 'delivered';
-    if (codeStr === '53' || desc.includes('uložen') || desc.includes('k vyzvednutí')) return 'available_for_pickup';
-    if (desc.includes('podán') || desc.includes('přijat')) return 'handed_to_carrier';
-    if (desc.includes('výdejn') || desc.includes('doručován')) return 'out_for_delivery';
+    const c = String(code);
+    const d = (desc || '').toLowerCase();
+    // Code-based first
+    const codeMap = {
+      '91': 'delivered',              // Doručeno
+      '53': 'available_for_pickup',   // Uloženo na poště
+      '72': 'returned_to_sender',     // Vráceno odesílateli
+      '73': 'returned_to_sender',     // Vrácení
+      '99': 'failed_delivery',        // Nedoručitelné
+      '11': 'handed_to_carrier',      // Podáno
+      '21': 'handed_to_carrier',      // Podáno na poště
+      '41': 'in_transit',             // V přepravě
+      '51': 'in_transit',             // Přeprava
+      '52': 'in_transit',             // V přepravě
+    };
+    if (codeMap[c]) return codeMap[c];
+    // Description fallback (order: negatives first!)
+    if (d.includes('nedoručen') || d.includes('nezastiž') || d.includes('not deliver')) return 'failed_delivery';
+    if (d.includes('vrácen') || d.includes('return')) return 'returned_to_sender';
+    if (d.includes('doručen') || d.includes('delivered')) return 'delivered';
+    if (d.includes('uložen') || d.includes('k vyzvednutí')) return 'available_for_pickup';
+    if (d.includes('podán') || d.includes('přijat')) return 'handed_to_carrier';
+    if (d.includes('doručován') || d.includes('výdejn')) return 'out_for_delivery';
     return 'in_transit';
   }
 
@@ -344,21 +365,31 @@ class TrackingSyncService {
    * 07=control scan, 10=on way to depot, 13=delivered, 14=not delivered,
    * 15=parcelshop, 17=returned, 18=infoscan (ignore), 20=customs
    */
+  /**
+   * DPD SCANCODE mapping (01-20).
+   */
   mapDPDStatus(code, desc) {
     const c = String(code).trim();
     const scanMap = {
-      '01': 'label_created',
-      '02': 'in_transit',            // at depot
-      '03': 'out_for_delivery',      // with courier
-      '05': 'handed_to_carrier',     // picked up from sender
-      '06': 'in_transit',            // sorting
-      '07': 'in_transit',            // control scan
-      '10': 'in_transit',            // on way to depot
-      '13': 'delivered',             // successfully delivered
-      '14': 'failed_delivery',       // not delivered
-      '15': 'available_for_pickup',  // at parcelshop
-      '17': 'returned_to_sender',    // returned
-      '20': 'in_transit',            // customs
+      '01': 'label_created',          // Data přijata
+      '02': 'in_transit',             // V doručovacím depu
+      '03': 'out_for_delivery',       // Balík k doručení
+      '04': 'failed_delivery',        // Nezastižen (1. pokus)
+      '05': 'handed_to_carrier',      // Balík předán DPD
+      '06': 'in_transit',             // Třídění
+      '07': 'in_transit',             // Kontrolní sken
+      '08': 'in_transit',             // Přeplánováno
+      '09': 'failed_delivery',        // Nezastižen (2. pokus)
+      '10': 'in_transit',             // Na cestě do depa
+      '11': 'available_for_pickup',   // V parcelshop
+      '12': 'returned_to_sender',     // Vráceno
+      '13': 'delivered',              // Doručeno
+      '14': 'failed_delivery',        // Nedoručeno
+      '15': 'available_for_pickup',   // V parcelshop k vyzvednutí
+      '16': 'in_transit',             // Celnice
+      '17': 'returned_to_sender',     // Vrácení odesílateli
+      '19': 'delivered',              // Platba dobírky (= doručeno)
+      '20': 'in_transit',             // Proclení
     };
     if (scanMap[c]) return scanMap[c];
     // Infoscan (18) — don't change status, fallback to description
@@ -380,17 +411,31 @@ class TrackingSyncService {
    * UPS status mapping.
    * UPS codes: D=Delivered, I=In Transit, P=Pickup, X=Exception, M=Billing, MV=Voided
    */
+  /**
+   * UPS status code mapping (P, I, D, X, M, MV, RS, DO, DD, KB, FS).
+   */
   mapUPSStatus(code, desc) {
     const c = String(code).toUpperCase();
-    if (c === 'D' || c === 'KB' || c === 'FS') return 'delivered';
-    if (c === 'X' || c === 'RS') return 'failed_delivery';
-    if (c === 'P') return 'handed_to_carrier';
-    if (c === 'I') return 'in_transit';
-    if (c === 'MV') return 'returned_to_sender';
+    const codeMap = {
+      'D': 'delivered',               // Delivered
+      'DD': 'delivered',              // Delivered Destination
+      'DO': 'delivered',              // Delivered Origin
+      'KB': 'delivered',              // UPS Access Point delivery
+      'FS': 'handed_to_carrier',      // First Scan
+      'P': 'handed_to_carrier',       // Pickup
+      'I': 'in_transit',             // In Transit
+      'X': 'failed_delivery',        // Exception
+      'RS': 'returned_to_sender',    // Return to Sender
+      'MV': 'returned_to_sender',    // Manifest Voided
+      'M': 'in_transit',             // Billing info
+    };
+    if (codeMap[c]) return codeMap[c];
     // Fallback to description
-    if (desc.includes('deliver')) return 'delivered';
-    if (desc.includes('return')) return 'returned_to_sender';
-    if (desc.includes('exception')) return 'failed_delivery';
+    const d = (desc || '').toLowerCase();
+    if (d.includes('delivered') || d.includes('doručen')) return 'delivered';
+    if (d.includes('return') || d.includes('vrácen')) return 'returned_to_sender';
+    if (d.includes('exception') || d.includes('not deliver')) return 'failed_delivery';
+    if (d.includes('pickup') || d.includes('access point')) return 'available_for_pickup';
     return 'in_transit';
   }
 
