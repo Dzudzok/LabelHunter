@@ -445,32 +445,80 @@ class TrackingSyncService {
    */
   mapUPSStatus(code, desc) {
     const c = String(code).toUpperCase();
+    // UPS has 40+ activity codes — map the known ones explicitly
     const codeMap = {
+      // Delivered
       'D': 'delivered',               // Delivered
       'DD': 'delivered',              // Delivered Destination
       'DO': 'delivered',              // Delivered Origin
-      'KB': 'delivered',              // UPS Access Point delivery
+      'KB': 'delivered',              // UPS Access Point — picked up by customer
+      '2W': 'delivered',              // Delivered (alt code)
+      '9E': 'delivered',              // Delivered (alt code)
+      // Available for pickup (UPS Access Point)
+      '2Q': 'available_for_pickup',   // Doručeno do UPS Access Point (parcel arrived at AP)
+      'ZP': 'available_for_pickup',   // Uschováno na UPS Access Point (stored at AP)
+      '5G': 'available_for_pickup',   // Balík zůstává v AP, blíží se konec úložní doby
+      'ZC': 'available_for_pickup',   // Na žádost příjemce doručen na AP
+      // On the way to Access Point (not yet there)
+      '5R': 'in_transit',             // Na cestě do UPS AP (will be available_for_pickup when arrives)
+      'ZA': 'in_transit',             // Čeká se na doručení na AP
+      'ZB': 'in_transit',             // Žádost o AP zatím nevyřízena
+      // Out for delivery
+      'OT': 'out_for_delivery',       // Připraveno pro doručení dnes
+      'OF': 'out_for_delivery',       // Zásilka se doručuje / naloženo v vozidle
+      // Handed to carrier
       'FS': 'handed_to_carrier',      // First Scan
-      'P': 'handed_to_carrier',       // Pickup
-      'OR': 'handed_to_carrier',      // Origin scan (dorazil do zařízení)
+      'P': 'handed_to_carrier',       // Pickup from sender
+      'OR': 'handed_to_carrier',      // Origin scan
+      // Label created
       'MP': 'label_created',          // Manifest pickup (štítek vytvořen)
-      'I': 'in_transit',             // In Transit
-      'AR': 'in_transit',            // Arrival scan (dorazil do zařízení)
-      'DP': 'in_transit',            // Departure scan (opustil zařízení)
-      'OT': 'in_transit',            // Out for today
-      'SR': 'in_transit',            // Special routing
-      'X': 'failed_delivery',        // Exception
-      'RS': 'returned_to_sender',    // Return to Sender
-      'MV': 'returned_to_sender',    // Manifest Voided
-      'M': 'in_transit',             // Billing info
+      // In transit
+      'I': 'in_transit',              // In Transit
+      'AR': 'in_transit',             // Arrival scan
+      'DP': 'in_transit',             // Departure scan
+      'EP': 'in_transit',             // Export scan
+      'IP': 'in_transit',             // Import scan
+      'DS': 'in_transit',             // Zpracování v zařízení
+      'WH': 'in_transit',             // Warehouse scan
+      'YP': 'in_transit',             // Zpracování v zařízení
+      'HL': 'in_transit',             // Balík zpracován v zařízení
+      'HM': 'in_transit',             // Přesměrován do doručovacího střediska
+      'DQ': 'in_transit',             // Odlehlá oblast — dodatečný čas
+      'SR': 'in_transit',             // Special routing
+      'M': 'in_transit',              // Billing info
+      'MF': 'in_transit',             // Zásilka zadržena pro budoucí doručení
+      // Delays
+      '08': 'in_transit',             // Provozní zpoždění
+      'C5': 'in_transit',             // Události mimo kontrolu — zpoždění
+      'C6': 'in_transit',             // Doručení opožděno o 1 den
+      '17': 'in_transit',             // Pozdní příjezd přívěsu
+      '34': 'in_transit',             // Nesprávně roztříděno
+      // Failed delivery
+      '48': 'failed_delivery',        // Příjemce nezastižen
+      'X': 'failed_delivery',         // Exception
+      // Problems (address, damage, lost)
+      '45': 'problem',                // Balík poškozen/zlikvidován
+      'AJ': 'problem',                // Zboží chybí, krabice zlikvidována
+      'H9': 'problem',                // Neshoda nebezpečný materiál
+      'AE': 'problem',                // Číslo ulice chybné
+      'AF': 'problem',                // Adresa neúplná
+      'AB': 'problem',                // Příjemce není v seznamu budovy
+      'AD': 'problem',                // Jméno příjemce chybné
+      'AK': 'problem',                // Název státu chybný
+      'XA': 'in_transit',             // Kontakt s příjemcem pro odbavení (celnice)
+      // Return
+      'RS': 'returned_to_sender',     // Return to Sender
+      'MV': 'returned_to_sender',     // Manifest Voided
     };
     if (codeMap[c]) return codeMap[c];
     // Fallback to description — IMPORTANT: negatives BEFORE positives
     const d = (desc || '').toLowerCase();
-    if (d.includes('not deliver') || d.includes('nedoručen') || d.includes('exception')) return 'failed_delivery';
-    if (d.includes('return') || d.includes('vrácen') || d.includes('back to sender')) return 'returned_to_sender';
-    if (d.includes('delivered') || d.includes('doručen')) return 'delivered';
-    if (d.includes('pickup') || d.includes('access point')) return 'available_for_pickup';
+    if (d.includes('poškozen') || d.includes('zlikvidován') || d.includes('chybí')) return 'problem';
+    if (d.includes('nezastižen') || d.includes('nemohl') || d.includes('not deliver') || d.includes('nedoručen')) return 'failed_delivery';
+    if (d.includes('vrácen') || d.includes('return') || d.includes('back to sender')) return 'returned_to_sender';
+    if (d.includes('access point') && (d.includes('uschováno') || d.includes('doručeno do') || d.includes('zůstává'))) return 'available_for_pickup';
+    if (d.includes('doručeno') || d.includes('delivered')) return 'delivered';
+    if (d.includes('doručuje') || d.includes('doručení dnes') || d.includes('naloženo')) return 'out_for_delivery';
     return 'in_transit';
   }
 
@@ -483,17 +531,27 @@ class TrackingSyncService {
     const c = String(code);
     const map = {
       '1': 'label_created',          // received data
-      '2': 'in_transit',             // arrived
+      '2': 'in_transit',             // arrived at depot
       '3': 'in_transit',             // prepared for departure
       '4': 'in_transit',             // departed
       '5': 'available_for_pickup',   // ready for pickup
       '6': 'handed_to_carrier',      // forwarded to another carrier
-      '7': 'delivered',              // delivered
+      '7': 'delivered',              // delivered / picked up by customer
       '8': 'returned_to_sender',     // returned
-      '9': 'failed_delivery',        // undeliverable
-      '10': 'returned_to_sender',    // cancelled
+      '9': 'returned_to_sender',     // posted back (vráceno odesílateli)
+      '10': 'returned_to_sender',    // cancelled / returned
+      '20': 'returned_to_sender',    // storage time expired → vráceno
+      '23': 'out_for_delivery',      // Z-BOX delivery attempt
+      '24': 'failed_delivery',       // Z-BOX last delivery attempt (failed)
+      '26': 'problem',               // packet under investigation
+      '27': 'in_transit',            // investigation resolved → continues
+      '30': 'in_transit',            // no favourite point set, redirect
     };
-    return map[c] || this.mapFromDescription(desc) || 'in_transit';
+    if (map[c]) return map[c];
+    // NULL code — check description
+    const d = (desc || '').toLowerCase();
+    if (d.includes('už víme') || d.includes('čekáme') || d.includes('obdrženy')) return 'label_created';
+    return this.mapFromDescription(desc) || 'in_transit';
   }
 
   /**

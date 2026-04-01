@@ -401,6 +401,20 @@ const DESCRIPTION_TRANSLATIONS = {
   // Zásilkovna
   'line': 'V přepravě',
   'ine': 'V přepravě',
+  'received data': 'Data přijata',
+  'arrived': 'Dorazila na depo',
+  'prepared for departure': 'Připraveno k odeslání',
+  'departed': 'Odesláno z depa',
+  'ready for pickup': 'Připraveno k vyzvednutí',
+  'delivered': 'Doručeno',
+  'posted back': 'Vráceno odesílateli',
+  'returned': 'Vráceno',
+  'storage time expired': 'Vypršela úložní doba',
+  'zbox delivery attempt': 'Pokus o doručení do Z-BOXu',
+  'zbox last delivery attempt': 'Poslední pokus o doručení do Z-BOXu',
+  'no favourite point set redirect': 'Přesměrování — není nastaveno oblíbené místo',
+  'packet under investigation': 'Zásilka je vyšetřována',
+  'packet investigation resolved': 'Vyšetřování zásilky vyřešeno',
 };
 
 function translateDescription(description) {
