@@ -483,6 +483,54 @@ router.post('/shipments/:id/send-email', async (req, res, next) => {
   }
 });
 
+// POST /re-evaluate — re-evaluate unified_status from existing tracking_sync_log data
+router.post('/re-evaluate', async (req, res, next) => {
+  try {
+    const { carrier } = req.body;
+    const { getUnifiedStatus } = require('../../services/retino/tracking-status-mapper');
+
+    // Get non-final shipments
+    let query = supabase
+      .from('delivery_notes')
+      .select('id, doc_number, unified_status, shipper_code')
+      .not('unified_status', 'in', '(delivered,returned_to_sender)')
+      .not('tracking_number', 'is', null);
+
+    if (carrier) query = query.eq('shipper_code', carrier);
+
+    const { data: shipments, error } = await query;
+    if (error) throw error;
+
+    let updated = 0;
+    for (const ship of (shipments || [])) {
+      // Get latest tracking_sync_log
+      const { data: logs } = await supabase
+        .from('tracking_sync_log')
+        .select('tracking_data')
+        .eq('delivery_note_id', ship.id)
+        .order('synced_at', { ascending: false })
+        .limit(1);
+
+      if (!logs?.[0]?.tracking_data) continue;
+
+      const { status: newStatus, lastDescription } = getUnifiedStatus(logs[0].tracking_data);
+      if (newStatus && newStatus !== 'unknown' && newStatus !== ship.unified_status) {
+        const updates = { unified_status: newStatus, last_tracking_description: lastDescription };
+        if (newStatus === 'delivered') updates.delivered_at = new Date().toISOString();
+        if (newStatus === 'available_for_pickup' && !ship.pickup_at) updates.pickup_at = new Date().toISOString();
+
+        await supabase.from('delivery_notes').update(updates).eq('id', ship.id);
+        console.log(`[ReEvaluate] ${ship.doc_number}: ${ship.unified_status} → ${newStatus}`);
+        updated++;
+      }
+    }
+
+    res.json({ total: shipments?.length || 0, updated });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // POST /force-sync — force tracking sync now (admin trigger, optional carrier filter)
 router.post('/force-sync', async (req, res, next) => {
   try {

@@ -119,6 +119,20 @@ export default function TrackingDashboard() {
     }
   }
 
+  const handleReEvaluate = async () => {
+    setSyncing(true)
+    try {
+      const body = syncCarrier ? { carrier: syncCarrier } : {}
+      const res = await api.post('/retino/tracking/re-evaluate', body)
+      alert(`Re-evaluate dokončen: ${res.data.updated} zásilek aktualizováno z ${res.data.total}`)
+      fetchDashboard(); fetchShipments()
+    } catch (err) {
+      alert('Chyba: ' + (err.response?.data?.error || err.message))
+    } finally {
+      setSyncing(false)
+    }
+  }
+
   return (
     <div className="bg-navy-900 text-theme-primary p-3 sm:p-6">
       {/* Header */}
@@ -137,6 +151,10 @@ export default function TrackingDashboard() {
             ) : (
               <><svg className="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>Sync</>
             )}
+          </button>
+          <button onClick={handleReEvaluate} disabled={syncing}
+            className="bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+            Re-evaluate
           </button>
         </div>
       </div>

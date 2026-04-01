@@ -24,7 +24,10 @@ class TrackingSyncService {
 
     // Paginate through ALL matching shipments (Supabase default limit is 1000)
     // Skip final statuses — no need to re-check delivered/returned packages
+    // Only sync shipments from last 60 days (older ones are likely resolved)
     const SKIP_UNIFIED = ['delivered', 'returned_to_sender'];
+    const SYNC_DAYS = 60;
+    const dateFrom = new Date(Date.now() - SYNC_DAYS * 24 * 60 * 60 * 1000).toISOString();
     const PAGE_SIZE = 1000;
     let offset = 0;
     let allShipments = [];
@@ -35,7 +38,8 @@ class TrackingSyncService {
         .select('*')
         .not('unified_status', 'in', `(${SKIP_UNIFIED.join(',')})`)
         .not('status', 'eq', 'cancelled')
-        .not('lp_shipment_id', 'is', null)
+        .not('tracking_number', 'is', null)
+        .gte('date_issued', dateFrom)
         .range(offset, offset + PAGE_SIZE - 1);
 
       if (carrierFilter) {
