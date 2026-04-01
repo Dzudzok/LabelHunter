@@ -59,6 +59,9 @@ const STATUS_RULES = [
       /neúspěšný pokus/i,
       /nedoručeno/i,
       /parcel was not delivered/i,
+      /nebyla doručena/i,
+      /zásilka nebyla doručena/i,
+      /poškození/i,
     ],
   },
   {
@@ -93,6 +96,8 @@ const STATUS_RULES = [
       /out for delivery/i,
       /parcel is being delivered/i,
       /zásilka se dnes doručuje/i,
+      /se dnes doručuje/i,
+      /dnes doručuje/i,
     ],
   },
   {
@@ -108,6 +113,8 @@ const STATUS_RULES = [
       /balík předán/i,
       /we received the parcel/i,
       /převzali od odesílatele/i,
+      /jsme převzali od odesílatele/i,
+      /čekáme na přijetí/i,
     ],
   },
   {

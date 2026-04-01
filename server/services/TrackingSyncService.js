@@ -430,7 +430,13 @@ class TrackingSyncService {
       'KB': 'delivered',              // UPS Access Point delivery
       'FS': 'handed_to_carrier',      // First Scan
       'P': 'handed_to_carrier',       // Pickup
+      'OR': 'handed_to_carrier',      // Origin scan (dorazil do zařízení)
+      'MP': 'label_created',          // Manifest pickup (štítek vytvořen)
       'I': 'in_transit',             // In Transit
+      'AR': 'in_transit',            // Arrival scan (dorazil do zařízení)
+      'DP': 'in_transit',            // Departure scan (opustil zařízení)
+      'OT': 'in_transit',            // Out for today
+      'SR': 'in_transit',            // Special routing
       'X': 'failed_delivery',        // Exception
       'RS': 'returned_to_sender',    // Return to Sender
       'MV': 'returned_to_sender',    // Manifest Voided
@@ -477,18 +483,19 @@ class TrackingSyncService {
     // PPL CPL API event codes (e.g. "Delivered", "ShipmentInTransport.TakeOverFromSender")
     if (c.includes('notdelivered') || c.includes('undeliverable')) return 'failed_delivery';
     if (c.includes('backshipment') || c.includes('backtosender') || (c.includes('return') && !c.includes('returnch'))) return 'returned_to_sender';
-    if (c === 'delivered' || c.includes('deliveryfinished')) return 'delivered';
+    if (c.startsWith('delivered') || c.includes('deliveryfinished')) return 'delivered';
+    if (c.includes('delivering') || c === 'delivery') return 'out_for_delivery';
     if (c.includes('waitingforshipment') || c === 'dataaccepted') return 'label_created';
     if (c.includes('loadingfordelivery') || c.includes('outfordelivery') || c.includes('readyfordelivery')) return 'out_for_delivery';
     if (c.includes('accesspoint') || c.includes('parcelshop') || c.includes('storedforpickup')) return 'available_for_pickup';
-    if (c.includes('takeover') || c.includes('pickedup') || c.includes('accepted')) return 'handed_to_carrier';
-    if (c.includes('shipmentintransport') || c.includes('intransit') || c.includes('preparingfordelivery') || c.includes('transit')) return 'in_transit';
+    if (c.includes('takeover') || c.includes('pickedup') || c.includes('accepted') || c.includes('handedoverto')) return 'handed_to_carrier';
+    if (c.includes('shipmentintransport') || c.includes('intransit') || c.includes('preparingfordelivery') || c.includes('transit') || c.includes('otherdepot') || c.includes('inputdepot') || c.includes('deliverydepot')) return 'in_transit';
     // Fallback to description
     const d = (desc || '').toLowerCase();
     if (d.includes('nedoručen') || d.includes('not deliver')) return 'failed_delivery';
     if (d.includes('vrácen') || d.includes('return') || d.includes('zpět') || d.includes('back to sender')) return 'returned_to_sender';
     if (d.includes('delivered') || d.includes('doručen')) return 'delivered';
-    if (d.includes('being delivered today') || d.includes('doručován')) return 'out_for_delivery';
+    if (d.includes('being delivered today') || d.includes('doručován') || d.includes('se dnes doručuje') || d.includes('dnes doručuje')) return 'out_for_delivery';
     return this.mapFromDescription(desc) || 'in_transit';
   }
 
@@ -500,7 +507,7 @@ class TrackingSyncService {
     const d = desc.toLowerCase();
     // IMPORTANT: Check negatives BEFORE positives! "nedoručeno" contains "doručen"
     // Failed delivery
-    if (d.includes('nedoručen') || d.includes('not deliver') || d.includes('nezastiž') || d.includes('undeliverable') || d.includes('neúspěšný pokus') || d.includes('nicht zugestellt')) return 'failed_delivery';
+    if (d.includes('nedoručen') || d.includes('nebyla doručen') || d.includes('not deliver') || d.includes('nezastiž') || d.includes('undeliverable') || d.includes('neúspěšný pokus') || d.includes('nicht zugestellt')) return 'failed_delivery';
     // Returned
     if (d.includes('vrácen') || d.includes('return') || d.includes('zpět') || d.includes('back to sender') || d.includes('zurück')) return 'returned_to_sender';
     // Delivered (after failed/returned checks)
@@ -508,7 +515,7 @@ class TrackingSyncService {
     // Available for pickup
     if (d.includes('k vyzvednutí') || d.includes('pickup') || d.includes('uložen') || d.includes('výdejn') || d.includes('parcelshop') || d.includes('pobočk')) return 'available_for_pickup';
     // Out for delivery
-    if (d.includes('doručován') || d.includes('out for') || d.includes('v doručení') || d.includes('on the way') || d.includes('na cestě k příjemci') || d.includes('with our courier')) return 'out_for_delivery';
+    if (d.includes('doručován') || d.includes('out for') || d.includes('v doručení') || d.includes('on the way') || d.includes('na cestě k příjemci') || d.includes('with our courier') || d.includes('se dnes doručuje') || d.includes('dnes doručuje')) return 'out_for_delivery';
     // Handed to carrier
     if (d.includes('přijat') || d.includes('podán') || d.includes('picked up') || d.includes('převzat') || d.includes('předán')) return 'handed_to_carrier';
     // In transit
