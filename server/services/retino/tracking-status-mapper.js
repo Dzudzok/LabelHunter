@@ -13,20 +13,31 @@ const STATUS_PRIORITY = {
 };
 
 // Order matters — first match wins, so more specific patterns come first
+// IMPORTANT: negatives (failed, returned) MUST come before positives (delivered)
+// because "nedoručeno" contains "doručen", "not delivered" contains "delivered"
 const STATUS_RULES = [
   {
-    status: 'delivered',
+    status: 'failed_delivery',
     patterns: [
-      /^doručeno\s*$/i,
-      /the parcel is delivered/i,
-      /parcel was successfully delivered/i,
-      /zásilka je u vás/i,
-      /balíček jsme úspěšně doručili/i,
-      /dodání zásilky/i,
-      /podpis k dispozici/i,
-      /zásilku jsme doručili/i,
-      /zugestellt/i,
-      /has been delivered/i,
+      /adresát nezastižen/i,
+      /odmítnutí převzetí/i,
+      /not delivered/i,
+      /delivery attempt failed/i,
+      /neúspěšný pokus/i,
+      /nedoručeno/i,
+      /parcel was not delivered/i,
+      /nebyla doručena/i,
+      /zásilka nebyla doručena/i,
+      /poškození/i,
+    ],
+  },
+  {
+    status: 'returned_to_sender',
+    patterns: [
+      /zpětné zaslání odesílateli/i,
+      /returned to sender/i,
+      /vráceno odesílateli/i,
+      /back to sender/i,
     ],
   },
   {
@@ -50,27 +61,18 @@ const STATUS_RULES = [
     ],
   },
   {
-    status: 'failed_delivery',
+    status: 'delivered',
     patterns: [
-      /adresát nezastižen/i,
-      /odmítnutí převzetí/i,
-      /not delivered/i,
-      /delivery attempt failed/i,
-      /neúspěšný pokus/i,
-      /nedoručeno/i,
-      /parcel was not delivered/i,
-      /nebyla doručena/i,
-      /zásilka nebyla doručena/i,
-      /poškození/i,
-    ],
-  },
-  {
-    status: 'returned_to_sender',
-    patterns: [
-      /zpětné zaslání odesílateli/i,
-      /returned to sender/i,
-      /vráceno odesílateli/i,
-      /back to sender/i,
+      /^doručeno\s*$/i,
+      /the parcel is delivered/i,
+      /parcel was successfully delivered/i,
+      /zásilka je u vás/i,
+      /balíček jsme úspěšně doručili/i,
+      /dodání zásilky/i,
+      /podpis k dispozici/i,
+      /zásilku jsme doručili/i,
+      /zugestellt/i,
+      /has been delivered/i,
     ],
   },
   {

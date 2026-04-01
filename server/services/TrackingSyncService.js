@@ -356,12 +356,13 @@ class TrackingSyncService {
    */
   mapFOFRStatus(code, desc) {
     const d = String(desc).toLowerCase();
-    if (d.includes('doručen')) return 'delivered';
+    // IMPORTANT: check negatives BEFORE positives (nedoručen contains doručen)
+    if (d.includes('nedoručen')) return 'failed_delivery';
     if (d.includes('vrácen')) return 'returned_to_sender';
+    if (d.includes('doručen')) return 'delivered';
     if (d.includes('na cestě') || d.includes('přeprav')) return 'in_transit';
     if (d.includes('ve skladu') || d.includes('sklad')) return 'in_transit';
     if (d.includes('připraven') || d.includes('k vyzvednutí')) return 'available_for_pickup';
-    if (d.includes('nedoručen')) return 'failed_delivery';
     if (d.includes('pořízená') || d.includes('exportovaná')) return 'handed_to_carrier';
     return 'in_transit';
   }
@@ -443,11 +444,11 @@ class TrackingSyncService {
       'M': 'in_transit',             // Billing info
     };
     if (codeMap[c]) return codeMap[c];
-    // Fallback to description
+    // Fallback to description — IMPORTANT: negatives BEFORE positives
     const d = (desc || '').toLowerCase();
+    if (d.includes('not deliver') || d.includes('nedoručen') || d.includes('exception')) return 'failed_delivery';
+    if (d.includes('return') || d.includes('vrácen') || d.includes('back to sender')) return 'returned_to_sender';
     if (d.includes('delivered') || d.includes('doručen')) return 'delivered';
-    if (d.includes('return') || d.includes('vrácen')) return 'returned_to_sender';
-    if (d.includes('exception') || d.includes('not deliver')) return 'failed_delivery';
     if (d.includes('pickup') || d.includes('access point')) return 'available_for_pickup';
     return 'in_transit';
   }
