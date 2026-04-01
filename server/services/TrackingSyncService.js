@@ -168,12 +168,15 @@ class TrackingSyncService {
           };
 
           // Save to tracking_sync_log
-          await supabase.from('tracking_sync_log').insert({
+          const stateCode = sorted[0]?.statusCode;
+          const stateCodeInt = stateCode && !isNaN(Number(stateCode)) ? Number(stateCode) : null;
+          const { error: logErr } = await supabase.from('tracking_sync_log').insert({
             delivery_note_id: shipment.id,
-            lp_state_code: sorted[0]?.statusCode || null,
+            lp_state_code: stateCodeInt,
             lp_state_name: lastDescription,
             tracking_data: trackingData,
           });
+          if (logErr) console.error(`[TrackingSync] Log insert error ${shipment.doc_number}:`, logErr.message);
 
           // Update unified_status + timestamps
           if (unifiedStatus !== shipment.unified_status) {

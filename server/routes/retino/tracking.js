@@ -182,7 +182,7 @@ router.get('/shipments/:id', async (req, res, next) => {
           trackingTimeline.push({
             date: item.date,
             description: item.description,
-            location: item.placeOfEvent || null,
+            location: item.location || item.placeOfEvent || null,
             postalCode: item.postalCode || null,
             unifiedStatus: getUnifiedStatus({ data: [{ trackingItems: [item] }] }).status,
           });
