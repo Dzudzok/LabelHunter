@@ -173,7 +173,7 @@ class TrackingSyncService {
           const { error: logErr } = await supabase.from('tracking_sync_log').insert({
             delivery_note_id: shipment.id,
             lp_state_code: stateCodeInt,
-            lp_state_name: lastDescription,
+            lp_state_name: (lastDescription || '').substring(0, 50),
             tracking_data: trackingData,
           });
           if (logErr) console.error(`[TrackingSync] Log insert error ${shipment.doc_number}:`, logErr.message);
