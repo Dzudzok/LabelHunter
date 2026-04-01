@@ -171,7 +171,7 @@ router.get('/delivery-time', async (req, res, next) => {
     if (shipper) filters.shipper = shipper;
 
     const notes = await fetchAllNotes(
-      'id, shipper_code, date_issued, label_generated_at, last_tracking_update, delivered_at, delivery_country',
+      'id, shipper_code, date_issued, label_generated_at, last_tracking_update, delivered_at, delivery_country, pickup_at',
       filters
     );
 
@@ -202,7 +202,24 @@ router.get('/delivery-time', async (req, res, next) => {
 
       const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
       const bucket = days >= 7 ? '7+' : String(days);
-      deliveryDays.push({ days, bucket, carrier: note.shipper_code || 'Neznámý' });
+
+      // Order-to-delivery: date_issued → delivered_at
+      let orderToDelivery = null;
+      if (note.date_issued && endDate) {
+        const otdMs = new Date(endDate) - new Date(note.date_issued);
+        if (otdMs >= 0) orderToDelivery = Math.floor(otdMs / (1000 * 60 * 60 * 24));
+      }
+
+      // Days at destination branch: pickup_at → delivered_at
+      let daysAtBranch = null;
+      if (note.pickup_at && endDate) {
+        const brMs = new Date(endDate) - new Date(note.pickup_at);
+        if (brMs >= 0) daysAtBranch = Math.floor(brMs / (1000 * 60 * 60 * 24));
+      }
+
+      const deliveredDate = (endDate || '').substring(0, 10); // YYYY-MM-DD for daily grouping
+
+      deliveryDays.push({ days, bucket, carrier: note.shipper_code || 'Neznámý', orderToDelivery, daysAtBranch, deliveredDate });
 
       const c = note.shipper_code || 'Neznámý';
       if (!byCarrier[c]) byCarrier[c] = { totalDays: 0, count: 0, buckets: {} };
@@ -238,11 +255,56 @@ router.get('/delivery-time', async (req, res, next) => {
       }))
       .sort((a, b) => b.count - a.count);
 
+    // P95 and Median
+    const sortedDays = deliveryDays.map(d => d.days).sort((a, b) => a - b);
+    const p95Days = sortedDays.length > 0 ? sortedDays[Math.floor(sortedDays.length * 0.95)] : null;
+    const medianDays = sortedDays.length > 0 ? sortedDays[Math.floor(sortedDays.length * 0.5)] : null;
+    const deliveryRate = totalMeasured; // all are delivered (filter = delivered)
+
+    // Order-to-delivery distribution
+    const otdValues = deliveryDays.filter(d => d.orderToDelivery !== null).map(d => d.orderToDelivery);
+    const otdDistribution = { '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7+': 0 };
+    for (const v of otdValues) otdDistribution[v >= 7 ? '7+' : String(v)] = (otdDistribution[v >= 7 ? '7+' : String(v)] || 0) + 1;
+    const avgOtd = otdValues.length > 0 ? Math.round((otdValues.reduce((s, v) => s + v, 0) / otdValues.length) * 10) / 10 : null;
+
+    // Days at branch distribution
+    const brValues = deliveryDays.filter(d => d.daysAtBranch !== null).map(d => d.daysAtBranch);
+    const brDistribution = { '0': 0, '1': 0, '2': 0, '3': 0, '4': 0, '5': 0, '6': 0, '7+': 0 };
+    for (const v of brValues) brDistribution[v >= 7 ? '7+' : String(v)] = (brDistribution[v >= 7 ? '7+' : String(v)] || 0) + 1;
+    const avgBranch = brValues.length > 0 ? Math.round((brValues.reduce((s, v) => s + v, 0) / brValues.length) * 10) / 10 : null;
+
+    // Daily trends (group by delivered date)
+    const dailyMap = {};
+    for (const d of deliveryDays) {
+      if (!d.deliveredDate) continue;
+      if (!dailyMap[d.deliveredDate]) dailyMap[d.deliveredDate] = { date: d.deliveredDate, count: 0, totalTransit: 0, totalOtd: 0, totalBranch: 0, cntOtd: 0, cntBranch: 0 };
+      dailyMap[d.deliveredDate].count++;
+      dailyMap[d.deliveredDate].totalTransit += d.days;
+      if (d.orderToDelivery !== null) { dailyMap[d.deliveredDate].totalOtd += d.orderToDelivery; dailyMap[d.deliveredDate].cntOtd++; }
+      if (d.daysAtBranch !== null) { dailyMap[d.deliveredDate].totalBranch += d.daysAtBranch; dailyMap[d.deliveredDate].cntBranch++; }
+    }
+    const dailyTrend = Object.values(dailyMap)
+      .sort((a, b) => a.date.localeCompare(b.date))
+      .map(d => ({
+        date: d.date,
+        count: d.count,
+        avgTransit: d.count > 0 ? Math.round((d.totalTransit / d.count) * 10) / 10 : 0,
+        avgOtd: d.cntOtd > 0 ? Math.round((d.totalOtd / d.cntOtd) * 10) / 10 : 0,
+        avgBranch: d.cntBranch > 0 ? Math.round((d.totalBranch / d.cntBranch) * 10) / 10 : 0,
+      }));
+
     const result = {
       totalMeasured,
       avgDays,
+      p95Days,
+      medianDays,
       distribution,
       distributionPct,
+      otdDistribution,
+      avgOtd,
+      brDistribution,
+      avgBranch,
+      dailyTrend,
       carrierAvg,
       countries,
       days: daysNum,

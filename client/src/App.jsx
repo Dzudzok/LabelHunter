@@ -10,6 +10,7 @@ import ReturnPage from './pages/ReturnPage/ReturnPage'
 // Retino module
 import RetinoLayout from './components/retino/RetinoLayout'
 import TrackingDashboard from './components/retino/tracking/TrackingDashboard'
+import TrackingOverview from './components/retino/tracking/TrackingOverview'
 import ShipmentDetail from './components/retino/tracking/ShipmentDetail'
 import ReturnsDashboard from './components/retino/returns/ReturnsDashboard'
 import ReturnAdminCreate from './components/retino/returns/ReturnAdminCreate'
@@ -72,7 +73,8 @@ export default function App() {
 
               {/* Retino admin routes — wrapped in sidebar layout */}
               <Route path="/retino" element={<PrivateRoute><RetinoLayout /></PrivateRoute>}>
-                <Route path="tracking" element={<TrackingDashboard />} />
+                <Route path="tracking" element={<TrackingOverview />} />
+                <Route path="tracking/shipping" element={<TrackingDashboard />} />
                 <Route path="tracking/problems" element={<TrackingProblems />} />
                 <Route path="tracking/:id" element={<ShipmentDetail />} />
                 <Route path="analytics/overview" element={<AnalyticsOverview />} />
