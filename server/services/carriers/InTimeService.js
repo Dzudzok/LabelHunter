@@ -15,7 +15,10 @@ class InTimeService {
   }
 
   isConfigured() {
-    return !!(this.username && this.password);
+    // InTime API (bridge.intime.cz) is discontinued — they moved to One Delivery (api.onedelivery.tech)
+    // Old credentials don't work. Disabled until new API access is obtained.
+    // TODO: Get One Delivery API credentials and update this service
+    return false;
   }
 
   /**
