@@ -25,9 +25,10 @@ class TrackingSyncService {
     console.log('[TrackingSync] Direct carrier APIs:', JSON.stringify(configured));
 
     // Paginate through ALL matching shipments (Supabase default limit is 1000)
-    // Skip final statuses — no need to re-check delivered/returned packages
+    // Skip only truly final statuses — delivered is final, but returned_to_sender
+    // may later change to delivered (e.g. redelivery, new address)
     // Only sync shipments from last 60 days (older ones are likely resolved)
-    const SKIP_UNIFIED = ['delivered', 'returned_to_sender'];
+    const SKIP_UNIFIED = ['delivered'];
     const SYNC_DAYS = 60;
     const dateFrom = new Date(Date.now() - SYNC_DAYS * 24 * 60 * 60 * 1000).toISOString();
     const PAGE_SIZE = 1000;
@@ -154,14 +155,26 @@ class TrackingSyncService {
           }
           if (!unifiedStatus) unifiedStatus = 'in_transit'; // fallback
 
-          // Post-processing: if "delivered" but timeline contains returned_to_sender,
-          // it means the parcel was "delivered" back to sender, not to customer.
-          // Same for failed_delivery — if parcel was damaged/refused and then "delivered" back.
+          // Post-processing: if newest status is "delivered" but the PREVIOUS meaningful
+          // status was "returned_to_sender", the "delivered" means delivered BACK to sender.
+          // However, if returned_to_sender is older and there are transit events after it
+          // leading to delivered, it means redelivery — keep as delivered.
           if (unifiedStatus === 'delivered') {
-            const allMapped = sorted.map(st => this.mapCarrierStatus(carrier, st)).filter(Boolean);
-            if (allMapped.includes('returned_to_sender')) {
+            // Find the second meaningful status (the one before delivered)
+            let secondStatus = null;
+            let foundFirst = false;
+            for (const st of sorted) {
+              const mapped = this.mapCarrierStatus(carrier, st);
+              if (!mapped) continue;
+              if (!foundFirst) { foundFirst = true; continue; } // skip first (delivered)
+              secondStatus = mapped;
+              break;
+            }
+            // Only override if the event right before delivered is returned_to_sender
+            // This catches: returned → "delivered" (back to sender)
+            // But NOT: returned → in_transit → out_for_delivery → delivered (redelivery)
+            if (secondStatus === 'returned_to_sender') {
               unifiedStatus = 'returned_to_sender';
-              // Find the return event description
               const returnEvent = sorted.find(st => this.mapCarrierStatus(carrier, st) === 'returned_to_sender');
               if (returnEvent) lastDescription = returnEvent.description || lastDescription;
             }

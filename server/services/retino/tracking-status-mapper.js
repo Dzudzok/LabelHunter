@@ -183,28 +183,16 @@ function getUnifiedStatus(trackingData) {
   const data = trackingData.data || trackingData;
   const items = (Array.isArray(data) ? data : [data]).filter(Boolean);
 
-  let bestStatus = 'unknown';
-  let bestPriority = 0;
   let lastDescription = null;
   let lastUpdate = null;
-  let hasReturnedToSender = false;
-  let returnDescription = null;
 
+  // Collect all events with dates and statuses, sorted chronologically (newest first)
+  const allEvents = [];
   for (const shipment of items) {
     const trackingItems = shipment.trackingItems || [];
     for (const item of trackingItems) {
       const status = classifyDescription(item.description);
-      const priority = STATUS_PRIORITY[status] || 0;
-      if (priority > bestPriority) {
-        bestPriority = priority;
-        bestStatus = status;
-      }
-      // Track if returned_to_sender appears anywhere in timeline
-      if (status === 'returned_to_sender') {
-        hasReturnedToSender = true;
-        returnDescription = item.description;
-      }
-      // Track the chronologically last event
+      allEvents.push({ status, description: item.description, date: item.date });
       if (!lastUpdate || (item.date && item.date > lastUpdate)) {
         lastUpdate = item.date || null;
         lastDescription = item.description || null;
@@ -212,11 +200,29 @@ function getUnifiedStatus(trackingData) {
     }
   }
 
-  // Post-processing: "delivered" after "returned_to_sender" means
-  // the parcel was delivered BACK to sender, not to customer
-  if (bestStatus === 'delivered' && hasReturnedToSender) {
-    bestStatus = 'returned_to_sender';
-    if (returnDescription) lastDescription = returnDescription;
+  // Sort by date descending (newest first)
+  allEvents.sort((a, b) => (b.date || '').localeCompare(a.date || ''));
+
+  // Find best status by priority
+  let bestStatus = 'unknown';
+  let bestPriority = 0;
+  for (const ev of allEvents) {
+    const priority = STATUS_PRIORITY[ev.status] || 0;
+    if (priority > bestPriority) {
+      bestPriority = priority;
+      bestStatus = ev.status;
+    }
+  }
+
+  // Post-processing: if delivered, check if the event right before it is returned_to_sender
+  // That means "delivered back to sender", not to customer.
+  // But if there are transit events between returned and delivered = redelivery, keep delivered.
+  if (bestStatus === 'delivered') {
+    const meaningful = allEvents.filter(e => e.status !== 'unknown');
+    if (meaningful.length >= 2 && meaningful[0].status === 'delivered' && meaningful[1].status === 'returned_to_sender') {
+      bestStatus = 'returned_to_sender';
+      lastDescription = meaningful[1].description;
+    }
   }
 
   return { status: bestStatus, lastDescription, lastUpdate };
