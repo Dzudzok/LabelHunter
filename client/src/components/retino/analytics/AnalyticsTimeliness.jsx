@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../../services/api'
 import StatsCards from '../shared/StatsCards'
+import CarrierLogo from '../tracking/CarrierLogo'
 
 const PERIOD_OPTIONS = [
   { label: '30 dni', value: '30' },
@@ -218,7 +219,13 @@ export default function AnalyticsTimeliness() {
               <tbody>
                 {carriers.map(([carrier, stats]) => (
                   <tr key={carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30 transition-colors">
-                    <td className="py-3 px-3 text-theme-primary font-medium">{carrier}</td>
+                    <td className="py-3 px-3">
+                      <span className="inline-flex items-center gap-1.5">
+                        <CarrierLogo carrier={carrier} size="sm" showFlag={false} />
+                        {carrier.endsWith(' CZ') && <span className="text-xs text-theme-muted">CZ</span>}
+                        {carrier.endsWith(' EU') && <span className="text-xs text-theme-muted">EU</span>}
+                      </span>
+                    </td>
                     <td className="py-3 px-3 text-right text-green-400">{stats.onTime}</td>
                     <td className="py-3 px-3 text-right text-red-400">{stats.late}</td>
                     <td className="py-3 px-3 text-right text-blue-400">{stats.early}</td>
@@ -270,7 +277,7 @@ export default function AnalyticsTimeliness() {
             <tbody>
               {eddConfig.map((cfg) => (
                 <tr key={cfg.id} className="border-b border-navy-700/50 hover:bg-navy-700/30 transition-colors">
-                  <td className="py-3 px-3 text-theme-primary font-medium">{cfg.shipper_code}</td>
+                  <td className="py-3 px-3"><CarrierLogo carrier={cfg.shipper_code} size="sm" showFlag={false} /></td>
                   <td className="py-3 px-3 text-theme-secondary">{cfg.country_code}</td>
                   <td className="py-3 px-3 text-right text-theme-secondary">{cfg.business_days}</td>
                   <td className="py-3 px-3 text-center text-theme-secondary">{cfg.count_weekends ? 'Ano' : 'Ne'}</td>

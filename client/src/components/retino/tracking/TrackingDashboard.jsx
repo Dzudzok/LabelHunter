@@ -166,7 +166,12 @@ export default function TrackingDashboard() {
                   isActive ? 'border-current text-theme-primary' : 'border-transparent text-theme-muted hover:text-theme-primary'
                 }`}
                 style={isActive ? { color: sf.color, borderColor: sf.color } : {}}>
-                {sf.label} <span className="text-xs opacity-60 ml-1">{count}</span>
+                {sf.label}
+                {count != null && (
+                  <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                    isActive ? 'bg-white/20' : 'bg-navy-600'
+                  }`}>{count}</span>
+                )}
               </button>
             )
           })}
