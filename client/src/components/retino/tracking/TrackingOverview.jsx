@@ -144,7 +144,11 @@ export default function TrackingOverview() {
                   return (
                     <tr key={carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30">
                       <td className="py-2.5 px-3">
-                        <CarrierLogo carrier={carrier} size="sm" />
+                        <span className="inline-flex items-center gap-1.5">
+                          <CarrierLogo carrier={carrier} size="sm" showFlag={false} />
+                          {carrier.endsWith(' CZ') && <span className="text-xs text-theme-muted">CZ</span>}
+                          {carrier.endsWith(' EU') && <span className="text-xs text-theme-muted">EU</span>}
+                        </span>
                       </td>
                       <td className="py-2.5 px-3 text-right text-theme-secondary">{stats.total}</td>
                       <td className="py-2.5 px-3 text-right text-purple-400">{stats.in_transit || 0}</td>

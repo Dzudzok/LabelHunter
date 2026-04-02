@@ -250,7 +250,13 @@ export default function AnalyticsDeliveryTime() {
               <tbody>
                 {data.carrierAvg.map(c => (
                   <tr key={c.carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30">
-                    <td className="py-3 px-3"><CarrierLogo carrier={c.carrier} size="sm" /></td>
+                    <td className="py-3 px-3">
+                      <span className="inline-flex items-center gap-1.5">
+                        <CarrierLogo carrier={c.carrier} size="sm" showFlag={false} />
+                        {c.carrier.endsWith(' CZ') && <span className="text-xs text-theme-muted">CZ</span>}
+                        {c.carrier.endsWith(' EU') && <span className="text-xs text-theme-muted">EU</span>}
+                      </span>
+                    </td>
                     <td className="py-3 px-3 text-right text-theme-secondary">{c.count}</td>
                     <td className="py-3 px-3 text-right">
                       <span className={`font-semibold ${c.avgDays <= 1 ? 'text-green-400' : c.avgDays <= 3 ? 'text-blue-400' : c.avgDays <= 5 ? 'text-yellow-400' : 'text-red-400'}`}>

@@ -218,7 +218,7 @@ export default function ShipmentDetail() {
             <InfoRow label="Datum" value={shipment.date_issued ? new Date(shipment.date_issued).toLocaleDateString('cs-CZ') : '-'} />
             <div className="flex justify-between items-center py-1">
               <span className="text-sm text-theme-muted">Dopravce</span>
-              <CarrierLogo carrier={shipment.display_carrier || shipment.shipper_code} size="md" />
+              <CarrierLogo carrier={shipment.shipper_code} country={shipment.delivery_country} size="md" />
             </div>
             <InfoRow label="Tracking" value={shipment.tracking_number} />
             {shipment.tracking_url && (

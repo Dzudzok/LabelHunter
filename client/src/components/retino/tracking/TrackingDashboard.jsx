@@ -230,7 +230,7 @@ export default function TrackingDashboard() {
                   <td className="py-2 px-3 text-xs text-theme-secondary">{r.order_number || r.invoice_number || '—'}</td>
                   <td className="py-2 px-3 text-xs text-theme-secondary hidden lg:table-cell truncate max-w-[150px]">{r.customer_name || '—'}</td>
                   <td className="py-2 px-3">
-                    <CarrierLogo carrier={r.display_carrier || r.shipper_code} size="xs" />
+                    <CarrierLogo carrier={r.shipper_code} country={r.delivery_country} size="xs" />
                   </td>
                   <td className="py-2 px-3 text-xs text-theme-muted hidden md:table-cell whitespace-nowrap">
                     {r.date_issued ? new Date(r.date_issued).toLocaleDateString('cs-CZ') : '—'}
@@ -335,7 +335,7 @@ export default function TrackingDashboard() {
                   <Row label="Číslo sledování" value={preview.tracking_number} mono />
                   <div className="flex justify-between items-center py-0.5">
                       <span className="text-theme-muted">Dopravce</span>
-                      <CarrierLogo carrier={preview.display_carrier || preview.shipper_code} size="sm" />
+                      <CarrierLogo carrier={preview.shipper_code} country={preview.delivery_country} size="sm" />
                     </div>
                   <Row label="Datum odeslání" value={preview.date_issued ? new Date(preview.date_issued).toLocaleDateString('cs-CZ') : '—'} />
                   {preview.tracking_url && (

@@ -167,7 +167,7 @@ export default function TrackingProblems() {
                   <td className="py-2 px-3 font-mono text-xs text-theme-primary">{s.tracking_number || s.doc_number}</td>
                   <td className="py-2 px-3 text-xs text-theme-secondary hidden lg:table-cell truncate max-w-[150px]">{s.customer_name || '—'}</td>
                   <td className="py-2 px-3">
-                    <CarrierLogo carrier={s.display_carrier || s.shipper_code} size="xs" />
+                    <CarrierLogo carrier={s.shipper_code} country={s.delivery_country} size="xs" />
                   </td>
                   <td className="py-2 px-3 text-xs text-theme-muted hidden md:table-cell whitespace-nowrap">
                     {s.date_issued ? new Date(s.date_issued).toLocaleDateString('cs-CZ') : '—'}
@@ -274,7 +274,7 @@ export default function TrackingProblems() {
                 <Row label="Tracking" value={preview.tracking_number} mono />
                 <div className="flex justify-between items-center py-0.5">
                     <span className="text-theme-muted">Dopravce</span>
-                    <CarrierLogo carrier={preview.display_carrier || preview.shipper_code} size="sm" />
+                    <CarrierLogo carrier={preview.shipper_code} country={preview.delivery_country} size="sm" />
                   </div>
                 {preview.tracking_url && (
                   <div className="flex justify-between py-0.5">

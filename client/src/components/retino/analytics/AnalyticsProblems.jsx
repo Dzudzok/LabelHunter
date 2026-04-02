@@ -221,7 +221,13 @@ export default function AnalyticsProblems() {
               <tbody>
                 {data.carrierProblems.map((c) => (
                   <tr key={c.carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30 transition-colors">
-                    <td className="py-3 px-3"><CarrierLogo carrier={c.carrier} size="sm" /></td>
+                    <td className="py-3 px-3">
+                      <span className="inline-flex items-center gap-1.5">
+                        <CarrierLogo carrier={c.carrier} size="sm" showFlag={false} />
+                        {c.carrier.endsWith(' CZ') && <span className="text-xs text-theme-muted">CZ</span>}
+                        {c.carrier.endsWith(' EU') && <span className="text-xs text-theme-muted">EU</span>}
+                      </span>
+                    </td>
                     <td className="py-3 px-3 text-right text-theme-secondary">{c.carrierTotal}</td>
                     <td className="py-3 px-3 text-right text-red-400 font-semibold">{c.problems}</td>
                     <td className="py-3 px-3 text-right">

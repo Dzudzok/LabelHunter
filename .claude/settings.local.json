@@ -16,7 +16,9 @@
       "Bash(node -c services/retino/tracking-status-mapper.js)",
       "Bash(node -c \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/routes/retino/tracking.js\")",
       "Bash(node -e ':*)",
-      "Bash(node -c \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/routes/retino/analytics.js\")"
+      "Bash(node -c \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/routes/retino/analytics.js\")",
+      "Bash(ls -la \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/\"*.png)",
+      "Read(//c/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/**)"
     ]
   }
 }
