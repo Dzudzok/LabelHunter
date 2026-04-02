@@ -265,6 +265,24 @@ class TrackingSyncService {
       console.log(`[TrackingSync/${carrier}] Done. Synced: ${synced}, Errors: ${errors}, Total: ${carrierShipments.length}`);
     }
 
+    // Clean stale label_created — if no carrier update after 3 days, label was never shipped
+    try {
+      const staleDays = 3;
+      const staleCutoff = new Date(Date.now() - staleDays * 24 * 60 * 60 * 1000).toISOString();
+      const { data: stale, error: staleErr } = await supabase
+        .from('delivery_notes')
+        .update({ unified_status: null, last_tracking_update: null, last_tracking_description: null })
+        .eq('unified_status', 'label_created')
+        .lt('date_issued', staleCutoff)
+        .not('tracking_number', 'is', null)
+        .select('id');
+      if (!staleErr && stale && stale.length > 0) {
+        console.log(`[TrackingSync] Cleaned ${stale.length} stale label_created shipments (older than ${staleDays} days)`);
+      }
+    } catch (e) {
+      console.error('[TrackingSync] Error cleaning stale labels:', e.message);
+    }
+
     // Log unmapped events summary
     const unmapped = this.getUnmappedSummary(true);
     if (Object.keys(unmapped).length > 0) {

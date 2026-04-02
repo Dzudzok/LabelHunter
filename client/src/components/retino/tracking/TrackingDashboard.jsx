@@ -192,6 +192,15 @@ export default function TrackingDashboard() {
             <option value="">Dopravce</option>
             {CARRIERS.map(c => <option key={c} value={c}>{c}</option>)}
           </select>
+          <div className="flex items-center gap-1.5">
+            <input type="date" value={dateFrom}
+              onChange={e => { setDateFrom(e.target.value); setDatePreset(''); setPage(1) }}
+              className="bg-navy-800 border border-navy-600 rounded-lg px-2 py-1 text-xs text-theme-primary outline-none focus:border-blue-500 w-[120px]" />
+            <span className="text-theme-muted text-xs">—</span>
+            <input type="date" value={dateTo}
+              onChange={e => { setDateTo(e.target.value); setDatePreset(''); setPage(1) }}
+              className="bg-navy-800 border border-navy-600 rounded-lg px-2 py-1 text-xs text-theme-primary outline-none focus:border-blue-500 w-[120px]" />
+          </div>
           <div className="flex gap-1">
             {DATE_PRESETS.map(p => (
               <button key={p.label} onClick={() => handleDatePreset(p)}
