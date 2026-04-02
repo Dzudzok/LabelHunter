@@ -8,6 +8,7 @@ import { api } from '../../services/api'
 import ItemList from './ItemList'
 import HunterPanel from './HunterPanel'
 import { usePrinter } from '../../hooks/usePrinter'
+import CarrierLogo from '../retino/tracking/CarrierLogo'
 
 export default function PackageView() {
   const { id } = useParams()
@@ -409,8 +410,9 @@ export default function PackageView() {
                   </div>
                   <div className="col-span-2">
                     <span className="text-theme-muted text-sm">Przewoźnik:</span>
-                    <div className="text-theme-primary font-semibold">
-                      {pkg.shipper_code ? `${pkg.shipper_code} | ${pkg.transport_name || pkg.shipper_service || ''}` : pkg.transport_name || '-'}
+                    <div className="flex items-center gap-2 mt-0.5">
+                      <CarrierLogo carrier={pkg.transport_name || pkg.shipper_code} country={pkg.delivery_country} size="md" />
+                      <span className="text-theme-secondary text-sm">{pkg.transport_name || pkg.shipper_service || ''}</span>
                     </div>
                   </div>
                   <div>

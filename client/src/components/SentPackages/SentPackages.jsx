@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
+import CarrierLogo from '../retino/tracking/CarrierLogo'
 
 const CARRIER_COLORS = {
   zasilkovna: 'bg-red-500/20 text-red-400',
@@ -167,10 +168,8 @@ export default function SentPackages({ isOpen, onClose }) {
                   </div>
 
                   {/* Carrier */}
-                  <div className={`px-3 py-1 rounded-lg text-sm font-medium shrink-0 ${
-                    CARRIER_COLORS[pkg.shipper_code?.toLowerCase()] || 'bg-navy-600 text-theme-secondary'
-                  }`}>
-                    {pkg.transport_name || pkg.shipper_code || '-'}
+                  <div className="shrink-0">
+                    <CarrierLogo carrier={pkg.transport_name || pkg.shipper_code} country={pkg.delivery_country} size="xs" />
                   </div>
 
                   {/* Tracking number */}
