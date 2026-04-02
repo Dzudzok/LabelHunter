@@ -1,5 +1,5 @@
 /**
- * CarrierLogo — displays carrier logo + country flag emoji.
+ * CarrierLogo — displays carrier logo + country flag (SVG image).
  * One logo per carrier (GLS, PPL, UPS...) + flag from delivery_country.
  */
 
@@ -17,58 +17,25 @@ const CARRIER_LOGOS = {
   'INTIME': '/carriers/intime.jpg',
 };
 
-const COUNTRY_FLAGS = {
-  'CZ': '\u{1F1E8}\u{1F1FF}',
-  'DE': '\u{1F1E9}\u{1F1EA}',
-  'AT': '\u{1F1E6}\u{1F1F9}',
-  'FR': '\u{1F1EB}\u{1F1F7}',
-  'ES': '\u{1F1EA}\u{1F1F8}',
-  'IT': '\u{1F1EE}\u{1F1F9}',
-  'SE': '\u{1F1F8}\u{1F1EA}',
-  'BE': '\u{1F1E7}\u{1F1EA}',
-  'DK': '\u{1F1E9}\u{1F1F0}',
-  'IE': '\u{1F1EE}\u{1F1EA}',
-  'PT': '\u{1F1F5}\u{1F1F9}',
-  'NL': '\u{1F1F3}\u{1F1F1}',
-  'PL': '\u{1F1F5}\u{1F1F1}',
-  'SK': '\u{1F1F8}\u{1F1F0}',
-  'HU': '\u{1F1ED}\u{1F1FA}',
-  'SI': '\u{1F1F8}\u{1F1EE}',
-  'HR': '\u{1F1ED}\u{1F1F7}',
-  'RO': '\u{1F1F7}\u{1F1F4}',
-  'BG': '\u{1F1E7}\u{1F1EC}',
-  'GR': '\u{1F1EC}\u{1F1F7}',
-  'FI': '\u{1F1EB}\u{1F1EE}',
-  'LU': '\u{1F1F1}\u{1F1FA}',
-  'CH': '\u{1F1E8}\u{1F1ED}',
-  'GB': '\u{1F1EC}\u{1F1E7}',
-};
+const COUNTRY_FLAGS = [
+  'CZ','DE','AT','FR','ES','IT','SE','BE','DK','IE','PT','NL',
+  'PL','SK','HU','SI','HR','RO','BG','GR','FI','LU','CH','GB',
+];
 
 /**
- * Extract base carrier name from display_carrier (e.g. "GLS CZ" -> "GLS", "UPS" -> "UPS")
+ * Extract base carrier name from display_carrier (e.g. "GLS CZ" -> "GLS")
  */
 function getBaseCarrier(displayCarrier) {
   if (!displayCarrier) return null;
   return displayCarrier.replace(/\s+(CZ|EU)$/i, '');
 }
 
-/**
- * Extract country from display_carrier or delivery_country
- * "GLS CZ" -> "CZ", "GLS EU" -> null (need delivery_country)
- */
-function getCountryFromDisplay(displayCarrier) {
-  if (!displayCarrier) return null;
-  const match = displayCarrier.match(/\s+(CZ)$/i);
-  return match ? match[1].toUpperCase() : null;
-}
-
 export default function CarrierLogo({ carrier, country, size = 'md', className = '', showFlag = true }) {
   const baseCarrier = getBaseCarrier(carrier);
   const logo = CARRIER_LOGOS[baseCarrier] || CARRIER_LOGOS[carrier];
 
-  // Determine country: explicit prop > extracted from display_carrier
-  const countryCode = country?.toUpperCase() || getCountryFromDisplay(carrier);
-  const flag = countryCode ? COUNTRY_FLAGS[countryCode] : null;
+  const countryCode = (country || '').toUpperCase();
+  const hasFlag = showFlag && countryCode && COUNTRY_FLAGS.includes(countryCode);
 
   const sizeClasses = {
     xs: 'h-4 max-w-[48px]',
@@ -79,11 +46,11 @@ export default function CarrierLogo({ carrier, country, size = 'md', className =
   };
 
   const flagSizes = {
-    xs: 'text-xs',
-    sm: 'text-sm',
-    md: 'text-base',
-    lg: 'text-lg',
-    xl: 'text-xl',
+    xs: 'h-3 w-4',
+    sm: 'h-3.5 w-[18px]',
+    md: 'h-4 w-[22px]',
+    lg: 'h-5 w-[26px]',
+    xl: 'h-6 w-8',
   };
 
   const badgeSizes = {
@@ -94,33 +61,38 @@ export default function CarrierLogo({ carrier, country, size = 'md', className =
     xl: 'text-base px-3 py-1',
   };
 
+  const flagEl = hasFlag ? (
+    <img
+      src={`/flags/${countryCode.toLowerCase()}.svg`}
+      alt={countryCode}
+      title={countryCode}
+      className={`${flagSizes[size] || flagSizes.md} inline-block rounded-[2px] shadow-sm border border-white/10`}
+    />
+  ) : null;
+
   if (logo) {
     return (
-      <span className={`inline-flex items-center gap-1 ${className}`}>
+      <span className={`inline-flex items-center gap-1.5 ${className}`}>
         <img
           src={logo}
           alt={baseCarrier || carrier}
           title={carrier}
           className={`${sizeClasses[size] || sizeClasses.md} object-contain`}
         />
-        {showFlag && flag && (
-          <span className={flagSizes[size] || flagSizes.md} title={countryCode}>{flag}</span>
-        )}
+        {flagEl}
       </span>
     );
   }
 
   // Text fallback
   return (
-    <span className={`inline-flex items-center gap-1 ${className}`}>
+    <span className={`inline-flex items-center gap-1.5 ${className}`}>
       <span className={`font-mono ${badgeSizes[size] || badgeSizes.md} bg-navy-700 rounded`}>
         {baseCarrier || carrier || '\u2014'}
       </span>
-      {showFlag && flag && (
-        <span className={flagSizes[size] || flagSizes.md} title={countryCode}>{flag}</span>
-      )}
+      {flagEl}
     </span>
   );
 }
 
-export { COUNTRY_FLAGS, CARRIER_LOGOS, getBaseCarrier };
+export { CARRIER_LOGOS, getBaseCarrier };
