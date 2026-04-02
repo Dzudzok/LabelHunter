@@ -72,8 +72,9 @@ export default function PackageCard({ pkg, onRefresh }) {
 
       {/* Carrier badge */}
       {pkg.transport_name && (
-        <div className="shrink-0">
-          <CarrierLogo carrier={pkg.transport_name} country={pkg.delivery_country} size="sm" />
+        <div className="shrink-0 flex items-center gap-2">
+          <CarrierLogo carrier={pkg.transport_name} country={pkg.delivery_country} size="sm" showFlag={false} />
+          <span className="text-theme-muted text-xs max-w-[120px] truncate hidden xl:inline">{pkg.transport_name}</span>
         </div>
       )}
 

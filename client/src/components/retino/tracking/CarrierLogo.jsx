@@ -23,11 +23,25 @@ const COUNTRY_FLAGS = [
 ];
 
 /**
- * Extract base carrier name from display_carrier (e.g. "GLS CZ" -> "GLS")
+ * Extract base carrier name from display_carrier or transport_name.
+ * "GLS CZ" -> "GLS", "Euro Business Parcel" -> "GLS", "PPL Parcel CZ Private" -> "PPL"
  */
-function getBaseCarrier(displayCarrier) {
-  if (!displayCarrier) return null;
-  return displayCarrier.replace(/\s+(CZ|EU)$/i, '');
+function getBaseCarrier(name) {
+  if (!name) return null;
+  const n = name.toLowerCase();
+  // Direct match first
+  const stripped = name.replace(/\s+(CZ|EU)$/i, '');
+  if (CARRIER_LOGOS[stripped]) return stripped;
+  // LP transport_name -> carrier mapping
+  if (n.includes('euro business') || n.includes('business parcel') || n.includes('gls')) return 'GLS';
+  if (n.includes('ppl') || n.includes('parcel cz')) return 'PPL';
+  if (n.includes('ups')) return 'UPS';
+  if (n.includes('dpd')) return 'DPD';
+  if (n.includes('zásilkovna') || n.includes('zasilkovna') || n.includes('výdejní míst')) return 'Zasilkovna';
+  if (n.includes('česká pošta') || n.includes('ceska posta') || n.includes('do ruky') || n.includes('balík')) return 'CP';
+  if (n.includes('fofr') || n.includes('transfor')) return 'FOFR';
+  if (n.includes('intime') || n.includes('wedo')) return 'InTime';
+  return stripped;
 }
 
 export default function CarrierLogo({ carrier, country, size = 'md', className = '', showFlag = true }) {
