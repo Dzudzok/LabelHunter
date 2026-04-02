@@ -27,6 +27,7 @@ router.get('/dashboard', async (req, res, next) => {
         .from('delivery_notes')
         .select('id, unified_status, shipper_code')
         .not('tracking_number', 'is', null)
+        .neq('tracking_number', '')
         .gte('date_issued', thirtyDaysAgo)
         .range(offset, offset + PAGE - 1);
 
@@ -81,7 +82,8 @@ router.get('/shipments', async (req, res, next) => {
     let query = supabase
       .from('delivery_notes')
       .select('id, doc_number, invoice_number, order_number, date_issued, customer_name, customer_email, shipper_code, tracking_number, tracking_url, unified_status, last_tracking_update, last_tracking_description, status', { count: 'exact' })
-      .not('tracking_number', 'is', null);
+      .not('tracking_number', 'is', null)
+      .neq('tracking_number', '');
 
     if (status) {
       const statuses = status.split(',');
@@ -220,6 +222,7 @@ router.get('/depot-stuck', async (req, res, next) => {
       .select('id, doc_number, invoice_number, customer_name, shipper_code, tracking_number, unified_status, date_issued, pickup_at, last_tracking_update', { count: 'exact' })
       .eq('unified_status', 'available_for_pickup')
       .not('tracking_number', 'is', null)
+      .neq('tracking_number', '')
       .order('date_issued', { ascending: true })
       .range(offset, offset + pageSize - 1);
 
@@ -263,6 +266,8 @@ router.get('/expiring', async (req, res, next) => {
         .from('delivery_notes')
         .select('id, doc_number, customer_name, customer_email, shipper_code, tracking_number, unified_status, pickup_at, stored_until, last_tracking_description, date_issued')
         .eq('unified_status', 'available_for_pickup')
+        .not('tracking_number', 'is', null)
+        .neq('tracking_number', '')
         .range(offset, offset + PAGE - 1);
       if (error) throw error;
       if (!batch || batch.length === 0) break;

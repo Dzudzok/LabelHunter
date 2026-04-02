@@ -314,7 +314,8 @@ class TrackingSyncService {
   // Codes that are EXPLICITLY mapped to in_transit (not fallback) — don't log these
   static KNOWN_TRANSIT_CODES = new Set([
     // GLS
-    'GLS:02', 'GLS:03', 'GLS:09',
+    'GLS:02', 'GLS:03', 'GLS:09', 'GLS:10', 'GLS:22', 'GLS:26',
+    'GLS:2', 'GLS:3', 'GLS:9',
     // DPD
     'DPD:02', 'DPD:06', 'DPD:07', 'DPD:08', 'DPD:10', 'DPD:16', 'DPD:20',
     // UPS
@@ -325,7 +326,9 @@ class TrackingSyncService {
     'Zasilkovna:2', 'Zasilkovna:3', 'Zasilkovna:4', 'Zasilkovna:27', 'Zasilkovna:30',
     // ČP
     'CP:-I', 'CP:-B', 'CP:-F', 'CP:41', 'CP:51', 'CP:52',
-    // PPL — no fixed codes, all string-based
+    // PPL — string-based codes, known in_transit ones
+    'PPL:ShipmentInTransport', 'PPL:PreparingForDelivery', 'PPL:InputDepot.Foreign',
+    'PPL:DeliveryDepot.Foreign', 'PPL:1521',
     // FOFR
     'FOFR:3', 'FOFR:4',
   ]);
@@ -377,20 +380,42 @@ class TrackingSyncService {
    */
   mapGLSStatus(code, desc) {
     if (code != null) {
-      const c = String(code).padStart(2, '0');
+      const c = String(code);
+      // GLS uses numeric codes — some single digit, some multi-digit
       const map = {
+        // Core lifecycle (01-09, 51)
         '51': 'label_created',          // Data přijata
-        '01': 'handed_to_carrier',      // Převzato do přepravy
-        '02': 'in_transit',             // V přepravě (třídění)
-        '03': 'in_transit',             // V přepravě (mezidepo)
-        '04': 'out_for_delivery',       // Na doručení
-        '05': 'delivered',              // Doručeno
-        '06': 'returned_to_sender',     // Vráceno odesílateli
-        '07': 'available_for_pickup',   // K vyzvednutí v ParcelShopu
-        '08': 'failed_delivery',        // Nedoručeno
-        '09': 'in_transit',             // Speciální událost
+        '1': 'handed_to_carrier',       // Převzato do přepravy
+        '01': 'handed_to_carrier',
+        '2': 'in_transit',              // V přepravě (třídění)
+        '02': 'in_transit',
+        '3': 'in_transit',              // V přepravě (mezidepo)
+        '03': 'in_transit',
+        '4': 'out_for_delivery',        // Na doručení
+        '04': 'out_for_delivery',
+        '5': 'delivered',               // Doručeno
+        '05': 'delivered',
+        '6': 'returned_to_sender',      // Vráceno odesílateli
+        '06': 'returned_to_sender',
+        '7': 'available_for_pickup',    // K vyzvednutí v ParcelShopu
+        '07': 'available_for_pickup',
+        '8': 'failed_delivery',         // Nedoručeno
+        '08': 'failed_delivery',
+        '9': 'in_transit',              // Speciální událost
+        '09': 'in_transit',
+        // Extended codes
+        '10': 'in_transit',             // Rollcarte Check
+        '12': 'failed_delivery',        // Note left (pokus o doručení, zanechán lístek)
+        '17': 'failed_delivery',        // Refused (odmítnuto příjemcem)
+        '18': 'problem',                // Wrong address
+        '22': 'in_transit',             // Back to the HUB (přeprava zpět)
+        '26': 'in_transit',             // HUB Inbound (příjem na HUB)
+        '30': 'problem',                // Damaged
+        '52': 'label_created',          // COD data sent (data dobírky)
+        '81': null,                     // RQ Info Normal (informační, skip)
+        '401': 'problem',               // ParcelLocker capacity problem
       };
-      if (map[c]) return map[c];
+      if (c in map) return map[c];
     }
     // NULL code — fallback to description (GLS sometimes sends events without code)
     if (desc) {
@@ -621,6 +646,9 @@ class TrackingSyncService {
       'AD': 'problem',                // Jméno příjemce chybné
       'AK': 'problem',                // Název státu chybný
       'XA': 'in_transit',             // Kontakt s příjemcem pro odbavení (celnice)
+      // UPS Access Point issues
+      'G3': 'failed_delivery',        // Pobočka zavřena, další pokus
+      '7A': 'failed_delivery',        // Nelze doručit do AP, další pokus
       // Return
       'RS': 'returned_to_sender',     // Return to Sender
       'MV': 'returned_to_sender',     // Manifest Voided

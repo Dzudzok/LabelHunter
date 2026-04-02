@@ -14,7 +14,8 @@
       "Bash(node -c \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/services/retino/tracking-status-mapper.js\")",
       "Bash(node -c services/TrackingSyncService.js)",
       "Bash(node -c services/retino/tracking-status-mapper.js)",
-      "Bash(node -c \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/routes/retino/tracking.js\")"
+      "Bash(node -c \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/routes/retino/tracking.js\")",
+      "Bash(node -e ':*)"
     ]
   }
 }

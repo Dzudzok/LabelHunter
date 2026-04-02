@@ -353,6 +353,14 @@ const DESCRIPTION_TRANSLATIONS = {
   'rollcarte check': 'Kontrola rollkontejneru',
   'small parcel': 'Malý balík',
   'statuskey_st130': 'Registrace',
+  'hub inbound': 'Příjem na HUB',
+  'rq info normal': 'Informační záznam',
+  'cod data sent': 'Data dobírky odeslána',
+  'note left': 'Zanechán lístek (příjemce nezastižen)',
+  'back to the hub': 'Přeprava zpět na HUB',
+  'wrong address': 'Chybná adresa',
+  'refused': 'Odmítnuto příjemcem',
+  'parcellocker capacity problem': 'ParcelLocker — nedostatek kapacity',
 
   // DPD
   'parcel has been pickup up at sender.': 'Balík převzat od odesílatele',
