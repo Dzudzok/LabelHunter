@@ -421,7 +421,7 @@ class TrackingSyncService {
         '12': 'failed_delivery',        // Note left (pokus o doručení, zanechán lístek)
         '17': 'failed_delivery',        // Refused (odmítnuto příjemcem)
         '18': 'problem',                // Wrong address
-        '22': 'in_transit',             // Back to the HUB (přeprava zpět)
+        '22': 'returned_to_sender',     // Back to the HUB (vrácení odesílateli)
         '26': 'in_transit',             // HUB Inbound (příjem na HUB)
         '30': 'problem',                // Damaged
         '52': 'label_created',          // COD data sent (data dobírky)
