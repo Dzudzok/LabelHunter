@@ -485,7 +485,17 @@ router.get('/timeliness', async (req, res, next) => {
       .not('expected_delivery_date', 'is', null)
       .gte('date_issued', dateFrom);
 
-    if (shipper) query = query.eq('shipper_code', shipper);
+    // Shipper filter — supports "GLS CZ", "GLS EU", "GLS"
+    if (shipper) {
+      const shipperMatch = shipper.match(/^(\w+)\s+(CZ|EU)$/i);
+      if (shipperMatch) {
+        query = query.eq('shipper_code', shipperMatch[1]);
+        if (shipperMatch[2].toUpperCase() === 'CZ') query = query.eq('delivery_country', 'CZ');
+        else query = query.neq('delivery_country', 'CZ');
+      } else {
+        query = query.eq('shipper_code', shipper);
+      }
+    }
 
     // Paginated fetch
     let all = [];
@@ -503,7 +513,16 @@ router.get('/timeliness', async (req, res, next) => {
         .select('id, timeliness, shipper_code, expected_delivery_date, last_tracking_update, unified_status, delivery_country')
         .not('expected_delivery_date', 'is', null)
         .gte('date_issued', dateFrom);
-      if (shipper) query = query.eq('shipper_code', shipper);
+      if (shipper) {
+        const shipperMatch = shipper.match(/^(\w+)\s+(CZ|EU)$/i);
+        if (shipperMatch) {
+          query = query.eq('shipper_code', shipperMatch[1]);
+          if (shipperMatch[2].toUpperCase() === 'CZ') query = query.eq('delivery_country', 'CZ');
+          else query = query.neq('delivery_country', 'CZ');
+        } else {
+          query = query.eq('shipper_code', shipper);
+        }
+      }
     }
 
     // Collect unique countries
@@ -513,7 +532,9 @@ router.get('/timeliness', async (req, res, next) => {
 
     // Filter by country if specified
     const filtered = country
-      ? all.filter(n => (n.delivery_country || 'CZ').toUpperCase() === country.toUpperCase())
+      ? (country.toUpperCase() === 'EU'
+        ? all.filter(n => (n.delivery_country || 'CZ').toUpperCase() !== 'CZ')
+        : all.filter(n => (n.delivery_country || 'CZ').toUpperCase() === country.toUpperCase()))
       : all;
 
     let onTime = 0, late = 0, early = 0, inProgressOnTime = 0, inProgressLate = 0;
@@ -522,7 +543,6 @@ router.get('/timeliness', async (req, res, next) => {
     for (const note of filtered) {
       const t = note.timeliness;
       if (!t) continue;
-      // Skip shipments without tracking (unified_status null = not tracked)
       if (!note.unified_status) continue;
 
       if (t === 'on_time') onTime++;
@@ -532,11 +552,13 @@ router.get('/timeliness', async (req, res, next) => {
       else if (t === 'in_progress_late') inProgressLate++;
 
       const c = getDisplayCarrier(note.shipper_code, note.delivery_country);
-      if (!byCarrier[c]) byCarrier[c] = { onTime: 0, late: 0, early: 0, total: 0 };
+      if (!byCarrier[c]) byCarrier[c] = { onTime: 0, late: 0, early: 0, inProgress: 0, total: 0 };
+      // Count separately — onTime is ONLY on_time, early is ONLY early
+      if (t === 'on_time') byCarrier[c].onTime++;
+      else if (t === 'early') byCarrier[c].early++;
+      else if (t === 'late') byCarrier[c].late++;
+      else byCarrier[c].inProgress++;
       byCarrier[c].total++;
-      if (t === 'on_time' || t === 'early') byCarrier[c].onTime++;
-      if (t === 'early') byCarrier[c].early++;
-      if (t === 'late') byCarrier[c].late++;
     }
 
     // delivered = on_time + late + early (completed shipments only)
@@ -547,15 +569,16 @@ router.get('/timeliness', async (req, res, next) => {
 
     const byCarrierResult = {};
     for (const [carrier, stats] of Object.entries(byCarrier)) {
-      // Per carrier: count only delivered for percentage
-      const carrierDelivered = stats.onTime + stats.late + stats.early;
+      const carrierDelivered = stats.onTime + stats.early + stats.late;
+      const carrierVcas = stats.onTime + stats.early;
       byCarrierResult[carrier] = {
         onTime: stats.onTime,
         late: stats.late,
         early: stats.early,
-        total: stats.total,
         delivered: carrierDelivered,
-        percent: carrierDelivered > 0 ? Math.round((stats.onTime / carrierDelivered) * 1000) / 10 : 0,
+        inProgress: stats.inProgress || 0,
+        total: stats.total,
+        percent: carrierDelivered > 0 ? Math.round((carrierVcas / carrierDelivered) * 1000) / 10 : 0,
       };
     }
 

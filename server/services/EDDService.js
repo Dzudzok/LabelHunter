@@ -75,8 +75,9 @@ class EDDService {
     const isDelivered = deliveryNote.unified_status === 'delivered';
 
     if (isDelivered) {
-      const deliveredAt = deliveryNote.last_tracking_update || deliveryNote.delivered_at;
-      if (!deliveredAt) return 'on_time'; // assume on time if no date
+      // Use delivered_at (set once on delivery), fallback to last_tracking_update
+      const deliveredAt = deliveryNote.delivered_at || deliveryNote.last_tracking_update;
+      if (!deliveredAt) return null; // unknown — don't assume
 
       const deliveredDate = new Date(deliveredAt);
       const deliveredDay = deliveredDate.toISOString().substring(0, 10);

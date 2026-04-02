@@ -209,15 +209,17 @@ export default function AnalyticsTimeliness() {
               <thead>
                 <tr className="border-b border-navy-600 text-theme-muted text-xs uppercase">
                   <th className="text-left py-3 px-3">Dopravce</th>
-                  <th className="text-right py-3 px-3">Vcas</th>
-                  <th className="text-right py-3 px-3">Opozdeno</th>
-                  <th className="text-right py-3 px-3">Drive</th>
-                  <th className="text-right py-3 px-3">Celkem</th>
-                  <th className="text-right py-3 px-3">Vcasnost %</th>
+                  <th className="text-right py-3 px-3">Včas</th>
+                  <th className="text-right py-3 px-3">Opožděno</th>
+                  <th className="text-right py-3 px-3">Dříve</th>
+                  <th className="text-right py-3 px-3">Doručeno</th>
+                  <th className="text-right py-3 px-3">Včasnost %</th>
                 </tr>
               </thead>
               <tbody>
-                {carriers.map(([carrier, stats]) => (
+                {carriers.map(([carrier, stats]) => {
+                  const delivered = stats.delivered || (stats.onTime + stats.early + stats.late)
+                  return (
                   <tr key={carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30 transition-colors">
                     <td className="py-3 px-3">
                       <span className="inline-flex items-center gap-1.5">
@@ -226,10 +228,10 @@ export default function AnalyticsTimeliness() {
                         {carrier.endsWith(' EU') && <span className="text-xs text-theme-muted">EU</span>}
                       </span>
                     </td>
-                    <td className="py-3 px-3 text-right text-green-400">{stats.onTime}</td>
+                    <td className="py-3 px-3 text-right text-green-400">{stats.onTime + stats.early}</td>
                     <td className="py-3 px-3 text-right text-red-400">{stats.late}</td>
                     <td className="py-3 px-3 text-right text-blue-400">{stats.early}</td>
-                    <td className="py-3 px-3 text-right text-theme-secondary">{stats.total}</td>
+                    <td className="py-3 px-3 text-right text-theme-secondary">{delivered}</td>
                     <td className="py-3 px-3 text-right">
                       <div className="flex items-center justify-end gap-2">
                         <div className="w-16 h-2 bg-navy-700 rounded-full overflow-hidden">
@@ -245,7 +247,8 @@ export default function AnalyticsTimeliness() {
                       </div>
                     </td>
                   </tr>
-                ))}
+                  )
+                })}
               </tbody>
             </table>
           </div>
