@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
+import CarrierLogo from '../tracking/CarrierLogo'
 import {
   AreaChart, Area, BarChart, Bar,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
@@ -220,7 +221,7 @@ export default function AnalyticsProblems() {
               <tbody>
                 {data.carrierProblems.map((c) => (
                   <tr key={c.carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30 transition-colors">
-                    <td className="py-3 px-3 text-theme-primary font-medium">{c.carrier}</td>
+                    <td className="py-3 px-3"><CarrierLogo carrier={c.carrier} size="sm" /></td>
                     <td className="py-3 px-3 text-right text-theme-secondary">{c.carrierTotal}</td>
                     <td className="py-3 px-3 text-right text-red-400 font-semibold">{c.problems}</td>
                     <td className="py-3 px-3 text-right">

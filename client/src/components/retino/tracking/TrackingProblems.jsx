@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../../services/api'
 import StatusBadge, { TRACKING_COLORS } from '../shared/StatusBadge'
+import CarrierLogo from './CarrierLogo'
 
 const PROBLEM_STATUSES = 'failed_delivery,returned_to_sender,problem'
 const CARRIERS = ['GLS', 'PPL', 'DPD', 'UPS', 'Zasilkovna', 'CP', 'FOFR']
@@ -166,7 +167,7 @@ export default function TrackingProblems() {
                   <td className="py-2 px-3 font-mono text-xs text-theme-primary">{s.tracking_number || s.doc_number}</td>
                   <td className="py-2 px-3 text-xs text-theme-secondary hidden lg:table-cell truncate max-w-[150px]">{s.customer_name || '—'}</td>
                   <td className="py-2 px-3">
-                    <span className="font-mono text-[10px] bg-navy-700 px-1.5 py-0.5 rounded">{s.shipper_code}</span>
+                    <CarrierLogo carrier={s.display_carrier || s.shipper_code} size="xs" />
                   </td>
                   <td className="py-2 px-3 text-xs text-theme-muted hidden md:table-cell whitespace-nowrap">
                     {s.date_issued ? new Date(s.date_issued).toLocaleDateString('cs-CZ') : '—'}
@@ -271,7 +272,10 @@ export default function TrackingProblems() {
               <div className="px-4 pb-3 border-t border-navy-700 pt-3 space-y-1.5 text-xs">
                 <Row label="Objednávka" value={preview.order_number || preview.invoice_number} />
                 <Row label="Tracking" value={preview.tracking_number} mono />
-                <Row label="Dopravce" value={preview.shipper_code} />
+                <div className="flex justify-between items-center py-0.5">
+                    <span className="text-theme-muted">Dopravce</span>
+                    <CarrierLogo carrier={preview.display_carrier || preview.shipper_code} size="sm" />
+                  </div>
                 {preview.tracking_url && (
                   <div className="flex justify-between py-0.5">
                     <span className="text-theme-muted">Sledování</span>

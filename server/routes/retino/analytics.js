@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../../db/supabase');
-const { STATUS_LABELS } = require('../../services/retino/tracking-status-mapper');
+const { STATUS_LABELS, getDisplayCarrier } = require('../../services/retino/tracking-status-mapper');
 const eddService = require('../../services/EDDService');
 
 const PAGE = 1000;
@@ -21,7 +21,16 @@ async function fetchAllNotes(select, filters = {}) {
     }
     if (filters.dateFrom) q = q.gte('date_issued', filters.dateFrom);
     if (filters.dateTo) q = q.lte('date_issued', filters.dateTo);
-    if (filters.shipper) q = q.eq('shipper_code', filters.shipper);
+    if (filters.shipper) {
+      const shipperMatch = filters.shipper.match(/^(\w+)\s+(CZ|EU)$/i);
+      if (shipperMatch) {
+        q = q.eq('shipper_code', shipperMatch[1]);
+        if (shipperMatch[2].toUpperCase() === 'CZ') q = q.eq('delivery_country', 'CZ');
+        else q = q.neq('delivery_country', 'CZ');
+      } else {
+        q = q.eq('shipper_code', filters.shipper);
+      }
+    }
     if (filters.status) q = q.eq('unified_status', filters.status);
     if (filters.notStatus) q = q.neq('unified_status', filters.notStatus);
     q = q.range(offset, offset + PAGE - 1);
@@ -75,7 +84,7 @@ router.get('/overview', async (req, res, next) => {
     if (shipper) filters.shipper = shipper;
 
     const notes = await fetchAllNotes(
-      'id, unified_status, shipper_code, date_issued, label_generated_at, last_tracking_update',
+      'id, unified_status, shipper_code, delivery_country, date_issued, label_generated_at, last_tracking_update',
       filters
     );
 
@@ -95,8 +104,8 @@ router.get('/overview', async (req, res, next) => {
       if (EXCLUDED_STATUSES.includes(s)) continue; // safety net
       statusCounts[s] = (statusCounts[s] || 0) + 1;
 
-      // Carrier stats
-      const c = note.shipper_code || 'Neznámý';
+      // Carrier stats (using display carrier)
+      const c = getDisplayCarrier(note.shipper_code, note.delivery_country);
       if (!carriers[c]) {
         carriers[c] = { total: 0, delivered: 0, in_transit: 0, problem: 0, pickup: 0 };
       }
@@ -236,9 +245,10 @@ router.get('/delivery-time', async (req, res, next) => {
       const deliveredDate = (endDate || '').substring(0, 10); // YYYY-MM-DD for daily grouping
 
       const deliveryType = isPickup ? 'pickup' : 'address';
-      deliveryDays.push({ days, totalDays, bucket, carrier: note.shipper_code || 'Neznámý', orderToDelivery, daysAtBranch, deliveredDate, deliveryType });
+      const displayCarrier = getDisplayCarrier(note.shipper_code, note.delivery_country);
+      deliveryDays.push({ days, totalDays, bucket, carrier: displayCarrier, orderToDelivery, daysAtBranch, deliveredDate, deliveryType });
 
-      const c = note.shipper_code || 'Neznámý';
+      const c = displayCarrier;
       if (!byCarrier[c]) byCarrier[c] = { totalDays: 0, count: 0, buckets: {} };
       byCarrier[c].totalDays += days;
       byCarrier[c].count++;
@@ -372,7 +382,7 @@ router.get('/problems', async (req, res, next) => {
     if (shipper) filters.shipper = shipper;
 
     const notes = await fetchAllNotes(
-      'id, doc_number, customer_name, shipper_code, date_issued, unified_status, last_tracking_description, tracking_number',
+      'id, doc_number, customer_name, shipper_code, delivery_country, date_issued, unified_status, last_tracking_description, tracking_number',
       filters
     );
 
@@ -387,10 +397,10 @@ router.get('/problems', async (req, res, next) => {
       byStatus[p.unified_status] = (byStatus[p.unified_status] || 0) + 1;
     }
 
-    // Problem breakdown by carrier
+    // Problem breakdown by carrier (using display carrier)
     const byCarrier = {};
     for (const p of problems) {
-      const c = p.shipper_code || 'Neznámý';
+      const c = getDisplayCarrier(p.shipper_code, p.delivery_country);
       if (!byCarrier[c]) byCarrier[c] = { total: 0, failed_delivery: 0, returned_to_sender: 0, problem: 0 };
       byCarrier[c].total++;
       byCarrier[c][p.unified_status] = (byCarrier[c][p.unified_status] || 0) + 1;
@@ -399,7 +409,7 @@ router.get('/problems', async (req, res, next) => {
     const carrierProblems = Object.entries(byCarrier)
       .map(([carrier, stats]) => {
         // Find total shipments for this carrier
-        const carrierTotal = notes.filter(n => (n.shipper_code || 'Neznámý') === carrier).length;
+        const carrierTotal = notes.filter(n => getDisplayCarrier(n.shipper_code, n.delivery_country) === carrier).length;
         return {
           carrier,
           problems: stats.total,
@@ -519,7 +529,7 @@ router.get('/timeliness', async (req, res, next) => {
       else if (t === 'in_progress_on_time') inProgressOnTime++;
       else if (t === 'in_progress_late') inProgressLate++;
 
-      const c = note.shipper_code || 'Neznamy';
+      const c = getDisplayCarrier(note.shipper_code, note.delivery_country);
       if (!byCarrier[c]) byCarrier[c] = { onTime: 0, late: 0, early: 0, total: 0 };
       byCarrier[c].total++;
       if (t === 'on_time' || t === 'early') byCarrier[c].onTime++;

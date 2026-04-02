@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const supabase = require('../../db/supabase');
-const { getUnifiedStatus, getStatusLabel, getStatusColor, STATUS_LABELS, translateDescription } = require('../../services/retino/tracking-status-mapper');
+const { getUnifiedStatus, getStatusLabel, getStatusColor, STATUS_LABELS, translateDescription, getDisplayCarrier } = require('../../services/retino/tracking-status-mapper');
 
 // Dashboard cache — refreshes max every 2 minutes
 let dashboardCache = null;
@@ -25,7 +25,7 @@ router.get('/dashboard', async (req, res, next) => {
     while (true) {
       const { data: batch, error } = await supabase
         .from('delivery_notes')
-        .select('id, unified_status, shipper_code')
+        .select('id, unified_status, shipper_code, delivery_country')
         .not('tracking_number', 'is', null)
         .neq('tracking_number', '')
         .gte('date_issued', thirtyDaysAgo)
@@ -49,7 +49,7 @@ router.get('/dashboard', async (req, res, next) => {
       const s = note.unified_status || 'unknown';
       statusCounts[s] = (statusCounts[s] || 0) + 1;
 
-      const carrier = note.shipper_code || 'unknown';
+      const carrier = getDisplayCarrier(note.shipper_code, note.delivery_country);
       if (!carrierStats[carrier]) carrierStats[carrier] = { total: 0, delivered: 0, in_transit: 0, problem: 0 };
       carrierStats[carrier].total++;
       if (s === 'delivered') carrierStats[carrier].delivered++;
@@ -81,7 +81,7 @@ router.get('/shipments', async (req, res, next) => {
 
     let query = supabase
       .from('delivery_notes')
-      .select('id, doc_number, invoice_number, order_number, date_issued, customer_name, customer_email, shipper_code, tracking_number, tracking_url, unified_status, last_tracking_update, last_tracking_description, status', { count: 'exact' })
+      .select('id, doc_number, invoice_number, order_number, date_issued, customer_name, customer_email, shipper_code, delivery_country, tracking_number, tracking_url, unified_status, last_tracking_update, last_tracking_description, status', { count: 'exact' })
       .not('tracking_number', 'is', null)
       .neq('tracking_number', '');
 
@@ -90,7 +90,17 @@ router.get('/shipments', async (req, res, next) => {
       if (statuses.length === 1) query = query.eq('unified_status', status);
       else query = query.in('unified_status', statuses);
     }
-    if (shipper) query = query.eq('shipper_code', shipper);
+    // Shipper filter supports display carrier (e.g. "GLS CZ", "GLS EU", "GLS")
+    if (shipper) {
+      const shipperMatch = shipper.match(/^(\w+)\s+(CZ|EU)$/i);
+      if (shipperMatch) {
+        query = query.eq('shipper_code', shipperMatch[1]);
+        if (shipperMatch[2].toUpperCase() === 'CZ') query = query.eq('delivery_country', 'CZ');
+        else query = query.neq('delivery_country', 'CZ');
+      } else {
+        query = query.eq('shipper_code', shipper);
+      }
+    }
     if (dateFrom) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom)) return res.status(400).json({ error: 'Invalid dateFrom format (YYYY-MM-DD)' });
       query = query.gte('date_issued', `${dateFrom}T00:00:00.000Z`);
@@ -126,9 +136,9 @@ router.get('/shipments', async (req, res, next) => {
           if (!tagMap[link.delivery_note_id]) tagMap[link.delivery_note_id] = [];
           if (link.shipment_tags) tagMap[link.delivery_note_id].push(link.shipment_tags);
         }
-        shipments = shipments.map(s => ({ ...s, tags: tagMap[s.id] || [] }));
+        shipments = shipments.map(s => ({ ...s, tags: tagMap[s.id] || [], display_carrier: getDisplayCarrier(s.shipper_code, s.delivery_country) }));
       } else {
-        shipments = shipments.map(s => ({ ...s, tags: [] }));
+        shipments = shipments.map(s => ({ ...s, tags: [], display_carrier: getDisplayCarrier(s.shipper_code, s.delivery_country) }));
       }
     }
 
@@ -196,6 +206,7 @@ router.get('/shipments/:id', async (req, res, next) => {
 
     res.json({
       ...note,
+      display_carrier: getDisplayCarrier(note.shipper_code, note.delivery_country),
       statusLabel: getStatusLabel(note.unified_status),
       statusColor: getStatusColor(note.unified_status),
       items: items || [],

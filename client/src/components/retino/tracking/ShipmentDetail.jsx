@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { api } from '../../../services/api'
 import StatusBadge from '../shared/StatusBadge'
+import CarrierLogo from './CarrierLogo'
 
 export default function ShipmentDetail() {
   const { id } = useParams()
@@ -215,7 +216,10 @@ export default function ShipmentDetail() {
             <InfoRow label="Faktura" value={shipment.invoice_number} />
             <InfoRow label="Objednávka" value={shipment.order_number} />
             <InfoRow label="Datum" value={shipment.date_issued ? new Date(shipment.date_issued).toLocaleDateString('cs-CZ') : '-'} />
-            <InfoRow label="Dopravce" value={shipment.shipper_code} />
+            <div className="flex justify-between items-center py-1">
+              <span className="text-sm text-theme-muted">Dopravce</span>
+              <CarrierLogo carrier={shipment.display_carrier || shipment.shipper_code} size="md" />
+            </div>
             <InfoRow label="Tracking" value={shipment.tracking_number} />
             {shipment.tracking_url && (
               <a href={shipment.tracking_url} target="_blank" rel="noopener noreferrer"

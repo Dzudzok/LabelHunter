@@ -442,6 +442,23 @@ function translateDescription(description) {
   return trimmed.replace(/\r?\n/g, ' ').trim();
 }
 
+/**
+ * Get display carrier name — splits CZ vs EU for carriers that serve both.
+ * shipper_code stays unchanged in DB (GLS, PPL), this is UI-only.
+ * @param {string} shipperCode - e.g. 'GLS', 'PPL', 'UPS'
+ * @param {string|null} deliveryCountry - e.g. 'CZ', 'DE', 'AT'
+ * @returns {string} e.g. 'GLS CZ', 'GLS EU', 'PPL CZ', 'UPS' (all EU)
+ */
+function getDisplayCarrier(shipperCode, deliveryCountry) {
+  const code = (shipperCode || '').toUpperCase();
+  const country = (deliveryCountry || '').toUpperCase();
+  // Carriers that operate both CZ and EU
+  if (code === 'GLS' || code === 'PPL') {
+    return country === 'CZ' ? `${shipperCode} CZ` : `${shipperCode} EU`;
+  }
+  return shipperCode || 'Neznámý';
+}
+
 module.exports = {
   getUnifiedStatus,
   classifyDescription,
@@ -449,6 +466,7 @@ module.exports = {
   getStatusColor,
   getSubStatus,
   translateDescription,
+  getDisplayCarrier,
   STATUS_PRIORITY,
   STATUS_LABELS,
   STATUS_COLORS,

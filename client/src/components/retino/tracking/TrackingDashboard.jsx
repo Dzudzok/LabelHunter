@@ -2,6 +2,7 @@ import { useState, useEffect, useCallback } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../../services/api'
 import StatusBadge, { TRACKING_COLORS } from '../shared/StatusBadge'
+import CarrierLogo from './CarrierLogo'
 
 const STATUS_FILTERS = [
   { key: 'all', label: 'Vše', color: '#64748b', icon: '📊' },
@@ -229,7 +230,7 @@ export default function TrackingDashboard() {
                   <td className="py-2 px-3 text-xs text-theme-secondary">{r.order_number || r.invoice_number || '—'}</td>
                   <td className="py-2 px-3 text-xs text-theme-secondary hidden lg:table-cell truncate max-w-[150px]">{r.customer_name || '—'}</td>
                   <td className="py-2 px-3">
-                    <span className="font-mono text-[10px] bg-navy-700 px-1.5 py-0.5 rounded">{r.shipper_code || '—'}</span>
+                    <CarrierLogo carrier={r.display_carrier || r.shipper_code} size="xs" />
                   </td>
                   <td className="py-2 px-3 text-xs text-theme-muted hidden md:table-cell whitespace-nowrap">
                     {r.date_issued ? new Date(r.date_issued).toLocaleDateString('cs-CZ') : '—'}
@@ -332,7 +333,10 @@ export default function TrackingDashboard() {
                 <div className="space-y-1.5 text-xs">
                   <Row label="Objednávka" value={preview.order_number || preview.invoice_number} />
                   <Row label="Číslo sledování" value={preview.tracking_number} mono />
-                  <Row label="Dopravce" value={preview.shipper_code} />
+                  <div className="flex justify-between items-center py-0.5">
+                      <span className="text-theme-muted">Dopravce</span>
+                      <CarrierLogo carrier={preview.display_carrier || preview.shipper_code} size="sm" />
+                    </div>
                   <Row label="Datum odeslání" value={preview.date_issued ? new Date(preview.date_issued).toLocaleDateString('cs-CZ') : '—'} />
                   {preview.tracking_url && (
                     <div className="flex justify-between py-0.5">

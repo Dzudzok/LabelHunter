@@ -3,6 +3,7 @@ import {
   BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from 'recharts'
 import { api } from '../../../services/api'
+import CarrierLogo from '../tracking/CarrierLogo'
 
 const PERIOD_OPTIONS = [
   { label: '7 dní', value: '7' },
@@ -249,7 +250,7 @@ export default function AnalyticsDeliveryTime() {
               <tbody>
                 {data.carrierAvg.map(c => (
                   <tr key={c.carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30">
-                    <td className="py-3 px-3 text-theme-primary font-medium">{c.carrier}</td>
+                    <td className="py-3 px-3"><CarrierLogo carrier={c.carrier} size="sm" /></td>
                     <td className="py-3 px-3 text-right text-theme-secondary">{c.count}</td>
                     <td className="py-3 px-3 text-right">
                       <span className={`font-semibold ${c.avgDays <= 1 ? 'text-green-400' : c.avgDays <= 3 ? 'text-blue-400' : c.avgDays <= 5 ? 'text-yellow-400' : 'text-red-400'}`}>

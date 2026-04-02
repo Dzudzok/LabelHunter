@@ -1,8 +1,9 @@
 import { useState, useEffect, useCallback } from 'react'
 import { api } from '../../../services/api'
 import StatusBadge from '../shared/StatusBadge'
+import CarrierLogo from './CarrierLogo'
 
-const CARRIERS = ['GLS', 'PPL', 'DPD', 'UPS', 'Zasilkovna', 'CP', 'FOFR']
+const CARRIERS = ['GLS CZ', 'GLS EU', 'PPL CZ', 'PPL EU', 'DPD', 'UPS', 'Zasilkovna', 'CP', 'FOFR']
 
 export default function TrackingOverview() {
   const [dashboard, setDashboard] = useState(null)
@@ -142,7 +143,9 @@ export default function TrackingOverview() {
                   const dPct = stats.total > 0 ? Math.round((stats.delivered / stats.total) * 1000) / 10 : 0
                   return (
                     <tr key={carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30">
-                      <td className="py-2.5 px-3 font-bold text-theme-primary">{carrier}</td>
+                      <td className="py-2.5 px-3">
+                        <CarrierLogo carrier={carrier} size="sm" />
+                      </td>
                       <td className="py-2.5 px-3 text-right text-theme-secondary">{stats.total}</td>
                       <td className="py-2.5 px-3 text-right text-purple-400">{stats.in_transit || 0}</td>
                       <td className="py-2.5 px-3 text-right text-green-400">{stats.delivered || 0}</td>

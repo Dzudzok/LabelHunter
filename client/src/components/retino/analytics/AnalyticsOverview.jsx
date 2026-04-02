@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react'
 import { useSearchParams } from 'react-router-dom'
+import CarrierLogo from '../tracking/CarrierLogo'
 import {
   AreaChart, Area, BarChart, Bar, PieChart, Pie, Cell,
   XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Legend,
@@ -251,7 +252,7 @@ export default function AnalyticsOverview() {
             <tbody>
               {data.carrierTable.map((c) => (
                 <tr key={c.carrier} className="border-b border-navy-700/50 hover:bg-navy-700/30 transition-colors">
-                  <td className="py-3 px-3 text-theme-primary font-medium">{c.carrier}</td>
+                  <td className="py-3 px-3"><CarrierLogo carrier={c.carrier} size="sm" /></td>
                   <td className="py-3 px-3 text-right text-theme-secondary">{c.total}</td>
                   <td className="py-3 px-3 text-right text-theme-secondary">
                     {c.in_transit > 0 && <>{c.inTransitPct} %</>}
