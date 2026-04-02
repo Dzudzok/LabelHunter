@@ -29,11 +29,38 @@ export default function TrackingProblems() {
   const [expiryDays, setExpiryDays] = useState(3)
   const pageSize = 50
 
+  // Tab counts
+  const [tabCounts, setTabCounts] = useState({})
+
   // Sidebar preview
   const [selectedId, setSelectedId] = useState(null)
   const [preview, setPreview] = useState(null)
   const [previewLoading, setPreviewLoading] = useState(false)
   const [previewSyncing, setPreviewSyncing] = useState(false)
+
+  // Fetch tab counts on mount and after data changes
+  const fetchTabCounts = useCallback(async () => {
+    try {
+      const [failed, returned, problem, depot, expiring] = await Promise.all([
+        api.get('/retino/tracking/shipments', { params: { status: 'failed_delivery', pageSize: 1 } }),
+        api.get('/retino/tracking/shipments', { params: { status: 'returned_to_sender', pageSize: 1 } }),
+        api.get('/retino/tracking/shipments', { params: { status: 'problem', pageSize: 1 } }),
+        api.get('/retino/tracking/depot-stuck', { params: { minDays: 4, pageSize: 1 } }),
+        api.get('/retino/tracking/expiring', { params: { days: 3, pageSize: 1 } }),
+      ])
+      const allProblems = (failed.data.total || 0) + (returned.data.total || 0) + (problem.data.total || 0)
+      setTabCounts({
+        'failed_delivery': failed.data.total || 0,
+        'returned_to_sender': returned.data.total || 0,
+        'problem': problem.data.total || 0,
+        'depot': depot.data.total || 0,
+        'expiring': expiring.data.total || 0,
+        'all': allProblems,
+      })
+    } catch {}
+  }, [])
+
+  useEffect(() => { fetchTabCounts() }, [fetchTabCounts])
 
   const fetchData = useCallback(async () => {
     setLoading(true)
@@ -102,6 +129,15 @@ export default function TrackingProblems() {
                 }`}
                 style={isActive ? { color: tab.color, borderColor: tab.color } : {}}>
                 {tab.label}
+                {(() => {
+                  const countKey = tab.type === 'depot' ? 'depot' : tab.type === 'expiring' ? 'expiring' : tab.status === PROBLEM_STATUSES ? 'all' : tab.status
+                  const count = tabCounts[countKey]
+                  return count != null ? (
+                    <span className={`ml-1.5 px-1.5 py-0.5 rounded-full text-[10px] font-bold ${
+                      isActive ? 'bg-white/20' : 'bg-navy-600'
+                    }`}>{count}</span>
+                  ) : null
+                })()}
               </button>
             )
           })}
