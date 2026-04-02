@@ -26,6 +26,7 @@ export default function TrackingProblems() {
   const [page, setPage] = useState(1)
   const [search, setSearch] = useState('')
   const [shipper, setShipper] = useState('')
+  const [country, setCountry] = useState('')
   const [expiryDays, setExpiryDays] = useState(3)
   const pageSize = 50
 
@@ -75,14 +76,15 @@ export default function TrackingProblems() {
         const params = { status: activeTab, page, pageSize, sortBy: 'date_issued', sortDir: 'desc' }
         if (search) params.search = search
         if (shipper) params.shipper = shipper
+        if (country) params.country = country
         const res = await api.get('/retino/tracking/shipments', { params })
         setShipments(res.data.shipments || []); setTotal(res.data.total || 0)
       }
     } catch {} finally { setLoading(false) }
-  }, [activeTab, activeType, page, search, shipper, expiryDays])
+  }, [activeTab, activeType, page, search, shipper, country, expiryDays])
 
   useEffect(() => { fetchData() }, [fetchData])
-  useEffect(() => { setPage(1) }, [activeTab, search, shipper, expiryDays])
+  useEffect(() => { setPage(1) }, [activeTab, search, shipper, country, expiryDays])
 
   // Sidebar preview
   useEffect(() => {
@@ -164,6 +166,22 @@ export default function TrackingProblems() {
               className="bg-navy-800 border border-navy-600 rounded-lg px-2 py-1.5 text-sm text-theme-primary">
               <option value="">Dopravce</option>
               {CARRIERS.map(c => <option key={c} value={c}>{c}</option>)}
+            </select>
+            <select value={country} onChange={e => setCountry(e.target.value)}
+              className="bg-navy-800 border border-navy-600 rounded-lg px-2 py-1.5 text-sm text-theme-primary">
+              <option value="">Země</option>
+              <option value="CZ">CZ</option>
+              <option value="EU">EU (vše mimo CZ)</option>
+              <option value="DE">DE</option>
+              <option value="AT">AT</option>
+              <option value="FR">FR</option>
+              <option value="ES">ES</option>
+              <option value="IT">IT</option>
+              <option value="SE">SE</option>
+              <option value="BE">BE</option>
+              <option value="NL">NL</option>
+              <option value="PL">PL</option>
+              <option value="SK">SK</option>
             </select>
           </div>
         )}

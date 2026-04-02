@@ -75,7 +75,7 @@ router.get('/dashboard', async (req, res, next) => {
 router.get('/shipments', async (req, res, next) => {
   try {
     const {
-      status, shipper, dateFrom, dateTo, search,
+      status, shipper, dateFrom, dateTo, search, country,
       page = 1, pageSize = 50, sortBy = 'date_issued', sortDir = 'desc',
     } = req.query;
 
@@ -100,6 +100,10 @@ router.get('/shipments', async (req, res, next) => {
       } else {
         query = query.eq('shipper_code', shipper);
       }
+    }
+    if (country) {
+      if (country.toUpperCase() === 'EU') query = query.neq('delivery_country', 'CZ');
+      else query = query.eq('delivery_country', country.toUpperCase());
     }
     if (dateFrom) {
       if (!/^\d{4}-\d{2}-\d{2}$/.test(dateFrom)) return res.status(400).json({ error: 'Invalid dateFrom format (YYYY-MM-DD)' });
