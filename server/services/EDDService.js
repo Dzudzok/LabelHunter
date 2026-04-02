@@ -64,34 +64,42 @@ class EDDService {
 
   /**
    * Calculate timeliness for a delivery note.
-   * If delivered: compare delivered_at (last_tracking_update) with expected_delivery_date.
-   * If not delivered: compare today with expected_delivery_date.
+   *
+   * Pickup (ParcelShop/výdejní místo): compare pickup_at (carrier → branch) with EDD
+   *   — measures CARRIER speed, not customer pickup speed
+   * Address (courier): compare delivered_at (carrier → door) with EDD
+   * In progress: compare today with EDD
    */
   calculateTimeliness(deliveryNote) {
     const edd = deliveryNote.expected_delivery_date;
     if (!edd) return null;
 
-    const eddDate = new Date(edd);
+    const eddDay = new Date(edd).toISOString().substring(0, 10);
     const isDelivered = deliveryNote.unified_status === 'delivered';
+    const isPickup = deliveryNote.unified_status === 'available_for_pickup' || !!deliveryNote.pickup_at;
 
-    if (isDelivered) {
-      // Use delivered_at (set once on delivery), fallback to last_tracking_update
-      const deliveredAt = deliveryNote.delivered_at || deliveryNote.last_tracking_update;
-      if (!deliveredAt) return null; // unknown — don't assume
+    // For pickups: measure when carrier delivered to branch (pickup_at)
+    // For address: measure when carrier delivered to customer (delivered_at)
+    if (isDelivered || isPickup) {
+      let compareDate;
+      if (deliveryNote.pickup_at) {
+        // Pickup point — carrier performance = how fast it reached the branch
+        compareDate = deliveryNote.pickup_at;
+      } else {
+        // Address delivery — carrier performance = how fast it reached the customer
+        compareDate = deliveryNote.delivered_at || deliveryNote.last_tracking_update;
+      }
+      if (!compareDate) return null;
 
-      const deliveredDate = new Date(deliveredAt);
-      const deliveredDay = deliveredDate.toISOString().substring(0, 10);
-      const eddDay = eddDate.toISOString().substring(0, 10);
+      const compareDay = new Date(compareDate).toISOString().substring(0, 10);
 
-      if (deliveredDay < eddDay) return 'early';
-      if (deliveredDay === eddDay) return 'on_time';
+      if (compareDay < eddDay) return 'early';
+      if (compareDay === eddDay) return 'on_time';
       return 'late';
     } else {
-      const today = new Date();
-      const todayStr = today.toISOString().substring(0, 10);
-      const eddStr = eddDate.toISOString().substring(0, 10);
+      const todayStr = new Date().toISOString().substring(0, 10);
 
-      if (todayStr <= eddStr) return 'in_progress_on_time';
+      if (todayStr <= eddDay) return 'in_progress_on_time';
       return 'in_progress_late';
     }
   }
@@ -105,7 +113,7 @@ class EDDService {
     if (typeof deliveryNoteOrId === 'string' || typeof deliveryNoteOrId === 'number') {
       const { data, error } = await supabase
         .from('delivery_notes')
-        .select('id, shipper_code, delivery_country, date_issued, unified_status, last_tracking_update, delivered_at, expected_delivery_date')
+        .select('id, shipper_code, delivery_country, date_issued, unified_status, last_tracking_update, delivered_at, pickup_at, expected_delivery_date')
         .eq('id', deliveryNoteOrId)
         .single();
       if (error || !data) return null;

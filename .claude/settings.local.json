@@ -22,7 +22,10 @@
       "Bash(ls -la \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/\"*.png \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/\"*.jpg)",
       "Bash(node -c \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/services/EDDService.js\")",
       "Bash(node -c \"../server/routes/retino/analytics.js\")",
-      "Bash(node -c \"../server/services/EDDService.js\")"
+      "Bash(node -c \"../server/services/EDDService.js\")",
+      "Bash(node -e \"require\\('dotenv'\\).config\\({ path: '../.env' }\\); console.log\\('OK', !!process.env.SUPABASE_URL\\);\")",
+      "Bash(node _qa_test.js)",
+      "Bash(node -c services/EDDService.js)"
     ]
   }
 }

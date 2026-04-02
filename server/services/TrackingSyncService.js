@@ -446,6 +446,8 @@ class TrackingSyncService {
         '30': 'problem',                // Damaged
         '52': 'label_created',          // COD data sent (data dobírky)
         '81': null,                     // RQ Info Normal (informační, skip)
+        '20': 'problem',                // Wrong ZIP code
+        '27': 'label_created',          // Small Parcel (data entry)
         '401': 'problem',               // ParcelLocker capacity problem
       };
       if (c in map) return map[c];

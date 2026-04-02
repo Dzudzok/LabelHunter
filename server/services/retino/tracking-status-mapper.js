@@ -371,6 +371,11 @@ const DESCRIPTION_TRANSLATIONS = {
   'wrong address': 'Chybná adresa',
   'refused': 'Odmítnuto příjemcem',
   'parcellocker capacity problem': 'ParcelLocker — nedostatek kapacity',
+  'can be picked up from gls parcel locker': 'K vyzvednutí z GLS ParcelLockeru',
+  'can be picked up from parcelshop': 'K vyzvednutí z ParcelShopu',
+  'the cod amount was credited to the sender\'s account.': 'Dobírka připsána na účet odesílatele',
+  'small parcel': 'Malý balík',
+  'wrong zip code': 'Chybné PSČ',
 
   // DPD
   'parcel has been pickup up at sender.': 'Balík převzat od odesílatele',
