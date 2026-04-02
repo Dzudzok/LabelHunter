@@ -1,5 +1,6 @@
 import { useNavigate } from 'react-router-dom'
 import { api } from '../../services/api'
+import CarrierLogo from '../retino/tracking/CarrierLogo'
 
 const STATUS_COLORS = {
   pending: 'border-red-500',
@@ -71,8 +72,8 @@ export default function PackageCard({ pkg, onRefresh }) {
 
       {/* Carrier badge */}
       {pkg.transport_name && (
-        <div className="bg-navy-600 px-3 py-1 rounded-lg text-sm font-medium text-theme-secondary shrink-0">
-          {pkg.transport_name}
+        <div className="shrink-0">
+          <CarrierLogo carrier={pkg.transport_name} country={pkg.delivery_country} size="sm" />
         </div>
       )}
 

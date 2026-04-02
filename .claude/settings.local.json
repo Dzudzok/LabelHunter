@@ -18,7 +18,8 @@
       "Bash(node -e ':*)",
       "Bash(node -c \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/server/routes/retino/analytics.js\")",
       "Bash(ls -la \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/\"*.png)",
-      "Read(//c/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/**)"
+      "Read(//c/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/**)",
+      "Bash(ls -la \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/\"*.png \"c:/Users/DELL/Desktop/PROJEKTY_IT/Projekty/LebelHunter/LabelHunter/\"*.jpg)"
     ]
   }
 }

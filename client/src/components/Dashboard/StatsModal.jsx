@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react'
 import { usePackageStore } from '../../store/packageStore'
+import CarrierLogo from '../retino/tracking/CarrierLogo'
 
 const STATUS_LABEL = {
   pending: 'Oczekuje',
@@ -147,7 +148,7 @@ export default function StatsModal({ date, onClose }) {
                       .sort((a, b) => b[1] - a[1])
                       .map(([shipper, count]) => (
                         <div key={shipper}>
-                          <div className="text-theme-secondary text-sm mb-1 font-semibold">{shipper}</div>
+                          <div className="mb-1"><CarrierLogo carrier={shipper} size="sm" showFlag={false} /></div>
                           <Bar value={count} max={maxShipper} color="bg-brand-orange" />
                         </div>
                       ))}
@@ -219,9 +220,7 @@ export default function StatsModal({ date, onClose }) {
                           <td className="px-4 py-2 text-theme-secondary truncate max-w-[140px]">{h.customer_name}</td>
                           <td className="px-4 py-2">
                             {h.shipper_code && (
-                              <span className="bg-navy-600 text-theme-secondary px-2 py-0.5 rounded text-xs font-bold">
-                                {h.shipper_code}
-                              </span>
+                              <CarrierLogo carrier={h.shipper_code} size="xs" showFlag={false} />
                             )}
                           </td>
                           <td className="px-4 py-2 text-theme-secondary">{h.scan_worker || <span className="text-theme-muted">—</span>}</td>

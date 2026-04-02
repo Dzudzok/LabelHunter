@@ -6,6 +6,7 @@ import { useScanner } from '../../hooks/useScanner'
 import { classifyBarcode } from '../../utils/barcode'
 import { api } from '../../services/api'
 import StatsBar from './StatsBar'
+import CarrierLogo from '../retino/tracking/CarrierLogo'
 import PackageCard from './PackageCard'
 import TransportMapModal from './TransportMapModal'
 import StatsModal from './StatsModal'
@@ -305,11 +306,9 @@ export default function Dashboard() {
                       <div className="text-theme-primary font-bold">{pkg.invoice_number}</div>
                       <div className="text-theme-secondary text-sm">{pkg.customer_name}</div>
                     </div>
-                    <div className="text-right">
-                      <span className="bg-navy-600 text-theme-secondary px-2 py-1 rounded text-xs font-bold">
-                        {pkg.transport_name || pkg.shipper_code || '-'}
-                      </span>
-                      <div className="text-theme-muted text-xs mt-1">{pkg.status}</div>
+                    <div className="text-right flex flex-col items-end gap-1">
+                      <CarrierLogo carrier={pkg.transport_name || pkg.shipper_code} country={pkg.delivery_country} size="xs" />
+                      <div className="text-theme-muted text-xs">{pkg.status}</div>
                     </div>
                   </div>
                 </button>
