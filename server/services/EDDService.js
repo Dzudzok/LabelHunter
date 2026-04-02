@@ -96,18 +96,26 @@ class EDDService {
   }
 
   /**
-   * Fetch a delivery note, calculate EDD + timeliness, and update it.
+   * Calculate EDD + timeliness for a shipment and update in DB.
+   * Accepts either an ID (string/number) or a delivery note object.
    */
-  async updateEDDForShipment(deliveryNoteId) {
-    const { data: note, error } = await supabase
-      .from('delivery_notes')
-      .select('id, shipper_code, delivery_country, date_issued, unified_status, last_tracking_update, expected_delivery_date')
-      .eq('id', deliveryNoteId)
-      .single();
+  async updateEDDForShipment(deliveryNoteOrId) {
+    let note;
+    if (typeof deliveryNoteOrId === 'string' || typeof deliveryNoteOrId === 'number') {
+      const { data, error } = await supabase
+        .from('delivery_notes')
+        .select('id, shipper_code, delivery_country, date_issued, unified_status, last_tracking_update, delivered_at, expected_delivery_date')
+        .eq('id', deliveryNoteOrId)
+        .single();
+      if (error || !data) return null;
+      note = data;
+    } else {
+      note = deliveryNoteOrId;
+    }
 
-    if (error || !note) return null;
+    if (!note.id) return null;
 
-    const edd = await this.calculateEDD(note);
+    const edd = note.expected_delivery_date || await this.calculateEDD(note);
     if (!edd) return null;
 
     // Set EDD on note for timeliness calculation
@@ -117,7 +125,7 @@ class EDDService {
     const { error: updateErr } = await supabase
       .from('delivery_notes')
       .update({ expected_delivery_date: edd, timeliness })
-      .eq('id', deliveryNoteId);
+      .eq('id', note.id);
 
     if (updateErr) {
       console.error('[EDDService] Update error:', updateErr.message);

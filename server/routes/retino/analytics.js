@@ -522,6 +522,8 @@ router.get('/timeliness', async (req, res, next) => {
     for (const note of filtered) {
       const t = note.timeliness;
       if (!t) continue;
+      // Skip shipments without tracking (unified_status null = not tracked)
+      if (!note.unified_status) continue;
 
       if (t === 'on_time') onTime++;
       else if (t === 'late') late++;

@@ -230,8 +230,8 @@ class TrackingSyncService {
             .update(updates)
             .eq('id', shipment.id);
 
-          // On delivery: calculate timeliness
-          if (unifiedStatus === 'delivered' && unifiedStatus !== shipment.unified_status) {
+          // Recalculate timeliness on any status change (not just delivery)
+          if (unifiedStatus !== shipment.unified_status && shipment.expected_delivery_date) {
             try {
               await eddService.updateEDDForShipment({ ...shipment, ...updates, unified_status: unifiedStatus });
             } catch (eddErr) {
