@@ -348,7 +348,7 @@ class TrackingSyncService {
   // Codes that are EXPLICITLY mapped to in_transit (not fallback) — don't log these
   static KNOWN_TRANSIT_CODES = new Set([
     // GLS
-    'GLS:02', 'GLS:03', 'GLS:09', 'GLS:10', 'GLS:22', 'GLS:26',
+    'GLS:02', 'GLS:03', 'GLS:09', 'GLS:10', 'GLS:22', 'GLS:26', 'GLS:29',
     'GLS:2', 'GLS:3', 'GLS:9',
     // DPD
     'DPD:02', 'DPD:06', 'DPD:07', 'DPD:08', 'DPD:10', 'DPD:16', 'DPD:20',
@@ -449,6 +449,14 @@ class TrackingSyncService {
         '81': null,                     // RQ Info Normal (informační, skip)
         '20': 'problem',                // Wrong ZIP code
         '27': 'label_created',          // Small Parcel (data entry)
+        '14': 'failed_delivery',        // Closed (recipient closed/unavailable)
+        '15': 'failed_delivery',        // Lack of time
+        '20': 'problem',                // Wrong ZIP code
+        '27': 'label_created',          // Small Parcel (data entry)
+        '29': 'in_transit',             // No data available
+        '43': 'problem',                // Lost
+        '57': 'returned_to_sender',     // Sent back to DEPO
+        '92': 'delivered',              // Signed On Paper
         '401': 'problem',               // ParcelLocker capacity problem
       };
       if (c in map) return map[c];
@@ -685,6 +693,9 @@ class TrackingSyncService {
       // UPS Access Point issues
       'G3': 'failed_delivery',        // Pobočka zavřena, další pokus
       '7A': 'failed_delivery',        // Nelze doručit do AP, další pokus
+      '7L': 'failed_delivery',        // Příjemce nepřítomen, AP zrušen, 2. pokus
+      '6C': 'returned_to_sender',     // Max dnů na AP vypršel
+      'O1': 'in_transit',             // Adresa doručení aktualizována příjemcem
       // Return
       'RS': 'returned_to_sender',     // Return to Sender
       'MV': 'returned_to_sender',     // Manifest Voided

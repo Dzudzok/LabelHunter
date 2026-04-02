@@ -376,6 +376,12 @@ const DESCRIPTION_TRANSLATIONS = {
   'the cod amount was credited to the sender\'s account.': 'Dobírka připsána na účet odesílatele',
   'small parcel': 'Malý balík',
   'wrong zip code': 'Chybné PSČ',
+  'lack of time': 'Nedostatek času — nedoručeno',
+  'sent back to depo': 'Odesláno zpět do depa',
+  'no data available': 'Žádná data k dispozici',
+  'closed': 'Zavřeno — příjemce nedostupný',
+  'lost': 'Zásilka ztracena',
+  'signed on paper': 'Podepsáno na papíře',
 
   // DPD
   'parcel has been pickup up at sender.': 'Balík převzat od odesílatele',
