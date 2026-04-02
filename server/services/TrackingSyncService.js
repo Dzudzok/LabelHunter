@@ -39,9 +39,10 @@ class TrackingSyncService {
       let query = supabase
         .from('delivery_notes')
         .select('*')
-        .not('unified_status', 'in', `(${SKIP_UNIFIED.join(',')})`)
+        .or(`unified_status.is.null,unified_status.not.in.(${SKIP_UNIFIED.join(',')})`)
         .not('status', 'eq', 'cancelled')
         .not('tracking_number', 'is', null)
+        .neq('tracking_number', '')
         .gte('date_issued', dateFrom)
         .range(offset, offset + PAGE_SIZE - 1);
 
