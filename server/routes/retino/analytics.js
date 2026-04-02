@@ -539,17 +539,23 @@ router.get('/timeliness', async (req, res, next) => {
       if (t === 'late') byCarrier[c].late++;
     }
 
-    const total = filtered.length;
-    const onTimePercent = total > 0 ? Math.round(((onTime + early) / total) * 1000) / 10 : 0;
+    // delivered = on_time + late + early (completed shipments only)
+    const totalDelivered = onTime + late + early;
+    // total = all with EDD (including in_progress)
+    const totalAll = totalDelivered + inProgressOnTime + inProgressLate;
+    const onTimePercent = totalDelivered > 0 ? Math.round(((onTime + early) / totalDelivered) * 1000) / 10 : 0;
 
     const byCarrierResult = {};
     for (const [carrier, stats] of Object.entries(byCarrier)) {
+      // Per carrier: count only delivered for percentage
+      const carrierDelivered = stats.onTime + stats.late + stats.early;
       byCarrierResult[carrier] = {
         onTime: stats.onTime,
         late: stats.late,
         early: stats.early,
         total: stats.total,
-        percent: stats.total > 0 ? Math.round((stats.onTime / stats.total) * 1000) / 10 : 0,
+        delivered: carrierDelivered,
+        percent: carrierDelivered > 0 ? Math.round((stats.onTime / carrierDelivered) * 1000) / 10 : 0,
       };
     }
 
@@ -559,7 +565,8 @@ router.get('/timeliness', async (req, res, next) => {
       early,
       inProgressOnTime,
       inProgressLate,
-      total,
+      totalDelivered,
+      total: totalAll,
       onTimePercent,
       byCarrier: byCarrierResult,
       countries,

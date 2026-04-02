@@ -62,8 +62,8 @@ export default function AnalyticsTimeliness() {
   if (loading || !data) {
     return (
       <div className="p-3 sm:p-6">
-        <h1 className="text-xl sm:text-2xl font-bold text-theme-primary mb-6">Vcasnost zasilek</h1>
-        <div className="text-theme-muted">Nacitani dat...</div>
+        <h1 className="text-xl sm:text-2xl font-bold text-theme-primary mb-6">Včasnost zásilek</h1>
+        <div className="text-theme-muted">Načítání dat...</div>
       </div>
     )
   }
@@ -81,9 +81,9 @@ export default function AnalyticsTimeliness() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold text-theme-primary">Vcasnost zasilek</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-theme-primary">Včasnost zásilek</h1>
           <p className="text-sm text-theme-muted mt-1">
-            Porovnani ocekavaneho a skutecneho data doruceni.
+            Porovnání očekávaného a skutečného data doručení.
           </p>
         </div>
         <div className="flex items-center gap-3">
@@ -129,17 +129,17 @@ export default function AnalyticsTimeliness() {
 
       {/* Stats cards */}
       <StatsCards cards={[
-        { label: 'Vcas', value: data.onTime + data.early, bgColor: '#064e3b', valueColor: '#10B981' },
-        { label: 'Opozdeno', value: data.late, bgColor: '#7f1d1d', valueColor: '#EF4444' },
-        { label: 'Drive', value: data.early, bgColor: '#1e3a5f', valueColor: '#3B82F6' },
-        { label: 'Celkem analyzovano', value: data.total, bgColor: '#1e293b', valueColor: '#e2e8f0' },
-        { label: 'Vcasnost', value: `${data.onTimePercent} %`, bgColor: '#1e293b', valueColor: data.onTimePercent >= 80 ? '#10B981' : '#F59E0B' },
+        { label: 'Včas', value: data.onTime + data.early, bgColor: '#064e3b', valueColor: '#10B981' },
+        { label: 'Opožděno', value: data.late, bgColor: '#7f1d1d', valueColor: '#EF4444' },
+        { label: 'Dříve', value: data.early, bgColor: '#1e3a5f', valueColor: '#3B82F6' },
+        { label: 'Doručeno celkem', value: data.totalDelivered || (data.onTime + data.late + data.early), bgColor: '#1e293b', valueColor: '#e2e8f0' },
+        { label: 'Včasnost', value: `${data.onTimePercent} %`, bgColor: '#1e293b', valueColor: data.onTimePercent >= 80 ? '#10B981' : data.onTimePercent >= 50 ? '#F59E0B' : '#EF4444' },
       ]} />
 
       {/* Donut visual — CSS colored bar */}
       {totalAnalyzed > 0 && (
         <div className="bg-navy-800 rounded-xl p-5 border border-navy-700">
-          <h2 className="text-lg font-semibold text-theme-primary mb-4">Rozlozeni vcasnosti</h2>
+          <h2 className="text-lg font-semibold text-theme-primary mb-4">Rozložení včasnosti</h2>
           <div className="flex rounded-lg overflow-hidden h-8 mb-3">
             {earlyPct > 0 && (
               <div
@@ -169,15 +169,15 @@ export default function AnalyticsTimeliness() {
           <div className="flex items-center gap-6 text-sm">
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#3B82F6' }} />
-              <span className="text-theme-secondary">Drive ({data.early})</span>
+              <span className="text-theme-secondary">Dříve ({data.early})</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#10B981' }} />
-              <span className="text-theme-secondary">Vcas ({data.onTime})</span>
+              <span className="text-theme-secondary">Včas ({data.onTime})</span>
             </div>
             <div className="flex items-center gap-2">
               <span className="w-3 h-3 rounded-full" style={{ backgroundColor: '#EF4444' }} />
-              <span className="text-theme-secondary">Opozdeno ({data.late})</span>
+              <span className="text-theme-secondary">Opožděno ({data.late})</span>
             </div>
           </div>
         </div>
@@ -186,15 +186,15 @@ export default function AnalyticsTimeliness() {
       {/* In progress */}
       {(data.inProgressOnTime > 0 || data.inProgressLate > 0) && (
         <div className="bg-navy-800 rounded-xl p-5 border border-navy-700">
-          <h2 className="text-lg font-semibold text-theme-primary mb-3">Probihajici zasilky</h2>
+          <h2 className="text-lg font-semibold text-theme-primary mb-3">Probíhající zásilky</h2>
           <div className="grid grid-cols-2 gap-4">
             <div className="bg-navy-700/50 rounded-lg p-4">
               <div className="text-2xl font-bold text-green-400">{data.inProgressOnTime}</div>
-              <div className="text-xs text-theme-muted mt-1">V terminu</div>
+              <div className="text-xs text-theme-muted mt-1">V termínu</div>
             </div>
             <div className="bg-navy-700/50 rounded-lg p-4">
               <div className="text-2xl font-bold text-red-400">{data.inProgressLate}</div>
-              <div className="text-xs text-theme-muted mt-1">Po terminu</div>
+              <div className="text-xs text-theme-muted mt-1">Po termínu</div>
             </div>
           </div>
         </div>

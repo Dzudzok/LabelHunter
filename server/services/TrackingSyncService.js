@@ -256,8 +256,10 @@ class TrackingSyncService {
           synced++;
         } catch (err) {
           errors++;
-          if (!err.message?.includes('Unauthorized') && !err.message?.includes('not configured')) {
-            console.error(`[TrackingSync/${carrier}] Error ${shipment.doc_number}:`, err.message);
+          const msg = err.message || '';
+          const ignorable = msg.includes('Unauthorized') || msg.includes('not configured') || msg.includes('not found') || msg.includes('No result');
+          if (!ignorable) {
+            console.error(`[TrackingSync/${carrier}] Error ${shipment.doc_number}:`, msg);
           }
         }
       }
